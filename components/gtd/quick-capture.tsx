@@ -9,12 +9,14 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Plus, Zap } from "lucide-react"
 import { useTasks } from "@/hooks/use-tasks"
 import { motion } from "framer-motion"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function QuickCapture() {
   const [title, setTitle] = useState("")
   const [isExpanded, setIsExpanded] = useState(false)
   const [loading, setLoading] = useState(false)
   const { addTask } = useTasks()
+  const { user } = useAuth() // Añadir esta línea
 
   const handleQuickAdd = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -22,6 +24,12 @@ export default function QuickCapture() {
 
     setLoading(true)
     try {
+      // Verificar que el usuario esté autenticado
+      if (!user || !user.uid) {
+        console.error("Usuario no autenticado")
+        throw new Error("Debes iniciar sesión para añadir tareas")
+      }
+
       await addTask({
         title: title.trim(),
         category: "Inbox",
@@ -32,6 +40,7 @@ export default function QuickCapture() {
       setIsExpanded(false)
     } catch (error) {
       console.error("Error al capturar tarea:", error)
+      // Mostrar un mensaje de error al usuario sería ideal aquí
     } finally {
       setLoading(false)
     }

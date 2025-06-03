@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { ArrowRight, Check, Loader2, AlertCircle, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardFooter } from "@/components/ui/card"
 
 export default function SubscriptionPage() {
   const { user, signOut } = useAuth()
@@ -217,32 +217,22 @@ export default function SubscriptionPage() {
           </div>
 
           <Card className="w-full max-w-md mx-auto overflow-hidden border-2 border-purple-100 shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <div className="h-2 bg-gradient-to-r from-purple-400 via-pink-500 to-red-500" />
-            <CardHeader className="pb-2">
-              <CardTitle className="text-2xl font-bold text-center">
-                {showTrialOption ? "Prueba Gratuita" : "Plan Premium"}
-              </CardTitle>
-              <CardDescription className="text-center">
-                {showTrialOption ? "7 días gratis, luego $2.500/mes" : "Todo lo que necesitas para dominar GTD"}
-              </CardDescription>
-            </CardHeader>
+            <div className="mb-6 text-center">
+              {showTrialOption ? (
+                <div className="pt-4">
+                  <span className="text-4xl font-bold text-green-600">Gratis</span>
+                  <span className="text-gray-500 ml-1">por 7 días</span>
+                  <div className="text-sm text-gray-500 mt-1">Luego $2.500/mes</div>
+                </div>
+              ) : (
+                <>
+                  <span className="text-4xl font-bold">$2.500</span>
+                  <span className="text-gray-500 ml-1">/mes</span>
+                  <div className="text-sm text-gray-500 mt-1">Pesos argentinos</div>
+                </>
+              )}
+            </div>
             <CardContent>
-              <div className="mb-6 text-center">
-                {showTrialOption ? (
-                  <>
-                    <span className="text-4xl font-bold text-green-600">Gratis</span>
-                    <span className="text-gray-500 ml-1">por 7 días</span>
-                    <div className="text-sm text-gray-500 mt-1">Luego $2.500/mes</div>
-                  </>
-                ) : (
-                  <>
-                    <span className="text-4xl font-bold">$2.500</span>
-                    <span className="text-gray-500 ml-1">/mes</span>
-                    <div className="text-sm text-gray-500 mt-1">Pesos argentinos</div>
-                  </>
-                )}
-              </div>
-
               <ul className="space-y-3">
                 {[
                   "Captura ilimitada de tareas",

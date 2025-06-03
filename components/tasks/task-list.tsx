@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -53,7 +53,33 @@ export default function TaskList({ onEditTask }: TaskListProps) {
     return matchesCategory && matchesPriority && matchesContext && matchesSearch && matchesCompleted
   })
 
-  const groupedTasks = filteredTasks.reduce(
+  // Ordenar tareas por fecha: más reciente a más futura, sin fecha al final
+  const sortedTasks = useMemo(() => {
+    return [...filteredTasks].sort((a, b) => {
+      // Si ambas tienen fecha
+      if (a.dueDate && b.dueDate) {
+        return a.dueDate.getTime() - b.dueDate.getTime()
+      }
+      // Si solo 'a' tiene fecha, 'a' va primero
+      if (a.dueDate && !b.dueDate) {
+        return -1
+      }
+      // Si solo 'b' tiene fecha, 'b' va primero
+      if (!a.dueDate && b.dueDate) {
+        return 1
+      }
+      // Si ninguna tiene fecha, ordenar por prioridad y luego por fecha de creación
+      const priorityOrder = { alta: 0, media: 1, baja: 2 }
+      const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority]
+      if (priorityDiff !== 0) {
+        return priorityDiff
+      }
+      // Si tienen la misma prioridad, ordenar por fecha de creación (más reciente primero)
+      return b.createdAt.getTime() - a.createdAt.getTime()
+    })
+  }, [filteredTasks])
+
+  const groupedTasks = sortedTasks.reduce(
     (acc, task) => {
       if (!acc[task.category]) {
         acc[task.category] = []
@@ -178,10 +204,10 @@ export default function TaskList({ onEditTask }: TaskListProps) {
         })
       ) : (
         <div className="space-y-3">
-          {filteredTasks.map((task) => (
+          {sortedTasks.map((task) => (
             <TaskItem key={task.id} task={task} onEdit={onEditTask} />
           ))}
-          {filteredTasks.length === 0 && (
+          {sortedTasks.length === 0 && (
             <Card>
               <CardContent className="p-8 text-center">
                 <p className="text-gray-500">No se encontraron tareas con los filtros aplicados.</p>

@@ -86,7 +86,6 @@ export default function ContextsPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 font-heading mb-2">Tus Contextos GTD</h2>
           <p className="text-gray-600">
             Organiza y gestiona todos tus contextos. Un contexto puede ser un lugar, persona, herramienta o proyecto que
             agrupa tareas relacionadas.

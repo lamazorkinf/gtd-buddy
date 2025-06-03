@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CheckCircle, Clock, Edit, Trash2, CalendarIcon, ArrowRight, Plus, Inbox, FolderOpen } from "lucide-react"
+import { CheckCircle, Clock, Edit, Trash2, CalendarIcon, ArrowRight, Inbox, FolderOpen } from "lucide-react"
 import { format, subDays, isAfter } from "date-fns"
 import { es } from "date-fns/locale"
 import { useTasks } from "@/hooks/use-tasks"
@@ -216,8 +216,6 @@ interface ReviewSectionProps {
   onUpdate: (taskId: string, updates: Partial<Task>) => void
   onDelete: (taskId: string) => void
   onMoveCategory: (taskId: string, category: GTDCategory) => void
-  onAddTask?: (category: GTDCategory) => void
-  category?: GTDCategory
   children?: React.ReactNode
   icon: React.ReactNode
   bgGradient: string
@@ -231,8 +229,6 @@ function ReviewSection({
   onUpdate,
   onDelete,
   onMoveCategory,
-  onAddTask,
-  category,
   children,
   icon,
   bgGradient,
@@ -263,19 +259,6 @@ function ReviewSection({
                 )}
               </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {category && onAddTask && (
-              <Button
-                onClick={() => onAddTask(category)}
-                size="sm"
-                variant="outline"
-                className="flex items-center gap-1 bg-white/50 hover:bg-white/80"
-              >
-                <Plus className="h-4 w-4" />
-                Añadir
-              </Button>
-            )}
           </div>
         </div>
       </CardHeader>
@@ -495,8 +478,6 @@ export default function WeeklyReviewComponent() {
           onUpdate={handleTaskUpdate}
           onDelete={handleTaskDelete}
           onMoveCategory={handleMoveCategory}
-          onAddTask={(category) => setShowNewTaskForm(category)}
-          category="Multitarea"
           icon={<FolderOpen className="h-6 w-6 text-purple-700" />}
           bgGradient="bg-gradient-to-r from-purple-50 to-purple-100"
           borderColor="border-purple-200"
@@ -518,8 +499,6 @@ export default function WeeklyReviewComponent() {
           onUpdate={handleTaskUpdate}
           onDelete={handleTaskDelete}
           onMoveCategory={handleMoveCategory}
-          onAddTask={(category) => setShowNewTaskForm(category)}
-          category="A la espera"
           icon={<Clock className="h-6 w-6 text-orange-700" />}
           bgGradient="bg-gradient-to-r from-orange-50 to-orange-100"
           borderColor="border-orange-200"
@@ -540,8 +519,6 @@ export default function WeeklyReviewComponent() {
           onUpdate={handleTaskUpdate}
           onDelete={handleTaskDelete}
           onMoveCategory={handleMoveCategory}
-          onAddTask={(category) => setShowNewTaskForm(category)}
-          category="Algún día"
           icon={<CalendarIcon className="h-6 w-6 text-green-700" />}
           bgGradient="bg-gradient-to-r from-green-50 to-green-100"
           borderColor="border-green-200"

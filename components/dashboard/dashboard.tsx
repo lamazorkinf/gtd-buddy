@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Plus,
   LogOut,
@@ -17,6 +18,7 @@ import {
   Lightbulb,
   RotateCcw,
   Target,
+  Settings,
 } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
@@ -29,6 +31,7 @@ import InboxProcessor from "@/components/gtd/inbox-processor"
 import WeeklyReviewComponent from "@/components/gtd/weekly-review"
 import { useContexts } from "@/hooks/use-contexts"
 import ModalTransition from "@/components/transitions/modal-transition"
+import { format } from "date-fns"
 
 export default function Dashboard() {
   const [showTaskForm, setShowTaskForm] = useState(false)
@@ -36,20 +39,26 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("overview")
   const { user, signOut } = useAuth()
   const { contexts } = useContexts()
-  const { tasks } = useTasks()
+  const { tasks, updateTask } = useTasks()
 
   // Análisis GTD
   const inboxTasks = tasks.filter((task) => task.category === "Inbox")
-  const nextActionTasks = tasks.filter((task) => task.category === "Próximas acciones" && !task.completed)
-  const multitaskTasks = tasks.filter((task) => task.category === "Multitarea" && !task.completed)
-  const waitingTasks = tasks.filter((task) => task.category === "A la espera" && !task.completed)
-  const somedayTasks = tasks.filter((task) => task.category === "Algún día")
-
   const todayTasks = tasks.filter(
     (task) => task.dueDate && task.dueDate.toDateString() === new Date().toDateString() && !task.completed,
   )
-
   const overdueTasks = tasks.filter((task) => task.dueDate && task.dueDate < new Date() && !task.completed)
+
+  // IDs de tareas que ya están en "Para hoy" o "Urgente" para excluirlas de "Próximas acciones"
+  const excludedTaskIds = new Set([...todayTasks.map((task) => task.id), ...overdueTasks.map((task) => task.id)])
+
+  // Próximas acciones filtradas (excluyendo las que ya están en otras categorías)
+  const nextActionTasks = tasks.filter(
+    (task) => task.category === "Próximas acciones" && !task.completed && !excludedTaskIds.has(task.id),
+  )
+
+  const multitaskTasks = tasks.filter((task) => task.category === "Multitarea" && !task.completed)
+  const waitingTasks = tasks.filter((task) => task.category === "A la espera" && !task.completed)
+  const somedayTasks = tasks.filter((task) => task.category === "Algún día")
 
   const handleEditTask = (task: Task) => {
     setEditingTask(task)
@@ -59,6 +68,18 @@ export default function Dashboard() {
   const handleCloseForm = () => {
     setShowTaskForm(false)
     setEditingTask(undefined)
+  }
+
+  const handleToggleComplete = async (taskId: string, completed: boolean) => {
+    try {
+      await updateTask(taskId, { completed: !completed })
+    } catch (error) {
+      console.error("Error al actualizar tarea:", error)
+    }
+  }
+
+  const handleGoToOrganize = () => {
+    setActiveTab("organize")
   }
 
   return (
@@ -187,9 +208,24 @@ export default function Dashboard() {
                   </h3>
                   <div className="space-y-2">
                     {todayTasks.slice(0, 5).map((task) => (
-                      <div key={task.id} className="p-2 bg-blue-50 rounded border-l-4 border-blue-400">
-                        <div className="font-medium text-sm">{task.title}</div>
-                        <div className="text-xs text-blue-600">{task.category}</div>
+                      <div
+                        key={task.id}
+                        className="p-2 bg-blue-50 rounded border-l-4 border-blue-400 flex items-start gap-2"
+                      >
+                        <Checkbox
+                          checked={task.completed}
+                          onCheckedChange={() => handleToggleComplete(task.id, task.completed)}
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium text-sm flex justify-between">
+                            <span>{task.title}</span>
+                            {task.dueDate && (
+                              <span className="text-xs text-blue-600 font-mono">{format(task.dueDate, "HH:mm")}</span>
+                            )}
+                          </div>
+                          <div className="text-xs text-blue-600">{task.category}</div>
+                        </div>
                       </div>
                     ))}
                     {todayTasks.length === 0 && (
@@ -208,9 +244,24 @@ export default function Dashboard() {
                   </h3>
                   <div className="space-y-2">
                     {nextActionTasks.slice(0, 5).map((task) => (
-                      <div key={task.id} className="p-2 bg-green-50 rounded border-l-4 border-green-400">
-                        <div className="font-medium text-sm">{task.title}</div>
-                        <div className="text-xs text-green-600">Prioridad: {task.priority}</div>
+                      <div
+                        key={task.id}
+                        className="p-2 bg-green-50 rounded border-l-4 border-green-400 flex items-start gap-2"
+                      >
+                        <Checkbox
+                          checked={task.completed}
+                          onCheckedChange={() => handleToggleComplete(task.id, task.completed)}
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium text-sm flex justify-between">
+                            <span>{task.title}</span>
+                            {task.dueDate && (
+                              <span className="text-xs text-green-600 font-mono">{format(task.dueDate, "HH:mm")}</span>
+                            )}
+                          </div>
+                          <div className="text-xs text-green-600">Prioridad: {task.priority}</div>
+                        </div>
                       </div>
                     ))}
                     {nextActionTasks.length === 0 && (
@@ -229,9 +280,32 @@ export default function Dashboard() {
                   </h3>
                   <div className="space-y-2">
                     {overdueTasks.slice(0, 5).map((task) => (
-                      <div key={task.id} className="p-2 bg-red-50 rounded border-l-4 border-red-400">
-                        <div className="font-medium text-sm">{task.title}</div>
-                        <div className="text-xs text-red-600">Vencida: {task.dueDate?.toLocaleDateString()}</div>
+                      <div key={task.id} className="space-y-2">
+                        <div className="p-2 bg-red-50 rounded border-l-4 border-red-400 flex items-start gap-2">
+                          <Checkbox
+                            checked={task.completed}
+                            onCheckedChange={() => handleToggleComplete(task.id, task.completed)}
+                            className="mt-1"
+                          />
+                          <div className="flex-1">
+                            <div className="font-medium text-sm flex justify-between">
+                              <span>{task.title}</span>
+                              {task.dueDate && (
+                                <span className="text-xs text-red-600 font-mono">{format(task.dueDate, "HH:mm")}</span>
+                              )}
+                            </div>
+                            <div className="text-xs text-red-600">Vencida: {task.dueDate?.toLocaleDateString()}</div>
+                          </div>
+                        </div>
+                        <Button
+                          onClick={handleGoToOrganize}
+                          size="sm"
+                          variant="outline"
+                          className="w-full text-xs border-red-300 text-red-700 hover:bg-red-50"
+                        >
+                          <Settings className="mr-1 h-3 w-3" />
+                          Ir a Organizar
+                        </Button>
                       </div>
                     ))}
                     {overdueTasks.length === 0 && <p className="text-sm text-gray-500">¡No hay tareas vencidas!</p>}
@@ -241,7 +315,7 @@ export default function Dashboard() {
             </div>
 
             {/* Resumen de categorías */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <Card className="text-center">
                 <CardContent className="p-4">
                   <div className="text-2xl font-bold text-purple-600">{multitaskTasks.length}</div>
@@ -258,12 +332,6 @@ export default function Dashboard() {
                 <CardContent className="p-4">
                   <div className="text-2xl font-bold text-green-600">{somedayTasks.length}</div>
                   <div className="text-sm text-gray-600">Algún Día</div>
-                </CardContent>
-              </Card>
-              <Card className="text-center">
-                <CardContent className="p-4">
-                  <div className="text-2xl font-bold text-blue-600">{contexts.length}</div>
-                  <div className="text-sm text-gray-600">Contextos</div>
                 </CardContent>
               </Card>
             </div>
