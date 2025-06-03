@@ -1,5 +1,14 @@
 {
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
   "dependencies": {
+    "next": "^14.2.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "framer-motion": "^10.16.16",
     "firebase-admin": "^11.10.0"
   }
