@@ -48,7 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const userDocSnap = await getDoc(userDocRef)
 
             if (userDocSnap.exists()) {
-              const userDataFromFirestore = userDocSnap.data() as User // Asumimos que User tiene todos los campos
+              const userDataFromFirestore = userDocSnap.data() as User
               setUser({
                 uid: firebaseUser.uid,
                 email: firebaseUser.email,
@@ -62,8 +62,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 role: userDataFromFirestore.role || "user",
                 subscriptionStatus: userDataFromFirestore.subscriptionStatus || "inactive",
                 subscriptionEndDate: userDataFromFirestore.subscriptionEndDate,
-                firstName: userDataFromFirestore.firstName, // Nuevo
-                lastName: userDataFromFirestore.lastName, // Nuevo
+                firstName: userDataFromFirestore.firstName,
+                lastName: userDataFromFirestore.lastName,
+                isInTrialPeriod: userDataFromFirestore.isInTrialPeriod === true, // Asegurar que sea booleano
+                trialStartDate: userDataFromFirestore.trialStartDate,
               })
             } else {
               // This case might happen if user was created via Google Sign-In for the first time
@@ -76,10 +78,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 displayName: firebaseUser.displayName,
                 photoURL: firebaseUser.photoURL,
                 role: "user",
-                subscriptionStatus: "pending_payment",
-                // firstName y lastName no estarían disponibles aquí si es la primera vez
-                // y no se pasaron al crear el usuario en Auth.
-                // La función signUp se encarga de escribirlos en Firestore.
+                subscriptionStatus: "trial", // Cambiar a "trial" para nuevos usuarios
+                isInTrialPeriod: true, // Nuevos usuarios comienzan en período de prueba
               }
               // Optionally create the user document here if it doesn't exist
               // await setDoc(userDocRef, { ...newUser, createdAt: serverTimestamp() });
@@ -138,7 +138,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           firstName: firstName,
           lastName: lastName,
           role: "user",
-          subscriptionStatus: "pending_payment",
+          subscriptionStatus: "trial", // Cambiar a "trial"
+          isInTrialPeriod: true, // Establecer período de prueba
+          trialStartDate: serverTimestamp(), // Marcar inicio de prueba
           createdAt: serverTimestamp(),
         }
         await setDoc(userDocRef, newUserFirestoreData)
@@ -159,12 +161,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const userDocSnap = await getDoc(userDocRef)
         if (!userDocSnap.exists()) {
           // Create user document if it's their first time with Google
+          const displayNameParts = firebaseUser.displayName?.split(" ") || ["", ""]
+          const firstName = displayNameParts[0]
+          const lastName = displayNameParts.slice(1).join(" ")
+
           const newUser: Omit<User, "uid"> = {
             email: firebaseUser.email,
             displayName: firebaseUser.displayName,
             photoURL: firebaseUser.photoURL,
+            firstName: firstName,
+            lastName: lastName,
             role: "user",
-            subscriptionStatus: "pending_payment",
+            subscriptionStatus: "trial", // Cambiar a "trial"
+            isInTrialPeriod: true, // Establecer período de prueba
+            trialStartDate: serverTimestamp(), // Marcar inicio de prueba
           }
           await setDoc(userDocRef, { ...newUser, createdAt: serverTimestamp(), uid: firebaseUser.uid })
         }

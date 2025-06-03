@@ -56,4 +56,6 @@ export interface User {
   firstName?: string
   lastName?: string
   lastWeeklyReview?: Date
+  isInTrialPeriod?: boolean // Campo para manejar el período de prueba
+  trialStartDate?: Date // Opcional: para rastrear cuándo comenzó la prueba
 }
