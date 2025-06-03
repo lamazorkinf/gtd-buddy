@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "framer-motion": "^10.16.16",
+    "firebase-admin": "^11.10.0"
+  }
+}
