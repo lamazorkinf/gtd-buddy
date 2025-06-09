@@ -1,9 +1,9 @@
 "use client"
 
 import type React from "react"
-
 import { motion, AnimatePresence } from "framer-motion"
-import { useEffect } from "react"
+import { useEffect, useState, useRef } from "react"
+import { createPortal } from "react-dom"
 
 interface ModalTransitionProps {
   isOpen: boolean
@@ -18,89 +18,115 @@ const backdropVariants = {
 
 const modalVariants = {
   hidden: {
-    y: "100%",
     opacity: 0,
-    scale: 0.95,
+    scale: 0.9,
+    y: 20,
   },
   visible: {
-    y: 0,
     opacity: 1,
     scale: 1,
+    y: 0,
     transition: {
       type: "spring",
-      damping: 25,
-      stiffness: 300,
-      duration: 0.3,
+      damping: 20,
+      stiffness: 200,
+      duration: 0.2,
     },
   },
   exit: {
-    y: "100%",
     opacity: 0,
-    scale: 0.95,
+    scale: 0.9,
+    y: 20,
     transition: {
-      type: "tween",
-      ease: "easeInOut",
-      duration: 0.2,
+      duration: 0.15,
     },
   },
 }
 
 export default function ModalTransition({ isOpen, onClose, children }: ModalTransitionProps) {
-  // Prevenir scroll del body cuando el modal está abierto
+  const [mounted, setMounted] = useState(false)
+  const portalRootRef = useRef<HTMLElement | null>(null)
+
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden"
-    } else {
-      document.body.style.overflow = "unset"
+    setMounted(true)
+    // Intentar obtener o crear un elemento portal en el body
+    let portalRoot = document.getElementById("modal-portal-root")
+    if (!portalRoot) {
+      portalRoot = document.createElement("div")
+      portalRoot.setAttribute("id", "modal-portal-root")
+      document.body.appendChild(portalRoot)
     }
+    portalRootRef.current = portalRoot
 
     return () => {
-      document.body.style.overflow = "unset"
+      // Limpiar el portal si este componente lo creó y ya no hay modales
+      // Esto es opcional y depende de si quieres un único portal para toda la app
+      // o uno por instancia de modal (lo cual es menos eficiente)
+      // if (portalRootRef.current && portalRootRef.current.childElementCount === 0) {
+      //   portalRootRef.current.remove();
+      // }
+    }
+  }, [])
+
+  useEffect(() => {
+    const body = document.body
+    if (isOpen) {
+      body.style.overflow = "hidden"
+    } else {
+      body.style.overflow = ""
+    }
+    // Asegurarse de limpiar el overflow si el componente se desmonta mientras está abierto
+    return () => {
+      body.style.overflow = ""
     }
   }, [isOpen])
 
-  // Cerrar modal con Escape
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) {
         onClose()
       }
     }
-
     document.addEventListener("keydown", handleEscape)
     return () => document.removeEventListener("keydown", handleEscape)
   }, [isOpen, onClose])
 
-  return (
+  const modalContent = (
     <AnimatePresence mode="wait">
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4" // z-index alto
           initial="hidden"
           animate="visible"
           exit="hidden"
           variants={backdropVariants}
           transition={{ duration: 0.2 }}
+          aria-labelledby="modal-title"
+          role="dialog"
+          aria-modal="true"
         >
           {/* Backdrop */}
           <motion.div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm" // Más oscuro para mejor contraste
             onClick={onClose}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           />
 
-          {/* Modal Content */}
+          {/* Modal Content Wrapper */}
           <motion.div
-            className="relative w-full max-w-2xl mx-4 mb-4 sm:mb-0 max-h-[90vh] overflow-hidden"
+            className="relative w-full max-w-2xl z-10 bg-white rounded-xl shadow-2xl"
             variants={modalVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-white rounded-t-xl sm:rounded-xl shadow-2xl overflow-y-auto max-h-[90vh]">
+            {/* Contenido scrolleable del modal */}
+            <div className="max-h-[85vh] overflow-y-auto p-6">
+              {" "}
+              {/* Padding añadido aquí */}
               {children}
             </div>
           </motion.div>
@@ -108,4 +134,10 @@ export default function ModalTransition({ isOpen, onClose, children }: ModalTran
       )}
     </AnimatePresence>
   )
+
+  if (!mounted || !portalRootRef.current) {
+    return null // No renderizar nada en el servidor o antes de que el portal esté listo
+  }
+
+  return createPortal(modalContent, portalRootRef.current)
 }

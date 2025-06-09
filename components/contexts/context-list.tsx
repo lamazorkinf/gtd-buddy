@@ -1,12 +1,26 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Progress } from "@/components/ui/progress"
-import { Target, MoreVertical, Edit, Trash2, Plus, Calendar, CheckCircle, Clock, Pause, Lightbulb } from "lucide-react"
+import {
+  Target,
+  MoreVertical,
+  Edit,
+  Trash2,
+  Plus,
+  Calendar,
+  CheckCircle,
+  Clock,
+  Pause,
+  Lightbulb,
+  Loader2,
+} from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import type { Context } from "@/types/task"
@@ -18,70 +32,69 @@ interface ContextListProps {
   onCreateTask: (contextId: string) => void
 }
 
-const CONTEXT_STATUS_CONFIG = {
+const CONTEXT_STATUS_CONFIG: Record<
+  Context["status"] & string,
+  { icon: React.ElementType; label: string; color: string; emoji: string; progressColor: string }
+> = {
   active: {
     icon: Target,
     label: "Activo",
-    color: "bg-green-100 text-green-800 border-green-300",
+    color: "bg-gtd-confidence-100 text-gtd-confidence-800 border-gtd-confidence-300",
     emoji: "🎯",
+    progressColor: "bg-gtd-confidence-500",
   },
   on_hold: {
     icon: Pause,
     label: "En Pausa",
     color: "bg-yellow-100 text-yellow-800 border-yellow-300",
     emoji: "⏸️",
+    progressColor: "bg-yellow-500",
   },
   completed: {
     icon: CheckCircle,
     label: "Completado",
-    color: "bg-blue-100 text-blue-800 border-blue-300",
+    color: "bg-gtd-focus-100 text-gtd-focus-800 border-gtd-focus-300",
     emoji: "✅",
+    progressColor: "bg-gtd-focus-500",
   },
   someday: {
     icon: Lightbulb,
     label: "Algún Día",
-    color: "bg-gray-100 text-gray-800 border-gray-300",
+    color: "bg-gtd-neutral-200 text-gtd-neutral-800 border-gtd-neutral-300",
     emoji: "🌱",
+    progressColor: "bg-gtd-neutral-500",
   },
 }
 
 export default function ContextList({ onEditContext, onCreateTask }: ContextListProps) {
   const [selectedStatus, setSelectedStatus] = useState<Context["status"] | "all">("all")
   const { contexts, loading, deleteContext } = useContexts()
-  const { tasks, getTasksByContextId } = useTasks()
+  const { getTasksByContextId } = useTasks() // Removed 'tasks' as it's not directly used here
 
   const filteredContexts = contexts.filter(
     (context) =>
-      selectedStatus === "all" || context.status === selectedStatus || (!context.status && selectedStatus === "active"), // Tratar contextos sin status como activos
+      selectedStatus === "all" || context.status === selectedStatus || (!context.status && selectedStatus === "active"),
   )
 
-  const getContextTasks = (contextId: string) => {
-    return getTasksByContextId(contextId)
-  }
-
   const getContextProgress = (contextId: string) => {
-    const contextTasks = getContextTasks(contextId)
-    if (contextTasks.length === 0) return 0
+    const contextTasks = getTasksByContextId(contextId)
+    if (contextTasks.length === 0) return { progress: 0, completed: 0, total: 0 }
     const completedTasks = contextTasks.filter((task) => task.completed).length
-    return Math.round((completedTasks / contextTasks.length) * 100)
+    return {
+      progress: Math.round((completedTasks / contextTasks.length) * 100),
+      completed: completedTasks,
+      total: contextTasks.length,
+    }
   }
 
   const handleDeleteContext = async (contextId: string) => {
-    const contextTasks = getContextTasks(contextId)
+    const { total: totalTasks } = getContextProgress(contextId)
+    const confirmMessage =
+      totalTasks > 0
+        ? `Este contexto tiene ${totalTasks} tareas asociadas. ¿Eliminar el contexto? Las tareas quedarán sin contexto asignado.`
+        : "¿Eliminar este contexto? No se puede deshacer."
 
-    if (contextTasks.length > 0) {
-      if (
-        !confirm(
-          `Este contexto tiene ${contextTasks.length} tareas asociadas. ¿Eliminar el contexto? Las tareas quedarán sin contexto asignado.`,
-        )
-      ) {
-        return
-      }
-    } else {
-      if (!confirm("¿Eliminar este contexto? No se puede deshacer.")) {
-        return
-      }
-    }
+    if (!confirm(confirmMessage)) return
 
     try {
       await deleteContext(contextId)
@@ -93,30 +106,42 @@ export default function ContextList({ onEditContext, onCreateTask }: ContextList
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+        <Loader2 className="h-10 w-10 animate-spin text-gtd-clarity-500" />
       </div>
     )
   }
 
   return (
     <div className="space-y-6">
-      {/* Filtros */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 p-4 bg-white/70 backdrop-blur-sm rounded-xl shadow border border-gtd-neutral-100">
         <Button
           variant={selectedStatus === "all" ? "default" : "outline"}
           onClick={() => setSelectedStatus("all")}
           size="sm"
+          className={
+            selectedStatus === "all"
+              ? "bg-gtd-clarity-500 text-white hover:bg-gtd-clarity-600"
+              : "text-gtd-neutral-700 border-gtd-neutral-300 hover:bg-gtd-neutral-100"
+          }
         >
           Todos ({contexts.length})
         </Button>
-        {Object.entries(CONTEXT_STATUS_CONFIG).map(([status, config]) => {
-          const count = contexts.filter((c) => c.status === status || (!c.status && status === "active")).length
+        {Object.entries(CONTEXT_STATUS_CONFIG).map(([statusKey, config]) => {
+          const statusValue = statusKey as Context["status"]
+          const count = contexts.filter(
+            (c) => c.status === statusValue || (!c.status && statusValue === "active"),
+          ).length
           return (
             <Button
-              key={status}
-              variant={selectedStatus === status ? "default" : "outline"}
-              onClick={() => setSelectedStatus(status as Context["status"])}
+              key={statusKey}
+              variant={selectedStatus === statusValue ? "default" : "outline"}
+              onClick={() => setSelectedStatus(statusValue)}
               size="sm"
+              className={
+                selectedStatus === statusValue
+                  ? "bg-gtd-clarity-500 text-white hover:bg-gtd-clarity-600"
+                  : "text-gtd-neutral-700 border-gtd-neutral-300 hover:bg-gtd-neutral-100"
+              }
             >
               {config.emoji} {config.label} ({count})
             </Button>
@@ -124,96 +149,113 @@ export default function ContextList({ onEditContext, onCreateTask }: ContextList
         })}
       </div>
 
-      {/* Lista de contextos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {filteredContexts.map((context) => {
-          const contextTasks = getContextTasks(context.id)
-          const progress = getContextProgress(context.id)
+          const { progress, completed, total } = getContextProgress(context.id)
           const statusConfig = CONTEXT_STATUS_CONFIG[context.status || "active"]
           const StatusIcon = statusConfig.icon
 
           return (
-            <Card key={context.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
+            <Card
+              key={context.id}
+              className="hover:shadow-lg transition-shadow duration-300 bg-white/80 backdrop-blur-sm border border-gtd-neutral-100"
+            >
+              <CardHeader className="border-b border-gtd-neutral-100">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <StatusIcon className="h-5 w-5 text-gray-600" />
-                      <CardTitle className="text-lg font-heading">{context.name}</CardTitle>
+                    <div className="flex items-center gap-3 mb-2">
+                      <StatusIcon className={`h-6 w-6 ${statusConfig.color.split(" ")[1]}`} />{" "}
+                      {/* Use text color for icon */}
+                      <CardTitle className="text-xl font-heading text-gtd-clarity-700">{context.name}</CardTitle>
                     </div>
-                    <Badge variant="outline" className={statusConfig.color}>
+                    <Badge variant="outline" className={`${statusConfig.color} text-xs`}>
                       {statusConfig.emoji} {statusConfig.label}
                     </Badge>
                   </div>
-
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-gtd-neutral-500 hover:bg-gtd-neutral-100"
+                      >
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onEditContext(context)}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Editar
+                      <DropdownMenuItem
+                        onClick={() => onEditContext(context)}
+                        className="text-gtd-neutral-700 hover:!bg-gtd-clarity-50"
+                      >
+                        <Edit className="mr-2 h-4 w-4 text-gtd-clarity-500" /> Editar
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onCreateTask(context.id)}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Añadir Tarea
+                      <DropdownMenuItem
+                        onClick={() => onCreateTask(context.id)}
+                        className="text-gtd-neutral-700 hover:!bg-gtd-focus-50"
+                      >
+                        <Plus className="mr-2 h-4 w-4 text-gtd-focus-500" /> Añadir Tarea
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => handleDeleteContext(context.id)}
-                        className="text-red-600 focus:text-red-600"
+                        className="text-red-600 hover:!text-red-700 hover:!bg-red-50"
                       >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Eliminar
+                        <Trash2 className="mr-2 h-4 w-4" /> Eliminar
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
               </CardHeader>
-
-              <CardContent className="space-y-4">
-                {context.description && <p className="text-sm text-gray-600">{context.description}</p>}
-
-                {/* Progreso */}
-                {contextTasks.length > 0 && (
+              <CardContent className="pt-4 space-y-4">
+                {context.description && (
+                  <p className="text-sm text-gtd-neutral-600 italic bg-gtd-neutral-50 p-3 rounded-md border-l-4 border-gtd-neutral-200">
+                    {context.description}
+                  </p>
+                )}
+                {total > 0 && (
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Progreso</span>
-                      <span className="font-medium">{progress}%</span>
+                      <span className="text-gtd-neutral-600">Progreso</span>
+                      <span className={`font-medium ${statusConfig.color.split(" ")[1]}`}>{progress}%</span>
                     </div>
-                    <Progress value={progress} className="h-2" />
-                    <div className="flex justify-between text-xs text-gray-500">
-                      <span>{contextTasks.filter((t) => t.completed).length} completadas</span>
-                      <span>{contextTasks.length} total</span>
+                    <Progress
+                      value={progress}
+                      className="h-2 [&>*]:bg-gradient-to-r [&>*]:from-gtd-clarity-400 [&>*]:to-gtd-action-400"
+                    />
+                    <div className="flex justify-between text-xs text-gtd-neutral-500">
+                      <span>{completed} completadas</span>
+                      <span>{total} total</span>
                     </div>
                   </div>
                 )}
-
-                {/* Información adicional */}
-                <div className="flex flex-wrap gap-2 text-xs text-gray-500">
+                <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-gtd-neutral-500">
                   {context.targetDate && (
                     <div className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      <span>Meta: {format(context.targetDate, "dd MMM yyyy", { locale: es })}</span>
+                      <Calendar className="h-3.5 w-3.5" /> Meta:{" "}
+                      {format(context.targetDate, "dd MMM yyyy", { locale: es })}
                     </div>
                   )}
                   {context.lastReviewed && (
                     <div className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      <span>Revisado: {format(context.lastReviewed, "dd MMM", { locale: es })}</span>
+                      <Clock className="h-3.5 w-3.5" /> Revisado:{" "}
+                      {format(context.lastReviewed, "dd MMM", { locale: es })}
                     </div>
                   )}
                 </div>
-
-                {/* Acciones rápidas */}
-                <div className="flex gap-2 pt-2">
-                  <Button onClick={() => onCreateTask(context.id)} size="sm" variant="outline" className="flex-1">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Nueva Tarea
+                <div className="flex gap-2 pt-3 border-t border-gtd-neutral-100">
+                  <Button
+                    onClick={() => onCreateTask(context.id)}
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 text-gtd-focus-600 border-gtd-focus-300 hover:bg-gtd-focus-50 hover:text-gtd-focus-700"
+                  >
+                    <Plus className="mr-2 h-4 w-4" /> Nueva Tarea
                   </Button>
-                  <Button onClick={() => onEditContext(context)} size="sm" variant="outline">
+                  <Button
+                    onClick={() => onEditContext(context)}
+                    size="sm"
+                    variant="outline"
+                    className="text-gtd-clarity-600 border-gtd-clarity-300 hover:bg-gtd-clarity-50 hover:text-gtd-clarity-700"
+                  >
                     <Edit className="h-4 w-4" />
                   </Button>
                 </div>
@@ -222,13 +264,12 @@ export default function ContextList({ onEditContext, onCreateTask }: ContextList
           )
         })}
       </div>
-
       {filteredContexts.length === 0 && (
-        <Card>
+        <Card className="bg-white/80 backdrop-blur-sm border border-gtd-neutral-100">
           <CardContent className="p-8 text-center">
-            <Target className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">No hay contextos</h3>
-            <p className="text-gray-500 mb-4">
+            <Target className="h-12 w-12 text-gtd-neutral-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gtd-neutral-700 mb-2 font-heading">No hay contextos</h3>
+            <p className="text-gtd-neutral-500 mb-4">
               {selectedStatus === "all"
                 ? "Crea tu primer contexto para organizar tareas relacionadas."
                 : `No hay contextos con estado "${CONTEXT_STATUS_CONFIG[selectedStatus as Context["status"]]?.label}".`}

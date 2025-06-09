@@ -6,7 +6,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
-import { Plus, Zap } from "lucide-react"
+import { Plus } from "lucide-react"
 import { useTasks } from "@/hooks/use-tasks"
 import { motion } from "framer-motion"
 import { useAuth } from "@/contexts/auth-context"
@@ -52,12 +52,12 @@ export default function QuickCapture() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
     >
-      <Card className="sticky top-4 z-40 shadow-lg border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50">
+      <Card className="sticky top-4 z-40 gtd-card-shadow border-gtd-clarity-200 bg-gradient-to-r from-gtd-lightness-50 to-gtd-neutral-50">
         <CardContent className="p-4">
           <form onSubmit={handleQuickAdd} className="space-y-3">
             <div className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-purple-600" />
-              <span className="font-medium text-purple-800 font-heading">Captura Rápida</span>
+              <span className="text-xl">⚡</span>
+              <span className="font-medium text-gtd-clarity-700 font-heading">Captura Rápida</span>
             </div>
 
             <div className="flex gap-2">
@@ -72,23 +72,17 @@ export default function QuickCapture() {
                 type="submit"
                 disabled={loading || !title.trim()}
                 size="sm"
-                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                className="gtd-gradient-action hover:from-gtd-action-500 hover:to-gtd-action-700 text-white gtd-transition"
               >
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
 
             {isExpanded && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }}
-                className="text-xs text-gray-600 bg-yellow-50 p-2 rounded border-l-4 border-yellow-400"
-              >
+              <div className="text-xs text-gtd-clarity-700 bg-gtd-confidence-50 p-2 rounded border-l-4 border-gtd-confidence-400">
                 💡 <strong>Tip GTD:</strong> Solo escribe el título. Después procesarás esta tarea desde el Inbox para
                 aclarar qué acción específica requiere.
-              </motion.div>
+              </div>
             )}
           </form>
         </CardContent>

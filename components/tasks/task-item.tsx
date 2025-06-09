@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Calendar, MoreVertical, Edit, Trash2, AlertCircle } from "lucide-react"
+import { Calendar, MoreVertical, Edit, Trash2, AlertCircle, Inbox, ArrowRight, FolderOpen, Clock } from "lucide-react"
 import { format, isBefore, startOfDay } from "date-fns"
 import { es } from "date-fns/locale"
 import type { Task } from "@/types/task"
@@ -140,6 +140,121 @@ export default function TaskItem({ task, onEdit }: TaskItemProps) {
                   {isOverdue ? <AlertCircle className="h-3 w-3" /> : <Calendar className="h-3 w-3" />}
                   {format(task.dueDate, "dd MMM", { locale: es })}
                 </Badge>
+              )}
+            </div>
+
+            {/* Botones de movimiento rápido */}
+            <div className="flex flex-wrap gap-1 mt-3 pt-2 border-t border-gray-100">
+              <span className="text-xs text-gray-500 mr-2 self-center">Mover a:</span>
+
+              {task.category !== "Inbox" && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-6 px-2 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-100"
+                  onClick={async () => {
+                    setLoading(true)
+                    try {
+                      await updateTask(task.id, { category: "Inbox" })
+                    } catch (error) {
+                      console.error("Error al mover tarea:", error)
+                    } finally {
+                      setLoading(false)
+                    }
+                  }}
+                  disabled={loading}
+                >
+                  <Inbox className="h-3 w-3 mr-1" />
+                  Inbox
+                </Button>
+              )}
+
+              {task.category !== "Próximas acciones" && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-6 px-2 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                  onClick={async () => {
+                    setLoading(true)
+                    try {
+                      await updateTask(task.id, { category: "Próximas acciones" })
+                    } catch (error) {
+                      console.error("Error al mover tarea:", error)
+                    } finally {
+                      setLoading(false)
+                    }
+                  }}
+                  disabled={loading}
+                >
+                  <ArrowRight className="h-3 w-3 mr-1" />
+                  Próximas
+                </Button>
+              )}
+
+              {task.category !== "Multitarea" && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-6 px-2 text-xs text-purple-600 hover:text-purple-800 hover:bg-purple-50"
+                  onClick={async () => {
+                    setLoading(true)
+                    try {
+                      await updateTask(task.id, { category: "Multitarea" })
+                    } catch (error) {
+                      console.error("Error al mover tarea:", error)
+                    } finally {
+                      setLoading(false)
+                    }
+                  }}
+                  disabled={loading}
+                >
+                  <FolderOpen className="h-3 w-3 mr-1" />
+                  Multitarea
+                </Button>
+              )}
+
+              {task.category !== "A la espera" && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-6 px-2 text-xs text-orange-600 hover:text-orange-800 hover:bg-orange-50"
+                  onClick={async () => {
+                    setLoading(true)
+                    try {
+                      await updateTask(task.id, { category: "A la espera" })
+                    } catch (error) {
+                      console.error("Error al mover tarea:", error)
+                    } finally {
+                      setLoading(false)
+                    }
+                  }}
+                  disabled={loading}
+                >
+                  <Clock className="h-3 w-3 mr-1" />
+                  Espera
+                </Button>
+              )}
+
+              {task.category !== "Algún día" && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-6 px-2 text-xs text-green-600 hover:text-green-800 hover:bg-green-50"
+                  onClick={async () => {
+                    setLoading(true)
+                    try {
+                      await updateTask(task.id, { category: "Algún día" })
+                    } catch (error) {
+                      console.error("Error al mover tarea:", error)
+                    } finally {
+                      setLoading(false)
+                    }
+                  }}
+                  disabled={loading}
+                >
+                  <Calendar className="h-3 w-3 mr-1" />
+                  Algún día
+                </Button>
               )}
             </div>
           </div>

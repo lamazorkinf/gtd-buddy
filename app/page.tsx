@@ -13,11 +13,21 @@ export default function HomePage() {
   // Efecto para redirigir a usuarios sin suscripción activa
   useEffect(() => {
     if (user && !loading) {
-      // Si el usuario no tiene suscripción activa NI está en período de prueba, redirigir a la página de suscripción
+      console.log("Usuario detectado:", {
+        role: user.role,
+        subscriptionStatus: user.subscriptionStatus,
+        showMessage: user.showMessage,
+        isInTrialPeriod: user.isInTrialPeriod,
+      })
+
+      // Si el usuario no tiene suscripción activa NI está en período de prueba NI es usuario de test, redirigir a la página de suscripción
       if (
         (user.subscriptionStatus === "pending_payment" || user.subscriptionStatus === "inactive") &&
-        !user.isInTrialPeriod
+        !user.isInTrialPeriod &&
+        user.role !== "test" &&
+        user.subscriptionStatus !== "test"
       ) {
+        console.log("Redirigiendo a subscription")
         router.push("/subscription")
       }
     }
@@ -35,8 +45,21 @@ export default function HomePage() {
   }
 
   if (user) {
-    // Si el usuario tiene suscripción activa O está en período de prueba, mostrar el dashboard
-    if (user.subscriptionStatus === "active" || user.subscriptionStatus === "trial" || user.isInTrialPeriod === true) {
+    console.log("Evaluando acceso al dashboard:", {
+      subscriptionStatus: user.subscriptionStatus,
+      isInTrialPeriod: user.isInTrialPeriod,
+      role: user.role,
+    })
+
+    // Si el usuario tiene suscripción activa O está en período de prueba O es usuario de test, mostrar el dashboard
+    if (
+      user.subscriptionStatus === "active" ||
+      user.subscriptionStatus === "trial" ||
+      user.subscriptionStatus === "test" ||
+      user.isInTrialPeriod === true ||
+      user.role === "test"
+    ) {
+      console.log("Mostrando Dashboard")
       return <Dashboard />
     }
 

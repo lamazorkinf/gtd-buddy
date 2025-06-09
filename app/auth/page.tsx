@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/contexts/auth-context"
-import { Mail, Lock, Chrome, Edit3, Eye, EyeOff } from "lucide-react"
+import { Mail, Lock, Chrome, Edit3, Eye, EyeOff, Loader2 } from "lucide-react"
 
 export default function AuthPage() {
   const searchParams = useSearchParams()
@@ -30,6 +30,12 @@ export default function AuthPage() {
   const handleTabChange = (value: string) => {
     setActiveTab(value)
     setError(null)
+    // Reset form fields when changing tabs for better UX
+    setEmail("")
+    setPassword("")
+    setConfirmPassword("")
+    setFirstName("")
+    setLastName("")
     const url = new URL(window.location.href)
     url.searchParams.set("tab", value)
     router.replace(url.pathname + url.search, { scroll: false })
@@ -40,7 +46,7 @@ export default function AuthPage() {
     if (tab === "signin" || tab === "signup") {
       setActiveTab(tab)
     }
-  }, [searchParams]) // Ahora depende de searchParams para actualizarse correctamente
+  }, [searchParams])
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -102,37 +108,24 @@ export default function AuthPage() {
 
   if (authLoading || (!authLoading && user)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-400 via-pink-500 to-red-500">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-white"></div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-gtd-clarity-500 mx-auto mb-4" />
+          <p className="text-gtd-clarity-700 text-lg">Cargando...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 p-4 selection:bg-pink-300 selection:text-white relative overflow-hidden">
-      {/* Fondo decorativo */}
-      <div
-        className="absolute inset-0 opacity-20"
-        style={{
-          backgroundImage: `
-        radial-gradient(at 40% 20%, hsla(215, 98%, 61%, 0.8) 0px, transparent 50%),
-        radial-gradient(at 80% 0%, hsla(256, 96%, 68%, 0.8) 0px, transparent 50%),
-        radial-gradient(at 0% 50%, hsla(343, 68%, 79%, 0.8) 0px, transparent 50%),
-        radial-gradient(at 80% 50%, hsla(222, 67%, 73%, 0.8) 0px, transparent 50%),
-        radial-gradient(at 0% 100%, hsla(355, 98%, 76%, 0.8) 0px, transparent 50%),
-        radial-gradient(at 80% 100%, hsla(125, 98%, 72%, 0.8) 0px, transparent 50%)
-      `,
-          backgroundSize: "400% 400%",
-        }}
-      ></div>
-
+    <div className="min-h-screen flex items-center justify-center p-4 selection:bg-gtd-action-300 selection:text-white">
       <div className="relative z-10 w-full max-w-md">
-        <Card className="w-full shadow-2xl rounded-xl overflow-hidden">
-          <CardHeader className="text-center pt-8 pb-4 bg-gray-50">
-            <CardTitle className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent font-heading">
+        <Card className="w-full shadow-2xl rounded-xl overflow-hidden bg-white/80 backdrop-blur-sm border border-gtd-neutral-100">
+          <CardHeader className="text-center pt-8 pb-4 bg-gtd-lightness-50/30">
+            <CardTitle className="text-4xl font-bold bg-gradient-to-r from-gtd-clarity-600 to-gtd-action-500 bg-clip-text text-transparent font-heading">
               GTD Buddy
             </CardTitle>
-            <CardDescription className="text-gray-500 mt-1">
+            <CardDescription className="text-gtd-neutral-700 mt-1">
               {activeTab === "signup"
                 ? "Crea tu cuenta para organizar tu vida."
                 : "Inicia sesión para acceder a tus tareas."}
@@ -143,16 +136,16 @@ export default function AuthPage() {
               <div className="mb-4 p-3 bg-red-100 text-red-700 border border-red-300 rounded-md text-sm">{error}</div>
             )}
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 bg-gray-100 p-1 rounded-lg">
+              <TabsList className="grid w-full grid-cols-2 bg-gtd-neutral-100 p-1 rounded-lg">
                 <TabsTrigger
                   value="signin"
-                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-md rounded-md py-2 transition-all duration-300"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-gtd-clarity-500 data-[state=active]:to-gtd-action-500 data-[state=active]:text-white data-[state=active]:shadow-md rounded-md py-2 transition-all duration-300 text-gtd-neutral-700"
                 >
                   Iniciar Sesión
                 </TabsTrigger>
                 <TabsTrigger
                   value="signup"
-                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-blue-500 data-[state=active]:text-white data-[state=active]:shadow-md rounded-md py-2 transition-all duration-300"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-gtd-confidence-500 data-[state=active]:to-gtd-focus-500 data-[state=active]:text-white data-[state=active]:shadow-md rounded-md py-2 transition-all duration-300 text-gtd-neutral-700"
                 >
                   Registrarse
                 </TabsTrigger>
@@ -161,30 +154,30 @@ export default function AuthPage() {
               <TabsContent value="signin" className="space-y-6 pt-6">
                 <div className="space-y-4">
                   <div className="relative">
-                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-gtd-neutral-400" />
                     <Input
                       type="email"
                       placeholder="Correo electrónico"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="pl-12 py-3 text-md rounded-lg focus:border-purple-500 focus:ring-purple-500"
+                      className="pl-12 py-3 text-md rounded-lg focus:border-gtd-clarity-500 focus:ring-gtd-clarity-500 border-gtd-neutral-200 bg-white"
                       required
                     />
                   </div>
                   <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-gtd-neutral-400" />
                     <Input
                       type={showPassword ? "text" : "password"}
                       placeholder="Contraseña"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="pl-12 pr-12 py-3 text-md rounded-lg focus:border-purple-500 focus:ring-purple-500"
+                      className="pl-12 pr-12 py-3 text-md rounded-lg focus:border-gtd-clarity-500 focus:ring-gtd-clarity-500 border-gtd-neutral-200 bg-white"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gtd-neutral-400 hover:text-gtd-neutral-600"
                     >
                       {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </button>
@@ -193,8 +186,9 @@ export default function AuthPage() {
                     <Button
                       onClick={() => handleEmailAuth(false)}
                       disabled={formLoading}
-                      className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-3 text-md rounded-lg font-semibold"
+                      className="w-full bg-gradient-to-r from-gtd-clarity-500 to-gtd-action-500 hover:from-gtd-clarity-600 hover:to-gtd-action-600 text-white py-3 text-md rounded-lg font-semibold"
                     >
+                      {formLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                       {formLoading ? "Iniciando..." : "Iniciar Sesión"}
                     </Button>
                   </div>
@@ -202,7 +196,7 @@ export default function AuthPage() {
                     <button
                       type="button"
                       onClick={() => handleTabChange("signup")}
-                      className="text-sm text-purple-600 hover:text-purple-800 hover:underline"
+                      className="text-sm text-gtd-clarity-600 hover:text-gtd-clarity-800 hover:underline"
                     >
                       ¿No tienes cuenta? Crea una aquí
                     </button>
@@ -214,71 +208,71 @@ export default function AuthPage() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="relative">
-                      <Edit3 className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <Edit3 className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-gtd-neutral-400" />
                       <Input
                         type="text"
                         placeholder="Nombre"
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
-                        className="pl-12 py-3 text-md rounded-lg focus:border-green-500 focus:ring-green-500"
+                        className="pl-12 py-3 text-md rounded-lg focus:border-gtd-confidence-500 focus:ring-gtd-confidence-500 border-gtd-neutral-200 bg-white"
                         required
                       />
                     </div>
                     <div className="relative">
-                      <Edit3 className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <Edit3 className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-gtd-neutral-400" />
                       <Input
                         type="text"
                         placeholder="Apellido"
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
-                        className="pl-12 py-3 text-md rounded-lg focus:border-green-500 focus:ring-green-500"
+                        className="pl-12 py-3 text-md rounded-lg focus:border-gtd-confidence-500 focus:ring-gtd-confidence-500 border-gtd-neutral-200 bg-white"
                         required
                       />
                     </div>
                   </div>
                   <div className="relative">
-                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-gtd-neutral-400" />
                     <Input
                       type="email"
                       placeholder="Correo electrónico"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="pl-12 py-3 text-md rounded-lg focus:border-green-500 focus:ring-green-500"
+                      className="pl-12 py-3 text-md rounded-lg focus:border-gtd-confidence-500 focus:ring-gtd-confidence-500 border-gtd-neutral-200 bg-white"
                       required
                     />
                   </div>
                   <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-gtd-neutral-400" />
                     <Input
                       type={showPassword ? "text" : "password"}
                       placeholder="Contraseña (mín. 6 caracteres)"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="pl-12 pr-12 py-3 text-md rounded-lg focus:border-green-500 focus:ring-green-500"
+                      className="pl-12 pr-12 py-3 text-md rounded-lg focus:border-gtd-confidence-500 focus:ring-gtd-confidence-500 border-gtd-neutral-200 bg-white"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gtd-neutral-400 hover:text-gtd-neutral-600"
                     >
                       {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </button>
                   </div>
                   <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-gtd-neutral-400" />
                     <Input
                       type={showConfirmPassword ? "text" : "password"}
                       placeholder="Confirmar Contraseña"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="pl-12 pr-12 py-3 text-md rounded-lg focus:border-green-500 focus:ring-green-500"
+                      className="pl-12 pr-12 py-3 text-md rounded-lg focus:border-gtd-confidence-500 focus:ring-gtd-confidence-500 border-gtd-neutral-200 bg-white"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gtd-neutral-400 hover:text-gtd-neutral-600"
                     >
                       {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </button>
@@ -287,8 +281,9 @@ export default function AuthPage() {
                     <Button
                       onClick={() => handleEmailAuth(true)}
                       disabled={formLoading}
-                      className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white py-3 text-md rounded-lg font-semibold"
+                      className="w-full bg-gradient-to-r from-gtd-confidence-500 to-gtd-focus-500 hover:from-gtd-confidence-600 hover:to-gtd-focus-600 text-white py-3 text-md rounded-lg font-semibold"
                     >
+                      {formLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                       {formLoading ? "Registrando..." : "Crear Cuenta"}
                     </Button>
                   </div>
@@ -296,7 +291,7 @@ export default function AuthPage() {
                     <button
                       type="button"
                       onClick={() => handleTabChange("signin")}
-                      className="text-sm text-purple-600 hover:text-purple-800 hover:underline"
+                      className="text-sm text-gtd-clarity-600 hover:text-gtd-clarity-800 hover:underline"
                     >
                       ¿Ya tienes cuenta? Inicia sesión aquí
                     </button>
@@ -308,19 +303,23 @@ export default function AuthPage() {
             <div className="mt-8">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-gray-300" />
+                  <span className="w-full border-t border-gtd-neutral-200" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-gray-500">O continúa con</span>
+                  <span className="bg-white/80 px-2 text-gtd-neutral-600">O continúa con</span>
                 </div>
               </div>
               <Button
                 onClick={handleGoogleAuth}
                 disabled={formLoading}
                 variant="outline"
-                className="w-full mt-6 py-3 text-md rounded-lg border-gray-300 hover:bg-gray-100"
+                className="w-full mt-6 py-3 text-md rounded-lg border-gtd-neutral-300 hover:bg-gtd-neutral-100 text-gtd-neutral-800 bg-white"
               >
-                <Chrome className="mr-2 h-5 w-5 text-red-500" />
+                {formLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Chrome className="mr-2 h-5 w-5 text-red-500" />
+                )}
                 Google
               </Button>
             </div>

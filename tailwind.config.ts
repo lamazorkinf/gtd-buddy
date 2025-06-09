@@ -53,42 +53,86 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Mapear nombres antiguos a nuevos para compatibilidad
-        lightBlue: {
-          50: "#f0f9ff",
-          100: "#e0f2fe",
-          200: "#bae6fd",
-          300: "#7dd3fc",
-          400: "#38bdf8",
-          500: "#0ea5e9",
-          600: "#0284c7",
-          700: "#0369a1",
-          800: "#075985",
-          900: "#0c4a6e",
-        },
-        warmGray: {
-          50: "#fafaf9",
-          100: "#f5f5f4",
-          200: "#e7e5e4",
-          300: "#d6d3d1",
-          400: "#a8a29e",
-          500: "#78716c",
-          600: "#57534e",
-          700: "#44403c",
-          800: "#292524",
-          900: "#1c1917",
-        },
-        trueGray: {
-          50: "#fafafa",
-          100: "#f5f5f5",
-          200: "#e5e5e5",
-          300: "#d4d4d4",
-          400: "#a3a3a3",
-          500: "#737373",
-          600: "#525252",
-          700: "#404040",
-          800: "#262626",
-          900: "#171717",
+        // Nueva paleta de colores GTD Buddy
+        gtd: {
+          // Violeta Suave - Claridad (cabeceras, secciones principales, botones primarios)
+          clarity: {
+            50: "#F5F1FE",
+            100: "#EBE1FD",
+            200: "#D7C3FB",
+            300: "#C3A5F9",
+            400: "#B388EB", // Color principal
+            500: "#9B6FE8",
+            600: "#8356E5",
+            700: "#6B3DE2",
+            800: "#5324DF",
+            900: "#3B0BDC",
+          },
+          // Magenta Intenso - Acción (CTAs, "Hacer Ahora", "Agregar tarea")
+          action: {
+            50: "#FDF2FB",
+            100: "#FCE5F7",
+            200: "#F9CBEF",
+            300: "#F6B1E7",
+            400: "#D46AC0", // Color principal
+            500: "#E157D3",
+            600: "#DE44E6",
+            700: "#DB31F9",
+            800: "#C828E0",
+            900: "#B51FC7",
+          },
+          // Turquesa Claro - Enfoque (Próximas acciones, filtros activos)
+          focus: {
+            50: "#F0FDFB",
+            100: "#E1FBF7",
+            200: "#C3F7EF",
+            300: "#A5F3E7",
+            400: "#7DE2D1", // Color principal
+            500: "#5FDBC9",
+            600: "#41D4C1",
+            700: "#23CDB9",
+            800: "#1FB5A5",
+            900: "#1B9D91",
+          },
+          // Celeste Niebla - Ligereza (fondo general)
+          lightness: {
+            50: "#E1F1FF", // Color principal
+            100: "#CCE7FF",
+            200: "#99CFFF",
+            300: "#66B7FF",
+            400: "#339FFF",
+            500: "#0087FF",
+            600: "#006FCC",
+            700: "#005799",
+            800: "#003F66",
+            900: "#002733",
+          },
+          // Verde Menta - Confianza (completadas, logros, revisión)
+          confidence: {
+            50: "#F2FBF5",
+            100: "#E5F7EB",
+            200: "#CBEED7",
+            300: "#B1E5C3",
+            400: "#A2E4B8", // Color principal
+            500: "#88DBA4",
+            600: "#6ED290",
+            700: "#54C97C",
+            800: "#4AB070",
+            900: "#409764",
+          },
+          // Gris Lavanda - Neutro Inteligente (tarjetas, listas, elementos secundarios)
+          neutral: {
+            50: "#DCD6F7", // Color principal
+            100: "#D1C9F5",
+            200: "#C6BCF3",
+            300: "#BBAFF1",
+            400: "#B0A2EF",
+            500: "#A595ED",
+            600: "#9A88EB",
+            700: "#8F7BE9",
+            800: "#846EE7",
+            900: "#7961E5",
+          },
         },
       },
       borderRadius: {
@@ -97,8 +141,8 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["var(--font-sora)", "system-ui", "sans-serif"],
-        heading: ["var(--font-manrope)", "system-ui", "sans-serif"],
+        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+        heading: ["var(--font-plus-jakarta)", "system-ui", "sans-serif"],
       },
       keyframes: {
         "accordion-down": {

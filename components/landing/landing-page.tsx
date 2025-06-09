@@ -58,10 +58,10 @@ const appAdvantages = [
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-red-50 text-gray-800 overflow-x-hidden">
+    <div className="min-h-screen gtd-gradient-bg text-gray-800 overflow-x-hidden">
       {/* Hero Section */}
       <section className="relative py-24 md:py-40 text-center text-white overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 opacity-90"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-gtd-clarity-500 via-gtd-action-400 to-gtd-focus-400 opacity-90"></div>
         <div
           className="absolute inset-0 opacity-20"
           style={{
@@ -92,7 +92,7 @@ export default function LandingPage() {
             transition={{ duration: 0.7, delay: 0.4 }}
             className="text-xl md:text-2xl mb-12 max-w-3xl mx-auto drop-shadow-sm"
           >
-            La herramienta definitiva para implementar el método Getting Things Done y transformar tu forma de trabajar.
+            Tu mente libre, tu sistema claro. Captura. Decide. Avanza.
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -103,9 +103,9 @@ export default function LandingPage() {
             <Link href="/auth?tab=signup" passHref>
               <Button
                 size="lg"
-                className="bg-purple-600 text-white hover:bg-purple-800 text-lg px-10 py-7 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 w-full sm:w-auto"
+                className="gtd-gradient-action hover:from-gtd-action-600 hover:to-gtd-action-800 text-white text-lg px-10 py-7 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 gtd-transition w-full sm:w-auto"
               >
-                Comienza Ahora
+                ⚡ Comienza Ahora
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>

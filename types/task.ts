@@ -50,12 +50,13 @@ export interface User {
   email: string | null
   displayName: string | null
   photoURL: string | null
-  role: "admin" | "user"
-  subscriptionStatus?: "active" | "inactive" | "trial" | "pending_payment"
+  role: "admin" | "user" | "test"
+  subscriptionStatus?: "active" | "inactive" | "trial" | "pending_payment" | "test"
   subscriptionEndDate?: Date
   firstName?: string
   lastName?: string
   lastWeeklyReview?: Date
   isInTrialPeriod?: boolean // Campo para manejar el período de prueba
   trialStartDate?: Date // Opcional: para rastrear cuándo comenzó la prueba
+  showMessage?: boolean // Campo para controlar si mostrar el mensaje de bienvenida a usuarios test
 }

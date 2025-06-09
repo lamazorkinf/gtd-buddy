@@ -1,25 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
-import {
-  Plus,
-  LogOut,
-  User,
-  Calendar,
-  Inbox,
-  ArrowRight,
-  FolderOpen,
-  Clock,
-  Lightbulb,
-  RotateCcw,
-  Target,
-  Settings,
-} from "lucide-react"
+import { Plus, LogOut, User, Calendar, Inbox, ArrowRight, Clock, Target, Settings } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
 import { useTasks } from "@/hooks/use-tasks"
@@ -32,14 +19,104 @@ import WeeklyReviewComponent from "@/components/gtd/weekly-review"
 import { useContexts } from "@/hooks/use-contexts"
 import ModalTransition from "@/components/transitions/modal-transition"
 import { format } from "date-fns"
+import TestUserWelcome from "@/components/welcome/test-user-welcome"
+import { doc, updateDoc, getDoc, setDoc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
 
 export default function Dashboard() {
   const [showTaskForm, setShowTaskForm] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | undefined>()
   const [activeTab, setActiveTab] = useState("overview")
+  const [showTestWelcome, setShowTestWelcome] = useState(false)
+  const [firestoreUser, setFirestoreUser] = useState<any>(null)
   const { user, signOut } = useAuth()
   const { contexts } = useContexts()
   const { tasks, updateTask } = useTasks()
+
+  // Obtener datos actualizados de Firestore
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (user?.uid) {
+        try {
+          const userDocRef = doc(db, "users", user.uid)
+          const userDoc = await getDoc(userDocRef)
+          if (userDoc.exists()) {
+            const userData = userDoc.data()
+            setFirestoreUser(userData)
+            console.log("Datos de Firestore:", userData)
+
+            // Verificar si es usuario test con datos de Firestore
+            if (
+              (userData.role === "test" || userData.subscriptionStatus === "test") &&
+              userData.showMessage !== false
+            ) {
+              console.log("Usuario test detectado en Firestore, mostrando popup")
+              setTimeout(() => {
+                setShowTestWelcome(true)
+              }, 1000)
+            }
+          } else {
+            console.log("Documento de usuario no existe en Firestore")
+          }
+        } catch (error) {
+          console.error("Error al obtener datos del usuario:", error)
+        }
+      }
+    }
+
+    fetchUserData()
+  }, [user?.uid])
+
+  const handleCloseTestWelcome = async (dontShowAgain = false) => {
+    setShowTestWelcome(false)
+
+    if (dontShowAgain && user?.uid) {
+      try {
+        const userDocRef = doc(db, "users", user.uid)
+
+        // Primero verificar si el documento existe
+        const userDoc = await getDoc(userDocRef)
+
+        if (userDoc.exists()) {
+          // Si existe, actualizar
+          await updateDoc(userDocRef, {
+            showMessage: false,
+          })
+          console.log("Campo showMessage actualizado a false")
+        } else {
+          // Si no existe, crear el documento con los datos básicos
+          console.log("Documento no existe, creando...")
+          await setDoc(userDocRef, {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            firstName: user.firstName || "",
+            lastName: user.lastName || "",
+            role: "test", // Asumimos que es test si está usando este modal
+            subscriptionStatus: "test",
+            showMessage: false,
+            createdAt: new Date(),
+          })
+          console.log("Documento creado con showMessage: false")
+        }
+
+        // Actualizar estado local
+        setFirestoreUser((prev) => ({ ...prev, showMessage: false }))
+      } catch (error) {
+        console.error("Error al actualizar showMessage:", error)
+        console.error("Detalles del error:", {
+          code: error.code,
+          message: error.message,
+          userId: user.uid,
+        })
+      }
+    }
+  }
+
+  // Función para probar el modal manualmente
+  const handleTestModal = () => {
+    setShowTestWelcome(true)
+  }
 
   // Análisis GTD
   const inboxTasks = tasks.filter((task) => task.category === "Inbox")
@@ -83,14 +160,14 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-red-50">
+    <div className="min-h-screen gtd-gradient-bg">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-white/90 backdrop-blur-sm shadow-sm border-b border-gtd-neutral-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-3">
               <Link href="/">
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent font-heading cursor-pointer">
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-gtd-clarity-400 to-gtd-action-400 bg-clip-text text-transparent font-heading cursor-pointer">
                   GTD Buddy
                 </h1>
               </Link>
@@ -138,30 +215,43 @@ export default function Dashboard() {
         {/* Navegación GTD - Solo las pestañas del flujo GTD */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <ArrowRight className="h-4 w-4" />
-              <span className="hidden sm:inline">Hacer</span>
+            <TabsTrigger
+              value="overview"
+              className="flex items-center gap-2 data-[state=active]:bg-gtd-confidence-400 data-[state=active]:text-white"
+            >
+              ⚡ <span className="hidden sm:inline">Hacer</span>
             </TabsTrigger>
-            <TabsTrigger value="inbox" className="flex items-center gap-2">
-              <Inbox className="h-4 w-4" />
-              <span className="hidden sm:inline">Procesar</span>
+            <TabsTrigger
+              value="inbox"
+              className="flex items-center gap-2 data-[state=active]:bg-gtd-action-400 data-[state=active]:text-white"
+            >
+              📥 <span className="hidden sm:inline">Procesar</span>
               {inboxTasks.length > 0 && (
-                <Badge variant="destructive" className="ml-1 h-5 w-5 p-0 text-xs">
+                <Badge
+                  variant="destructive"
+                  className="ml-1 h-6 w-6 p-0 text-xs flex items-center justify-center bg-gtd-action-600"
+                >
                   {inboxTasks.length}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="organize" className="flex items-center gap-2">
-              <FolderOpen className="h-4 w-4" />
-              <span className="hidden sm:inline">Organizar</span>
+            <TabsTrigger
+              value="organize"
+              className="flex items-center gap-2 data-[state=active]:bg-gtd-clarity-400 data-[state=active]:text-white"
+            >
+              📂 <span className="hidden sm:inline">Organizar</span>
             </TabsTrigger>
-            <TabsTrigger value="review" className="flex items-center gap-2">
-              <RotateCcw className="h-4 w-4" />
-              <span className="hidden sm:inline">Revisar</span>
+            <TabsTrigger
+              value="review"
+              className="flex items-center gap-2 data-[state=active]:bg-gtd-focus-400 data-[state=active]:text-white"
+            >
+              🔄 <span className="hidden sm:inline">Revisar</span>
             </TabsTrigger>
-            <TabsTrigger value="capture" className="flex items-center gap-2">
-              <Lightbulb className="h-4 w-4" />
-              <span className="hidden sm:inline">Capturar</span>
+            <TabsTrigger
+              value="capture"
+              className="flex items-center gap-2 data-[state=active]:bg-gtd-neutral-400 data-[state=active]:text-white"
+            >
+              💡 <span className="hidden sm:inline">Capturar</span>
             </TabsTrigger>
           </TabsList>
 
@@ -171,10 +261,9 @@ export default function Dashboard() {
               <h2 className="text-2xl font-bold text-gray-900 font-heading">¿Qué Hacer Ahora?</h2>
               <Button
                 onClick={() => setShowTaskForm(true)}
-                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                className="gtd-gradient-action hover:from-gtd-action-500 hover:to-gtd-action-700 text-white gtd-transition"
               >
-                <Plus className="mr-2 h-4 w-4" />
-                Nueva Tarea
+                <Plus className="mr-2 h-4 w-4" />⚡ Nueva Tarea
               </Button>
             </div>
 
@@ -200,7 +289,7 @@ export default function Dashboard() {
             {/* Vista enfocada en acción */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Tareas de hoy */}
-              <Card className="border-blue-200">
+              <Card className="border-gtd-focus-400 bg-gtd-focus-50">
                 <CardContent className="p-6">
                   <h3 className="font-semibold text-blue-800 mb-4 flex items-center gap-2">
                     <Calendar className="h-5 w-5" />
@@ -236,14 +325,14 @@ export default function Dashboard() {
               </Card>
 
               {/* Próximas acciones */}
-              <Card className="border-green-200">
+              <Card className="border-gtd-confidence-400 bg-gtd-confidence-50">
                 <CardContent className="p-6">
                   <h3 className="font-semibold text-green-800 mb-4 flex items-center gap-2">
                     <ArrowRight className="h-5 w-5" />
                     Próximas Acciones ({nextActionTasks.length})
                   </h3>
-                  <div className="space-y-2">
-                    {nextActionTasks.slice(0, 5).map((task) => (
+                  <div className="space-y-2 max-h-80 overflow-y-auto pr-2">
+                    {nextActionTasks.slice(0, 10).map((task) => (
                       <div
                         key={task.id}
                         className="p-2 bg-green-50 rounded border-l-4 border-green-400 flex items-start gap-2"
@@ -272,7 +361,7 @@ export default function Dashboard() {
               </Card>
 
               {/* Vencidas/Urgentes */}
-              <Card className="border-red-200">
+              <Card className="border-gtd-action-400 bg-gtd-action-50">
                 <CardContent className="p-6">
                   <h3 className="font-semibold text-red-800 mb-4 flex items-center gap-2">
                     <Clock className="h-5 w-5" />
@@ -406,6 +495,18 @@ export default function Dashboard() {
         <ModalTransition isOpen={showTaskForm} onClose={handleCloseForm}>
           <TaskForm task={editingTask} onClose={handleCloseForm} />
         </ModalTransition>
+
+        {/* Test User Welcome Modal */}
+        <TestUserWelcome isOpen={showTestWelcome} onClose={handleCloseTestWelcome} />
+
+        {/* Botón temporal para probar el modal */}
+        <Button
+          onClick={handleTestModal}
+          className="fixed bottom-4 right-4 bg-red-500 hover:bg-red-600 text-white z-50"
+          size="sm"
+        >
+          Test Modal
+        </Button>
       </main>
     </div>
   )
