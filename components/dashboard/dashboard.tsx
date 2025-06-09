@@ -113,11 +113,6 @@ export default function Dashboard() {
     }
   }
 
-  // Función para probar el modal manualmente
-  const handleTestModal = () => {
-    setShowTestWelcome(true)
-  }
-
   // Análisis GTD
   const inboxTasks = tasks.filter((task) => task.category === "Inbox")
   const todayTasks = tasks.filter(
@@ -498,15 +493,6 @@ export default function Dashboard() {
 
         {/* Test User Welcome Modal */}
         <TestUserWelcome isOpen={showTestWelcome} onClose={handleCloseTestWelcome} />
-
-        {/* Botón temporal para probar el modal */}
-        <Button
-          onClick={handleTestModal}
-          className="fixed bottom-4 right-4 bg-red-500 hover:bg-red-600 text-white z-50"
-          size="sm"
-        >
-          Test Modal
-        </Button>
       </main>
     </div>
   )
