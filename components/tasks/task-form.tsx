@@ -54,6 +54,7 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
   const [isCreatingContext, setIsCreatingContext] = useState(false)
   const [newContextName, setNewContextName] = useState("")
   const [newContextDescription, setNewContextDescription] = useState("")
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false)
 
   const { addTask, updateTask } = useTasks()
   const { contexts, addContext } = useContexts()
@@ -108,6 +109,11 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
 
   const handleUpdateSubtaskTitle = (subtaskId: string, newTitle: string) => {
     setSubtasks(subtasks.map((st) => (st.id === subtaskId ? { ...st, title: newTitle } : st)))
+  }
+
+  const handleDateSelect = (selectedDate: Date | undefined) => {
+    setDueDate(selectedDate)
+    setIsCalendarOpen(false) // Cerrar el calendario después de seleccionar
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -382,7 +388,7 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block">Fecha límite (opcional)</label>
               <div className="space-y-2">
-                <Popover>
+                <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                   <PopoverTrigger asChild>
                     <Button variant="outline" className="w-full justify-start text-left font-normal">
                       <CalendarIcon className="mr-2 h-4 w-4" />
@@ -390,7 +396,7 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0 modal-popover-content" align="start" side="top">
-                    <Calendar mode="single" selected={dueDate} onSelect={setDueDate} initialFocus />
+                    <Calendar mode="single" selected={dueDate} onSelect={handleDateSelect} initialFocus />
                   </PopoverContent>
                 </Popover>
 
