@@ -123,8 +123,8 @@ export default function ModalTransition({ isOpen, onClose, children }: ModalTran
             exit="exit"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Contenido scrolleable del modal */}
-            <div className="max-h-[85vh] overflow-y-auto">{children}</div>
+            {/* Contenido scrolleable del modal - removido overflow hidden para permitir que los popovers se muestren */}
+            <div className="max-h-[85vh] overflow-y-auto overflow-x-visible">{children}</div>
           </motion.div>
         </motion.div>
       )}

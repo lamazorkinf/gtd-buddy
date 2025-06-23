@@ -118,3 +118,14 @@ body.modal-open {
 .modal-popover-content {
   z-index: 9999 !important;
 }
+
+/* Asegurar que los popovers se rendericen correctamente dentro de modales */
+[data-radix-popper-content-wrapper] {
+  z-index: 9999 !important;
+}
+
+/* Específico para el calendario dentro del modal */
+.modal-content [data-radix-popover-content] {
+  z-index: 10000 !important;
+  position: fixed !important;
+}
