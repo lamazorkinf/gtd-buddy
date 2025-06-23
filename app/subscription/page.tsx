@@ -3,23 +3,17 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
-import { ArrowRight, Check, Loader2, AlertCircle, LogOut } from "lucide-react"
+import { ArrowRight, Check, Loader2, AlertCircle, LogOut, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function SubscriptionPage() {
-  const { user, signOut, loading: authLoading } = useAuth() // Added authLoading
+  const { user, subscriptionStatus, signOut, loading: authLoading } = useAuth()
   const router = useRouter()
-  const [processingSubscription, setProcessingSubscription] = useState(false) // Renamed loading to processingSubscription
+  const [processingSubscription, setProcessingSubscription] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [errorDetails, setErrorDetails] = useState<string | null>(null)
-
-  const shouldShowTrialOption = (currentUser: typeof user) => {
-    if (!currentUser) return false
-    return (
-      !currentUser.subscriptionEndDate && currentUser.subscriptionStatus !== "trial" && !currentUser.isInTrialPeriod
-    )
-  }
 
   useEffect(() => {
     if (authLoading) return // Wait for auth to finish loading
@@ -29,20 +23,15 @@ export default function SubscriptionPage() {
       return
     }
 
-    const canAccessDashboard =
-      user.subscriptionStatus === "active" ||
-      user.subscriptionStatus === "trial" ||
-      user.subscriptionStatus === "test" ||
-      user.isInTrialPeriod === true ||
-      user.role === "test"
-
-    if (canAccessDashboard) {
+    // Usar la nueva lógica de verificación de suscripción
+    if (subscriptionStatus.canAccessDashboard) {
       router.replace("/")
       return
     }
-    // If not loading and not redirected, set processing to false to show the page content
+
+    // Si no loading y no redirected, set processing to false to show the page content
     setProcessingSubscription(false)
-  }, [user, authLoading, router])
+  }, [user, authLoading, subscriptionStatus, router])
 
   const handleSignOut = async () => {
     try {
@@ -114,7 +103,8 @@ export default function SubscriptionPage() {
           <p className="text-gtd-clarity-700 text-lg">Verificando estado de suscripción...</p>
           {user && (
             <p className="text-xs text-gtd-neutral-500 mt-2">
-              Usuario: {user.email} | Status: {user.subscriptionStatus} | Trial: {String(user.isInTrialPeriod)}
+              Usuario: {user.email} | Status: {user.subscriptionStatus} | Expirado:{" "}
+              {String(subscriptionStatus.isExpired)}
             </p>
           )}
         </div>
@@ -122,18 +112,17 @@ export default function SubscriptionPage() {
     )
   }
 
-  // If user is loaded but not authorized for dashboard, and not processing subscription, show the page
-  if (
-    !user ||
-    (user.subscriptionStatus !== "active" &&
-      user.subscriptionStatus !== "trial" &&
-      user.subscriptionStatus !== "test" &&
-      user.isInTrialPeriod !== true &&
-      user.role !== "test")
-  ) {
-    const showTrial = shouldShowTrialOption(user)
-    const buttonText = showTrial ? "Iniciar período de prueba gratuito" : "Suscribirse ahora"
-    const buttonLoadingText = showTrial ? "Iniciando prueba..." : "Procesando..."
+  // Si el usuario no puede acceder al dashboard, mostrar la página de suscripción
+  if (!subscriptionStatus.canAccessDashboard) {
+    const isExpiredSubscription = subscriptionStatus.isExpired
+    const shouldShowTrialOption =
+      !isExpiredSubscription &&
+      !user?.subscriptionEndDate &&
+      user?.subscriptionStatus !== "trial" &&
+      !user?.isInTrialPeriod
+
+    const buttonText = shouldShowTrialOption ? "Iniciar período de prueba gratuito" : "Suscribirse ahora"
+    const buttonLoadingText = shouldShowTrialOption ? "Iniciando prueba..." : "Procesando..."
 
     return (
       <div className="min-h-screen flex flex-col selection:bg-gtd-action-300 selection:text-white">
@@ -164,20 +153,47 @@ export default function SubscriptionPage() {
 
         <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
           <div className="w-full max-w-4xl mx-auto">
+            {/* Alerta de suscripción expirada */}
+            {isExpiredSubscription && (
+              <Alert className="mb-8 border-red-200 bg-red-50">
+                <Clock className="h-4 w-4 text-red-600" />
+                <AlertDescription className="text-red-800">
+                  <strong>Tu suscripción ha expirado.</strong> Para continuar usando GTD Buddy, necesitas renovar tu
+                  suscripción.
+                  {user?.subscriptionEndDate && (
+                    <span className="block text-sm mt-1">
+                      Expiró el:{" "}
+                      {new Date(
+                        user.subscriptionEndDate.seconds
+                          ? user.subscriptionEndDate.seconds * 1000
+                          : user.subscriptionEndDate,
+                      ).toLocaleDateString()}
+                    </span>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
+
             <div className="text-center mb-10">
               <h2 className="text-3xl sm:text-4xl font-bold mb-3 font-heading text-gtd-clarity-700">
-                {showTrial ? "¡Bienvenido a GTD Buddy!" : "Potencia tu Productividad"}
+                {isExpiredSubscription
+                  ? "Renueva tu Suscripción"
+                  : shouldShowTrialOption
+                    ? "¡Bienvenido a GTD Buddy!"
+                    : "Potencia tu Productividad"}
               </h2>
               <p className="text-lg text-gtd-neutral-600 max-w-2xl mx-auto">
-                {showTrial
-                  ? "Comienza tu período de prueba gratuito de 7 días y descubre cómo GTD puede transformar tu organización."
-                  : "Suscríbete para desbloquear todas las funcionalidades y organizar tu vida con el método GTD."}
+                {isExpiredSubscription
+                  ? "Tu período de acceso ha terminado. Renueva tu suscripción para continuar organizando tu vida con GTD."
+                  : shouldShowTrialOption
+                    ? "Comienza tu período de prueba gratuito de 7 días y descubre cómo GTD puede transformar tu organización."
+                    : "Suscríbete para desbloquear todas las funcionalidades y organizar tu vida con el método GTD."}
               </p>
             </div>
 
             <Card className="w-full max-w-md mx-auto overflow-hidden border-2 border-gtd-clarity-200 shadow-xl hover:shadow-2xl transition-shadow duration-300 bg-white/80 backdrop-blur-sm">
               <div className="p-8 text-center">
-                {showTrial ? (
+                {shouldShowTrialOption ? (
                   <>
                     <span className="text-4xl font-bold text-gtd-confidence-600">Gratis</span>
                     <span className="text-gtd-neutral-500 ml-1">por 7 días</span>
@@ -245,7 +261,7 @@ export default function SubscriptionPage() {
             )}
 
             <div className="mt-8 text-center text-sm text-gtd-neutral-500">
-              {showTrial ? (
+              {shouldShowTrialOption ? (
                 <>
                   Al iniciar tu prueba, aceptas nuestros{" "}
                   <a href="#" className="text-gtd-clarity-600 hover:underline">

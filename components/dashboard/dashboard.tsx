@@ -1,12 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Plus, LogOut, User, Calendar, Inbox, ArrowRight, Clock, Target, Settings } from "lucide-react"
+import { Plus, LogOut, User, Calendar, Inbox, ArrowRight, Clock, Target, Settings, AlertTriangle } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
 import { useTasks } from "@/hooks/use-tasks"
@@ -22,6 +23,7 @@ import { format } from "date-fns"
 import TestUserWelcome from "@/components/welcome/test-user-welcome"
 import { doc, updateDoc, getDoc, setDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function Dashboard() {
   const [showTaskForm, setShowTaskForm] = useState(false)
@@ -29,9 +31,27 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("overview")
   const [showTestWelcome, setShowTestWelcome] = useState(false)
   const [firestoreUser, setFirestoreUser] = useState<any>(null)
-  const { user, signOut } = useAuth()
+  const { user, subscriptionStatus, signOut } = useAuth()
   const { contexts } = useContexts()
   const { tasks, updateTask } = useTasks()
+  const router = useRouter()
+
+  // Verificar acceso al dashboard usando la nueva lógica
+  useEffect(() => {
+    if (!user) {
+      router.push("/auth")
+      return
+    }
+
+    // Si no puede acceder al dashboard, redirigir a suscripción
+    if (!subscriptionStatus.canAccessDashboard) {
+      console.log("Acceso denegado al dashboard:", subscriptionStatus.reason)
+      router.push("/subscription")
+      return
+    }
+
+    console.log("Acceso permitido al dashboard:", subscriptionStatus.reason)
+  }, [user, subscriptionStatus, router])
 
   // Obtener datos actualizados de Firestore
   useEffect(() => {
@@ -43,20 +63,16 @@ export default function Dashboard() {
           if (userDoc.exists()) {
             const userData = userDoc.data()
             setFirestoreUser(userData)
-            console.log("Datos de Firestore:", userData)
 
             // Verificar si es usuario test con datos de Firestore
             if (
               (userData.role === "test" || userData.subscriptionStatus === "test") &&
               userData.showMessage !== false
             ) {
-              console.log("Usuario test detectado en Firestore, mostrando popup")
               setTimeout(() => {
                 setShowTestWelcome(true)
               }, 1000)
             }
-          } else {
-            console.log("Documento de usuario no existe en Firestore")
           }
         } catch (error) {
           console.error("Error al obtener datos del usuario:", error)
@@ -82,10 +98,8 @@ export default function Dashboard() {
           await updateDoc(userDocRef, {
             showMessage: false,
           })
-          console.log("Campo showMessage actualizado a false")
         } else {
           // Si no existe, crear el documento con los datos básicos
-          console.log("Documento no existe, creando...")
           await setDoc(userDocRef, {
             uid: user.uid,
             email: user.email,
@@ -97,20 +111,32 @@ export default function Dashboard() {
             showMessage: false,
             createdAt: new Date(),
           })
-          console.log("Documento creado con showMessage: false")
         }
 
         // Actualizar estado local
         setFirestoreUser((prev) => ({ ...prev, showMessage: false }))
       } catch (error) {
         console.error("Error al actualizar showMessage:", error)
-        console.error("Detalles del error:", {
-          code: error.code,
-          message: error.message,
-          userId: user.uid,
-        })
       }
     }
+  }
+
+  // Si no puede acceder, mostrar mensaje de carga mientras redirige
+  if (!subscriptionStatus.canAccessDashboard) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Acceso Restringido</h2>
+          <p className="text-gray-600 mb-4">
+            {subscriptionStatus.isExpired
+              ? "Tu suscripción ha expirado. Redirigiendo a la página de renovación..."
+              : "No tienes una suscripción activa. Redirigiendo..."}
+          </p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto"></div>
+        </div>
+      </div>
+    )
   }
 
   // Análisis GTD
@@ -156,6 +182,24 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen gtd-gradient-bg">
+      {/* Alerta de suscripción próxima a expirar */}
+      {subscriptionStatus.isInTrial && user?.subscriptionEndDate && (
+        <Alert className="mx-4 mt-4 border-yellow-200 bg-yellow-50">
+          <Clock className="h-4 w-4 text-yellow-600" />
+          <AlertDescription className="text-yellow-800">
+            <strong>Período de prueba activo.</strong> Tu acceso expira el{" "}
+            {new Date(
+              user.subscriptionEndDate.seconds ? user.subscriptionEndDate.seconds * 1000 : user.subscriptionEndDate,
+            ).toLocaleDateString()}
+            .{" "}
+            <Link href="/subscription" className="underline font-medium">
+              Suscríbete ahora
+            </Link>{" "}
+            para continuar sin interrupciones.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Header */}
       <header className="bg-white/90 backdrop-blur-sm shadow-sm border-b border-gtd-neutral-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

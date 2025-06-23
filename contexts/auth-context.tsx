@@ -14,10 +14,12 @@ import {
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore"
 import { auth, db, googleProvider } from "@/lib/firebase"
 import type { User } from "@/types/task"
+import { checkSubscriptionStatus } from "@/lib/subscription-utils"
 
 interface AuthContextType {
   user: User | null
   loading: boolean
+  subscriptionStatus: ReturnType<typeof checkSubscriptionStatus>
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<void>
   signInWithGoogle: () => Promise<void>
@@ -29,6 +31,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+
+  // Calcular estado de suscripción basado en el usuario actual
+  const subscriptionStatus = checkSubscriptionStatus(user)
 
   useEffect(() => {
     // Asegurarse de que auth esté inicializado
@@ -49,7 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             if (userDocSnap.exists()) {
               const userDataFromFirestore = userDocSnap.data() as User
-              setUser({
+              const userData: User = {
                 uid: firebaseUser.uid,
                 email: firebaseUser.email,
                 // Prioriza displayName de Firebase Auth, luego de Firestore, luego construye
@@ -66,6 +71,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 lastName: userDataFromFirestore.lastName,
                 isInTrialPeriod: userDataFromFirestore.isInTrialPeriod === true, // Asegurar que sea booleano
                 trialStartDate: userDataFromFirestore.trialStartDate,
+              }
+
+              setUser(userData)
+
+              // Log del estado de suscripción para debug
+              const status = checkSubscriptionStatus(userData)
+              console.log("Estado de suscripción:", {
+                canAccess: status.canAccessDashboard,
+                reason: status.reason,
+                isExpired: status.isExpired,
+                endDate: userData.subscriptionEndDate,
               })
             } else {
               // This case might happen if user was created via Google Sign-In for the first time
@@ -124,6 +140,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         const userDocRef = doc(db, "users", firebaseUser.uid)
+
+        // Calcular fecha de expiración del trial (7 días desde ahora)
+        const trialEndDate = new Date()
+        trialEndDate.setDate(trialEndDate.getDate() + 7)
+
         const newUserFirestoreData: Omit<User, "uid" | "email" | "photoURL" | "displayName"> & {
           email: string | null
           photoURL: string | null
@@ -138,9 +159,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           firstName: firstName,
           lastName: lastName,
           role: "user",
-          subscriptionStatus: "trial", // Cambiar a "trial"
-          isInTrialPeriod: true, // Establecer período de prueba
-          trialStartDate: serverTimestamp(), // Marcar inicio de prueba
+          subscriptionStatus: "trial",
+          isInTrialPeriod: true,
+          trialStartDate: serverTimestamp(),
+          subscriptionEndDate: trialEndDate, // Agregar fecha de expiración del trial
           createdAt: serverTimestamp(),
         }
         await setDoc(userDocRef, newUserFirestoreData)
@@ -165,6 +187,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const firstName = displayNameParts[0]
           const lastName = displayNameParts.slice(1).join(" ")
 
+          // Calcular fecha de expiración del trial (7 días desde ahora)
+          const trialEndDate = new Date()
+          trialEndDate.setDate(trialEndDate.getDate() + 7)
+
           const newUser: Omit<User, "uid"> = {
             email: firebaseUser.email,
             displayName: firebaseUser.displayName,
@@ -172,9 +198,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             firstName: firstName,
             lastName: lastName,
             role: "user",
-            subscriptionStatus: "trial", // Cambiar a "trial"
-            isInTrialPeriod: true, // Establecer período de prueba
-            trialStartDate: serverTimestamp(), // Marcar inicio de prueba
+            subscriptionStatus: "trial",
+            isInTrialPeriod: true,
+            trialStartDate: serverTimestamp(),
+            subscriptionEndDate: trialEndDate, // Agregar fecha de expiración del trial
           }
           await setDoc(userDocRef, { ...newUser, createdAt: serverTimestamp(), uid: firebaseUser.uid })
         }
@@ -200,6 +227,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         loading,
+        subscriptionStatus,
         signIn,
         signUp,
         signInWithGoogle,

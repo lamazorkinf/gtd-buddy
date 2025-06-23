@@ -100,8 +100,6 @@ export function useTasks() {
       isQuickAction: taskData.isQuickAction || false,
     })
 
-    console.log("Guardando en Firestore:", dataToSave) // Debug
-
     await addDoc(collection(db, "tasks"), dataToSave)
   }
 
@@ -110,8 +108,6 @@ export function useTasks() {
       ...updates,
       updatedAt: serverTimestamp(),
     })
-
-    console.log("Actualizando en Firestore:", dataToUpdate) // Debug
 
     await updateDoc(doc(db, "tasks", taskId), dataToUpdate)
   }

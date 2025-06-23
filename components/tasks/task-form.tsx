@@ -48,7 +48,7 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
   const [subtasks, setSubtasks] = useState<Subtask[]>(task?.subtasks || [])
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("")
   const [loading, setLoading] = useState(false)
-  const [isCreatingContext, setIsCreatingContext] = useState(false)
+  const [isCreatingContext, setIsCreatingContext] = useState(isCreatingContext)
   const [newContextName, setNewContextName] = useState("")
   const [newContextDescription, setNewContextDescription] = useState("")
 
@@ -59,8 +59,6 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
 
   useEffect(() => {
     if (task) {
-      console.log("Inicializando formulario con tarea:", task) // Debug
-      console.log("Contexto de la tarea:", task.contextId) // Debug
       setTitle(task.title || "")
       setDescription(task.description || "")
       setCategory(task.category || defaultCategory || "Inbox")
@@ -153,8 +151,6 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
 
       // Siempre incluir subtasks, incluso si está vacío
       taskData.subtasks = subtasks
-
-      console.log("Datos a guardar:", taskData) // Debug
 
       if (isEditing && task?.id) {
         // Asegurarse que task.id existe
@@ -371,7 +367,6 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
                   <Select
                     value={contextId || "none"}
                     onValueChange={(value) => {
-                      console.log("Contexto seleccionado:", value) // Debug
                       if (value === "none") {
                         setContextId(undefined)
                       } else if (value === "new") {
