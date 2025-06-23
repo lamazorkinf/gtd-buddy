@@ -14,6 +14,12 @@ export interface Context {
   targetDate?: Date
 }
 
+export interface Subtask {
+  id: string
+  title: string
+  completed: boolean
+}
+
 export interface Task {
   id: string
   title: string
@@ -31,6 +37,7 @@ export interface Task {
   estimatedMinutes?: number
   isQuickAction?: boolean // Para la regla de 2 minutos
   lastReviewed?: Date
+  subtasks?: Subtask[] // Array de subtareas
 }
 
 export interface WeeklyReview {

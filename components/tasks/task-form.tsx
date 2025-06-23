@@ -11,12 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, Plus, Edit, Clock } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox" // Importar Checkbox
+import { CalendarIcon, Plus, Edit, Clock, Trash2, ListChecks } from "lucide-react" // Importar ListChecks y Trash2
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
-import type { Task, GTDCategory, Priority } from "@/types/task"
+import type { Task, GTDCategory, Priority, Subtask } from "@/types/task" // Importar Subtask
 import { useTasks } from "@/hooks/use-tasks"
 import { useContexts } from "@/hooks/use-contexts"
+import { v4 as uuidv4 } from "uuid" // Para generar IDs únicos para subtareas
 
 interface TaskFormProps {
   task?: Task
@@ -46,6 +48,8 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
   const [dueTime, setDueTime] = useState<string>(task?.dueDate ? format(task.dueDate, "HH:mm") : "23:59")
   const [estimatedMinutes, setEstimatedMinutes] = useState<number | undefined>(task?.estimatedMinutes)
   const [contextId, setContextId] = useState<string | undefined>(task?.contextId || defaultContextId)
+  const [subtasks, setSubtasks] = useState<Subtask[]>(task?.subtasks || [])
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState("")
   const [loading, setLoading] = useState(false)
   const [isCreatingContext, setIsCreatingContext] = useState(false)
   const [newContextName, setNewContextName] = useState("")
@@ -54,21 +58,31 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
   const { addTask, updateTask } = useTasks()
   const { contexts, addContext } = useContexts()
 
-  // Determinar si estamos editando o creando
   const isEditing = task && task.id && task.id.trim() !== ""
+
+  useEffect(() => {
+    if (task) {
+      console.log("Inicializando formulario con tarea:", task) // Debug
+      console.log("Contexto de la tarea:", task.contextId) // Debug
+      setTitle(task.title || "")
+      setDescription(task.description || "")
+      setCategory(task.category || defaultCategory || "Inbox")
+      setPriority(task.priority || "media")
+      setDueDate(task.dueDate)
+      setDueTime(task.dueDate ? format(task.dueDate, "HH:mm") : "23:59")
+      setEstimatedMinutes(task.estimatedMinutes)
+      setContextId(task.contextId || undefined) // Asegurar que sea undefined si no hay contexto
+      setSubtasks(task.subtasks || [])
+    }
+  }, [task, defaultCategory])
 
   const handleCreateContext = async () => {
     if (!newContextName.trim()) return
-
     try {
-      const contextData: any = {
-        name: newContextName.trim(),
-      }
-
+      const contextData: any = { name: newContextName.trim() }
       if (newContextDescription.trim()) {
         contextData.description = newContextDescription.trim()
       }
-
       await addContext(contextData)
       setNewContextName("")
       setNewContextDescription("")
@@ -76,6 +90,24 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
     } catch (error) {
       console.error("Error al crear contexto:", error)
     }
+  }
+
+  const handleAddSubtask = () => {
+    if (!newSubtaskTitle.trim()) return
+    setSubtasks([...subtasks, { id: uuidv4(), title: newSubtaskTitle.trim(), completed: false }])
+    setNewSubtaskTitle("")
+  }
+
+  const handleToggleSubtask = (subtaskId: string) => {
+    setSubtasks(subtasks.map((st) => (st.id === subtaskId ? { ...st, completed: !st.completed } : st)))
+  }
+
+  const handleRemoveSubtask = (subtaskId: string) => {
+    setSubtasks(subtasks.filter((st) => st.id !== subtaskId))
+  }
+
+  const handleUpdateSubtaskTitle = (subtaskId: string, newTitle: string) => {
+    setSubtasks(subtasks.map((st) => (st.id === subtaskId ? { ...st, title: newTitle } : st)))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -91,32 +123,24 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
         completed: task?.completed || false,
       }
 
-      if (description.trim()) {
-        taskData.description = description.trim()
-      }
-
+      if (description.trim()) taskData.description = description.trim()
       if (dueDate) {
         const [hours, minutes] = dueTime.split(":").map(Number)
         const dateWithTime = new Date(dueDate)
         dateWithTime.setHours(hours, minutes, 0, 0)
         taskData.dueDate = dateWithTime
       }
+      if (estimatedMinutes && estimatedMinutes > 0) taskData.estimatedMinutes = estimatedMinutes
+      if (contextId) taskData.contextId = contextId
+      if (category === "Multitarea") taskData.subtasks = subtasks
 
-      if (estimatedMinutes && estimatedMinutes > 0) {
-        taskData.estimatedMinutes = estimatedMinutes
-      }
-
-      if (contextId) {
-        taskData.contextId = contextId
-      }
-
-      if (isEditing) {
+      if (isEditing && task?.id) {
+        // Asegurarse que task.id existe
         await updateTask(task.id, taskData)
       } else {
         await addTask(taskData)
       }
 
-      // Reset form if creating new task
       if (!isEditing) {
         setTitle("")
         setDescription("")
@@ -126,8 +150,8 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
         setDueTime("23:59")
         setEstimatedMinutes(undefined)
         setContextId(defaultContextId)
+        setSubtasks([])
       }
-
       onClose?.()
     } catch (error) {
       console.error("Error al guardar tarea:", error)
@@ -137,6 +161,7 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
   }
 
   useEffect(() => {
+    // Solo manejar la creación de nuevo contexto, no resetear contextId en edición
     if (contextId === "new") {
       setContextId(undefined)
       setIsCreatingContext(true)
@@ -210,7 +235,70 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4">
+          {/* Sección de Subtareas */}
+          {category === "Multitarea" && (
+            <div className="space-y-4 p-4 border rounded-md bg-slate-50">
+              <h4 className="text-md font-semibold flex items-center gap-2 text-slate-700">
+                <ListChecks className="h-5 w-5" />
+                Subtareas del Proyecto
+              </h4>
+              <div className="space-y-2">
+                {subtasks.map((st, index) => (
+                  <div key={st.id || index} className="flex items-center gap-2 p-2 bg-white rounded border">
+                    <Checkbox
+                      id={`subtask-${st.id}`}
+                      checked={st.completed}
+                      onCheckedChange={() => handleToggleSubtask(st.id)}
+                    />
+                    <Input
+                      type="text"
+                      value={st.title}
+                      onChange={(e) => handleUpdateSubtaskTitle(st.id, e.target.value)}
+                      className={`flex-grow text-sm ${st.completed ? "line-through text-gray-500" : ""}`}
+                      placeholder="Descripción de la subtarea"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleRemoveSubtask(st.id)}
+                      className="h-7 w-7 text-red-500 hover:bg-red-100"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-2 pt-2 border-t">
+                <Input
+                  type="text"
+                  value={newSubtaskTitle}
+                  onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                  placeholder="Añadir nueva subtarea..."
+                  className="flex-grow"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault()
+                      handleAddSubtask()
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  onClick={handleAddSubtask}
+                  size="sm"
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  <Plus className="h-4 w-4 mr-1" /> Añadir
+                </Button>
+              </div>
+              {subtasks.length === 0 && (
+                <p className="text-xs text-center text-gray-500 py-2">Aún no hay subtareas. ¡Añade la primera!</p>
+              )}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block flex items-center gap-2">
                 <Clock className="h-4 w-4" />
@@ -225,9 +313,6 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
                 max="480"
               />
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4">
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block">Contexto</label>
               {isCreatingContext ? (
@@ -246,6 +331,7 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
                   />
                   <div className="flex gap-2">
                     <Button
+                      type="button"
                       onClick={handleCreateContext}
                       disabled={!newContextName.trim()}
                       size="sm"
@@ -253,7 +339,7 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
                     >
                       Guardar Contexto
                     </Button>
-                    <Button onClick={() => setIsCreatingContext(false)} variant="outline" size="sm">
+                    <Button type="button" onClick={() => setIsCreatingContext(false)} variant="outline" size="sm">
                       Cancelar
                     </Button>
                   </div>
@@ -261,7 +347,17 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
               ) : (
                 <Select
                   value={contextId || "none"}
-                  onValueChange={(value) => setContextId(value === "none" ? undefined : value)}
+                  onValueChange={(value) => {
+                    console.log("Contexto seleccionado:", value) // Debug
+                    if (value === "none") {
+                      setContextId(undefined)
+                    } else if (value === "new") {
+                      setContextId(undefined)
+                      setIsCreatingContext(true)
+                    } else {
+                      setContextId(value)
+                    }
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar contexto..." />
@@ -280,48 +376,47 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
                 </Select>
               )}
             </div>
+          </div>
 
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">Fecha límite (opcional)</label>
-              <div className="space-y-2">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start text-left font-normal">
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dueDate ? format(dueDate, "PPP", { locale: es }) : "Seleccionar fecha"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar mode="single" selected={dueDate} onSelect={setDueDate} initialFocus />
-                  </PopoverContent>
-                </Popover>
-
-                {dueDate && (
-                  <div className="flex items-center gap-2">
-                    <Input type="time" value={dueTime} onChange={(e) => setDueTime(e.target.value)} className="w-32" />
-                    <span className="text-sm text-gray-500">Hora límite</span>
-                  </div>
-                )}
-
-                {dueDate && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setDueDate(undefined)
-                      setDueTime("23:59")
-                    }}
-                    className="mt-1 text-xs text-gray-500 hover:text-gray-700"
-                  >
-                    Quitar fecha
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-2 block">Fecha límite (opcional)</label>
+            <div className="space-y-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start text-left font-normal">
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dueDate ? format(dueDate, "PPP", { locale: es }) : "Seleccionar fecha"}
                   </Button>
-                )}
-              </div>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar mode="single" selected={dueDate} onSelect={setDueDate} initialFocus />
+                </PopoverContent>
+              </Popover>
+
+              {dueDate && (
+                <div className="flex items-center gap-2">
+                  <Input type="time" value={dueTime} onChange={(e) => setDueTime(e.target.value)} className="w-32" />
+                  <span className="text-sm text-gray-500">Hora límite</span>
+                </div>
+              )}
+
+              {dueDate && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setDueDate(undefined)
+                    setDueTime("23:59")
+                  }}
+                  className="mt-1 text-xs text-gray-500 hover:text-gray-700"
+                >
+                  Quitar fecha
+                </Button>
+              )}
             </div>
           </div>
 
-          {/* Tips GTD según categoría */}
           {category === "Inbox" && (
             <div className="bg-gray-50 p-4 rounded-lg border-l-4 border-gray-400">
               <p className="text-sm text-gray-700">
@@ -329,7 +424,6 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
               </p>
             </div>
           )}
-
           {category === "Próximas acciones" && (
             <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400">
               <p className="text-sm text-blue-700">
@@ -338,12 +432,18 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
               </p>
             </div>
           )}
-
-          {category === "Multitarea" && (
+          {category === "Multitarea" && subtasks.length === 0 && (
             <div className="bg-purple-50 p-4 rounded-lg border-l-4 border-purple-400">
               <p className="text-sm text-purple-700">
-                📋 <strong>Multitarea:</strong> Define claramente el resultado deseado y las próximas acciones
-                necesarias.
+                📋 <strong>Multitarea:</strong> ¡Este es un proyecto! Define las subtareas necesarias para completarlo.
+              </p>
+            </div>
+          )}
+          {category === "Multitarea" && subtasks.length > 0 && (
+            <div className="bg-purple-50 p-4 rounded-lg border-l-4 border-purple-400">
+              <p className="text-sm text-purple-700">
+                📈 <strong>Progreso del Proyecto:</strong> {subtasks.filter((st) => st.completed).length} de{" "}
+                {subtasks.length} subtareas completadas.
               </p>
             </div>
           )}
