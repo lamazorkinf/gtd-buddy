@@ -78,6 +78,9 @@ export function useTasks() {
     if (taskData.isQuickAction !== undefined) cleanData.isQuickAction = taskData.isQuickAction
     if (taskData.lastReviewed) cleanData.lastReviewed = taskData.lastReviewed
 
+    // Subtareas - siempre incluir, incluso si está vacío
+    if (taskData.subtasks !== undefined) cleanData.subtasks = taskData.subtasks
+
     // Timestamps
     if (taskData.createdAt) cleanData.createdAt = taskData.createdAt
     if (taskData.updatedAt) cleanData.updatedAt = taskData.updatedAt
@@ -97,6 +100,8 @@ export function useTasks() {
       isQuickAction: taskData.isQuickAction || false,
     })
 
+    console.log("Guardando en Firestore:", dataToSave) // Debug
+
     await addDoc(collection(db, "tasks"), dataToSave)
   }
 
@@ -105,6 +110,8 @@ export function useTasks() {
       ...updates,
       updatedAt: serverTimestamp(),
     })
+
+    console.log("Actualizando en Firestore:", dataToUpdate) // Debug
 
     await updateDoc(doc(db, "tasks", taskId), dataToUpdate)
   }

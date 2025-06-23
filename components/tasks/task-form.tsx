@@ -110,7 +110,10 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const dateValue = e.target.value
     if (dateValue) {
-      setDueDate(new Date(dateValue))
+      // Crear la fecha en la zona horaria local para evitar problemas de UTC
+      const [year, month, day] = dateValue.split("-").map(Number)
+      const localDate = new Date(year, month - 1, day) // month - 1 porque los meses en JS van de 0-11
+      setDueDate(localDate)
     } else {
       setDueDate(undefined)
     }
@@ -118,7 +121,11 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
 
   const formatDateForInput = (date: Date | undefined): string => {
     if (!date) return ""
-    return format(date, "yyyy-MM-dd")
+    // Usar la fecha local sin conversión UTC
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, "0")
+    const day = String(date.getDate()).padStart(2, "0")
+    return `${year}-${month}-${day}`
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -143,7 +150,11 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
       }
       if (estimatedMinutes && estimatedMinutes > 0) taskData.estimatedMinutes = estimatedMinutes
       if (contextId) taskData.contextId = contextId
-      if (category === "Multitarea") taskData.subtasks = subtasks
+
+      // Siempre incluir subtasks, incluso si está vacío
+      taskData.subtasks = subtasks
+
+      console.log("Datos a guardar:", taskData) // Debug
 
       if (isEditing && task?.id) {
         // Asegurarse que task.id existe
