@@ -9,12 +9,9 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Checkbox } from "@/components/ui/checkbox" // Importar Checkbox
 import { CalendarIcon, Plus, Edit, Clock, Trash2, ListChecks } from "lucide-react" // Importar ListChecks y Trash2
 import { format } from "date-fns"
-import { es } from "date-fns/locale"
 import type { Task, GTDCategory, Priority, Subtask } from "@/types/task" // Importar Subtask
 import { useTasks } from "@/hooks/use-tasks"
 import { useContexts } from "@/hooks/use-contexts"
@@ -54,7 +51,6 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
   const [isCreatingContext, setIsCreatingContext] = useState(false)
   const [newContextName, setNewContextName] = useState("")
   const [newContextDescription, setNewContextDescription] = useState("")
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false)
 
   const { addTask, updateTask } = useTasks()
   const { contexts, addContext } = useContexts()
@@ -111,9 +107,18 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
     setSubtasks(subtasks.map((st) => (st.id === subtaskId ? { ...st, title: newTitle } : st)))
   }
 
-  const handleDateSelect = (selectedDate: Date | undefined) => {
-    setDueDate(selectedDate)
-    setIsCalendarOpen(false) // Cerrar el calendario después de seleccionar
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const dateValue = e.target.value
+    if (dateValue) {
+      setDueDate(new Date(dateValue))
+    } else {
+      setDueDate(undefined)
+    }
+  }
+
+  const formatDateForInput = (date: Date | undefined): string => {
+    if (!date) return ""
+    return format(date, "yyyy-MM-dd")
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -388,38 +393,38 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block">Fecha límite (opcional)</label>
               <div className="space-y-2">
-                <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start text-left font-normal">
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dueDate ? format(dueDate, "PPP", { locale: es }) : "Seleccionar fecha"}
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      type="date"
+                      value={formatDateForInput(dueDate)}
+                      onChange={handleDateChange}
+                      className="pl-10"
+                      placeholder="Seleccionar fecha"
+                    />
+                  </div>
+                  {dueDate && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setDueDate(undefined)
+                        setDueTime("23:59")
+                      }}
+                      className="text-xs text-gray-500 hover:text-gray-700"
+                    >
+                      Quitar
                     </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 modal-popover-content" align="start" side="top">
-                    <Calendar mode="single" selected={dueDate} onSelect={handleDateSelect} initialFocus />
-                  </PopoverContent>
-                </Popover>
+                  )}
+                </div>
 
                 {dueDate && (
                   <div className="flex items-center gap-2">
                     <Input type="time" value={dueTime} onChange={(e) => setDueTime(e.target.value)} className="w-32" />
                     <span className="text-sm text-gray-500">Hora límite</span>
                   </div>
-                )}
-
-                {dueDate && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setDueDate(undefined)
-                      setDueTime("23:59")
-                    }}
-                    className="mt-1 text-xs text-gray-500 hover:text-gray-700"
-                  >
-                    Quitar fecha
-                  </Button>
                 )}
               </div>
             </div>
