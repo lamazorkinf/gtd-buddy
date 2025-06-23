@@ -116,7 +116,7 @@ export default function ModalTransition({ isOpen, onClose, children }: ModalTran
 
           {/* Modal Content Wrapper */}
           <motion.div
-            className="relative w-full max-w-2xl z-10 bg-white rounded-xl shadow-2xl"
+            className="relative w-full max-w-2xl z-10 bg-white rounded-xl shadow-2xl modal-content"
             variants={modalVariants}
             initial="hidden"
             animate="visible"
@@ -124,11 +124,7 @@ export default function ModalTransition({ isOpen, onClose, children }: ModalTran
             onClick={(e) => e.stopPropagation()}
           >
             {/* Contenido scrolleable del modal */}
-            <div className="max-h-[85vh] overflow-y-auto p-6">
-              {" "}
-              {/* Padding añadido aquí */}
-              {children}
-            </div>
+            <div className="max-h-[85vh] overflow-y-auto">{children}</div>
           </motion.div>
         </motion.div>
       )}

@@ -206,7 +206,7 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="modal-select-content">
                   {GTD_CATEGORIES.map((cat) => (
                     <SelectItem key={cat} value={cat}>
                       {cat}
@@ -222,7 +222,7 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="modal-select-content">
                   {PRIORITIES.map((p) => (
                     <SelectItem key={p} value={p}>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${PRIORITY_COLORS[p]}`}>
@@ -362,7 +362,7 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar contexto..." />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="modal-select-content">
                     <SelectItem value="none">Sin contexto</SelectItem>
                     {contexts.map((context) => (
                       <SelectItem key={context.id} value={context.id}>
@@ -388,7 +388,7 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
                     {dueDate ? format(dueDate, "PPP", { locale: es }) : "Seleccionar fecha"}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
+                <PopoverContent className="w-auto p-0 modal-popover-content">
                   <Calendar mode="single" selected={dueDate} onSelect={setDueDate} initialFocus />
                 </PopoverContent>
               </Popover>

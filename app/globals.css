@@ -54,7 +54,7 @@ body {
     --card: 0 0% 3.9%;
     --card-foreground: 0 0% 98%;
     --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
+    --popover-foreground: 0 0% 3.9%;
     --primary: 0 0% 98%;
     --primary-foreground: 0 0% 9%;
     --secondary: 0 0% 14.9%;
@@ -95,4 +95,26 @@ body {
 
 body.modal-open {
   overflow: hidden;
+}
+
+/* Asegurar que los elementos dentro de modales tengan z-index más alto */
+.modal-content [data-radix-popper-content-wrapper] {
+  z-index: 9999 !important;
+}
+
+.modal-content [data-radix-select-content] {
+  z-index: 9999 !important;
+}
+
+.modal-content [data-radix-popover-content] {
+  z-index: 9999 !important;
+}
+
+/* Clases específicas para elementos que aparecen dentro de modales */
+.modal-select-content {
+  z-index: 9999 !important;
+}
+
+.modal-popover-content {
+  z-index: 9999 !important;
 }
