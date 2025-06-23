@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -31,27 +31,32 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("overview")
   const [showTestWelcome, setShowTestWelcome] = useState(false)
   const [firestoreUser, setFirestoreUser] = useState<any>(null)
+  const [isRedirecting, setIsRedirecting] = useState(false)
   const { user, subscriptionStatus, signOut } = useAuth()
   const { contexts } = useContexts()
   const { tasks, updateTask } = useTasks()
   const router = useRouter()
+  const redirectRef = useRef(false) // Para evitar múltiples redirecciones
 
   // Verificar acceso al dashboard usando la nueva lógica
   useEffect(() => {
-    if (!user) {
-      router.push("/auth")
-      return
-    }
+    if (!user || redirectRef.current) return
 
     // Si no puede acceder al dashboard, redirigir a suscripción
     if (!subscriptionStatus.canAccessDashboard) {
-      console.log("Acceso denegado al dashboard:", subscriptionStatus.reason)
-      router.push("/subscription")
+      console.log("Acceso denegado - redirigiendo a suscripción:", subscriptionStatus.reason)
+      redirectRef.current = true // Marcar que ya estamos redirigiendo
+      setIsRedirecting(true)
+
+      // Pequeño delay para evitar problemas de hidratación
+      setTimeout(() => {
+        router.push("/subscription")
+      }, 100)
       return
     }
 
     console.log("Acceso permitido al dashboard:", subscriptionStatus.reason)
-  }, [user, subscriptionStatus, router])
+  }, [user, subscriptionStatus.canAccessDashboard, subscriptionStatus.reason, router])
 
   // Obtener datos actualizados de Firestore
   useEffect(() => {
@@ -121,8 +126,8 @@ export default function Dashboard() {
     }
   }
 
-  // Si no puede acceder, mostrar mensaje de carga mientras redirige
-  if (!subscriptionStatus.canAccessDashboard) {
+  // Si no puede acceder o está redirigiendo, mostrar mensaje de carga
+  if (!subscriptionStatus.canAccessDashboard || isRedirecting) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
