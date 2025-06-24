@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import type { EnergyLevel } from "@/types/task" // Import EnergyLevel
+import type { EnergyLevel } from "@/types/task"
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
@@ -9,13 +9,13 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox" // Importar Checkbox
-import { CalendarIcon, Plus, Edit, Clock, Trash2, ListChecks } from "lucide-react" // Importar ListChecks y Trash2
+import { Checkbox } from "@/components/ui/checkbox"
+import { CalendarIcon, Plus, Edit, Clock, Trash2, ListChecks } from "lucide-react"
 import { format } from "date-fns"
-import type { Task, GTDCategory, Priority, Subtask } from "@/types/task" // Importar Subtask
+import type { Task, GTDCategory, Priority, Subtask } from "@/types/task"
 import { useTasks } from "@/hooks/use-tasks"
 import { useContexts } from "@/hooks/use-contexts"
-import { v4 as uuidv4 } from "uuid" // Para generar IDs únicos para subtareas
+import { v4 as uuidv4 } from "uuid"
 
 interface TaskFormProps {
   task?: Task
@@ -48,7 +48,7 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
   const [subtasks, setSubtasks] = useState<Subtask[]>(task?.subtasks || [])
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("")
   const [loading, setLoading] = useState(false)
-  const [isCreatingContext, setIsCreatingContext] = useState(isCreatingContext)
+  const [isCreatingContext, setIsCreatingContext] = useState(false) // Corregido: inicializado con false
   const [newContextName, setNewContextName] = useState("")
   const [newContextDescription, setNewContextDescription] = useState("")
 
@@ -66,7 +66,7 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
       setDueDate(task.dueDate)
       setDueTime(task.dueDate ? format(task.dueDate, "HH:mm") : "23:59")
       setEstimatedMinutes(task.estimatedMinutes)
-      setContextId(task.contextId || undefined) // Asegurar que sea undefined si no hay contexto
+      setContextId(task.contextId || undefined)
       setSubtasks(task.subtasks || [])
     }
   }, [task, defaultCategory])
@@ -153,7 +153,6 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
       taskData.subtasks = subtasks
 
       if (isEditing && task?.id) {
-        // Asegurarse que task.id existe
         await updateTask(task.id, taskData)
       } else {
         await addTask(taskData)

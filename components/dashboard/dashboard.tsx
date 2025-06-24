@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Plus, LogOut, User, Calendar, Inbox, ArrowRight, Clock, Target, Settings, AlertTriangle } from "lucide-react"
+import { Plus, LogOut, User, Calendar, Inbox, ArrowRight, Clock, Target, Settings } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
 import { useTasks } from "@/hooks/use-tasks"
@@ -31,7 +31,6 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("overview")
   const [showTestWelcome, setShowTestWelcome] = useState(false)
   const [firestoreUser, setFirestoreUser] = useState<any>(null)
-  const [isRedirecting, setIsRedirecting] = useState(false)
   const { user, subscriptionStatus, signOut } = useAuth()
   const { contexts } = useContexts()
   const { tasks, updateTask } = useTasks()
@@ -42,16 +41,11 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user || redirectRef.current) return
 
-    // Si no puede acceder al dashboard, redirigir a suscripción
+    // Si no puede acceder al dashboard, redirigir inmediatamente
     if (!subscriptionStatus.canAccessDashboard) {
       console.log("Acceso denegado - redirigiendo a suscripción:", subscriptionStatus.reason)
       redirectRef.current = true // Marcar que ya estamos redirigiendo
-      setIsRedirecting(true)
-
-      // Pequeño delay para evitar problemas de hidratación
-      setTimeout(() => {
-        router.push("/subscription")
-      }, 100)
+      router.replace("/subscription") // Usar replace en lugar de push para evitar historial
       return
     }
 
@@ -126,22 +120,9 @@ export default function Dashboard() {
     }
   }
 
-  // Si no puede acceder o está redirigiendo, mostrar mensaje de carga
-  if (!subscriptionStatus.canAccessDashboard || isRedirecting) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Acceso Restringido</h2>
-          <p className="text-gray-600 mb-4">
-            {subscriptionStatus.isExpired
-              ? "Tu suscripción ha expirado. Redirigiendo a la página de renovación..."
-              : "No tienes una suscripción activa. Redirigiendo..."}
-          </p>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto"></div>
-        </div>
-      </div>
-    )
+  // Si no puede acceder, no renderizar nada (la redirección ya se ejecutó)
+  if (!subscriptionStatus.canAccessDashboard) {
+    return null
   }
 
   // Análisis GTD
