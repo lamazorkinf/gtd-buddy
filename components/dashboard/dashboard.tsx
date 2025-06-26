@@ -20,6 +20,7 @@ import WeeklyReviewComponent from "@/components/gtd/weekly-review"
 import { useContexts } from "@/hooks/use-contexts"
 import ModalTransition from "@/components/transitions/modal-transition"
 import { format } from "date-fns"
+import { es } from "date-fns/locale"
 import TestUserWelcome from "@/components/welcome/test-user-welcome"
 import { doc, updateDoc, getDoc, setDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
@@ -368,21 +369,16 @@ export default function Dashboard() {
                           className="mt-1"
                         />
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm pr-6">
+                          <div className="font-medium text-sm">
                             <span className="break-words">{task.title}</span>
                           </div>
+                          {task.dueDate && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              {format(task.dueDate, "EEEE dd/MM/yyyy HH:mm", { locale: es })}
+                            </div>
+                          )}
                           <div className="text-xs text-green-600">Prioridad: {task.priority}</div>
                         </div>
-                        {task.dueDate && (
-                          <div className="absolute top-2 right-2 flex-shrink-0">
-                            <div
-                              className="relative group cursor-pointer"
-                              title={format(task.dueDate, "dd/MM/yyyy HH:mm")}
-                            >
-                              <Clock className="h-4 w-4 text-green-600 hover:text-green-800 transition-colors" />
-                            </div>
-                          </div>
-                        )}
                       </div>
                     ))}
                     {nextActionTasks.length === 0 && (
