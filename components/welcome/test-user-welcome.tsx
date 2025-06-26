@@ -72,7 +72,7 @@ export default function TestUserWelcome({ isOpen, onClose }: TestUserWelcomeProp
     <AnimatePresence mode="wait">
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto px-8 py-12 md:py-16"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
           initial="hidden"
           animate="visible"
           exit="hidden"
@@ -89,66 +89,65 @@ export default function TestUserWelcome({ isOpen, onClose }: TestUserWelcomeProp
 
           {/* Modal Content */}
           <motion.div
-            className="relative w-full max-w-2xl z-[10000] my-12 md:my-16"
+            className="relative w-full max-w-2xl max-h-[70vh] z-[10000]"
             variants={modalVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
             onClick={(e) => e.stopPropagation()}
           >
-            <Card className="bg-white/95 backdrop-blur-sm border-2 border-gtd-clarity-200 shadow-2xl">
-              {/* Header con botón de cerrar */}
-              <div className="flex justify-end p-4 pb-0">
+            <Card className="bg-white/95 backdrop-blur-sm border-2 border-gtd-clarity-200 shadow-2xl max-h-full flex flex-col">
+              {/* Header con título y botón de cerrar - Fixed */}
+              <div className="flex justify-between items-start p-4 pb-0 border-b border-gtd-neutral-100">
+                <div className="flex-1 text-center pr-8 pl-px pb-4">
+                  <h1 className="text-2xl md:text-3xl font-bold font-heading bg-gradient-to-r from-gtd-clarity-600 via-gtd-action-500 to-gtd-focus-500 bg-clip-text text-transparent">
+                    ¡Hola {user?.firstName || "amigo/a"}! Gracias por estar acá! 🙌
+                  </h1>
+                </div>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => onClose(true)}
-                  className="text-gtd-neutral-500 hover:text-gtd-neutral-700 hover:bg-gtd-neutral-100 rounded-full h-8 w-8 p-0"
+                  className="text-gtd-neutral-500 hover:text-gtd-neutral-700 hover:bg-gtd-neutral-100 rounded-full h-8 w-8 p-0 flex-shrink-0"
                 >
                   <X className="h-4 w-4" />
                 </Button>
               </div>
 
-              <CardContent className="px-8 pb-8 pt-2">
-                {/* Título */}
-                <div className="text-center mb-6">
-                  <h1 className="text-3xl font-bold font-heading bg-gradient-to-r from-gtd-clarity-600 via-gtd-action-500 to-gtd-focus-500 bg-clip-text text-transparent mb-2">
-                    ¡Hola {user?.firstName || "amigo/a"}! Gracias por estar acá! 🙌
-                  </h1>
-                </div>
+              {/* Todo el contenido scrolleable incluyendo el botón */}
+              <div className="flex-1 overflow-y-auto min-h-0">
+                <CardContent className="px-6 pb-6 pt-2">
+                  {/* Contenido del mensaje */}
+                  <div className="space-y-4 text-gtd-neutral-700 leading-relaxed text-sm md:text-base text-justify">
+                    <p>Quiero darte las gracias de corazón por estar probando esta app.</p>
 
-                {/* Contenido del mensaje */}
-                <div className="space-y-4 text-gtd-neutral-700 leading-relaxed">
-                  <p>
-                    Quiero darte las gracias por estar probando esta app.
-                  </p>
+                    <p>
+                      Esta etapa es clave para el proyecto y tu mirada, tus comentarios y tu tiempo valen oro para mí.
+                      Más allá de los errores o cosas a mejorar que encuentres, lo que más valoro es tu honestidad y el
+                      hecho de que te tomes unos minutos para ayudarme a crecer.
+                    </p>
 
-                  <p>
-                    Esta etapa es clave para el proyecto y tu mirada, tus comentarios y tu tiempo valen oro para mí.
-                    Más allá de los errores o cosas a mejorar que encuentres, lo que más valoro es tu honestidad y el
-                    hecho de que te tomes unos minutos para ayudarme a crecer.
-                  </p>
+                    <p>
+                      ¡Espero que disfrutes la experiencia y te sientas parte del proceso! Si ves algo para mejorar,
+                      decímelo sin filtro: cada aporte tuyo suma muchísimo.
+                    </p>
 
-                  <p>
-                    ¡Espero que disfrutes la experiencia y te sientas parte del proceso! Si ves algo para mejorar,
-                    decímelo sin filtro: cada aporte tuyo suma muchísimo.
-                  </p>
+                    <p className="font-medium text-gtd-clarity-700">
+                      Abrazo grande y, una vez más, <strong>GRACIAS</strong> por estar.
+                    </p>
+                  </div>
 
-                  <p className="font-medium text-gtd-clarity-700">
-                    Abrazo grande y, una vez más, <strong>GRACIAS</strong> por estar.
-                  </p>
-                </div>
-
-                {/* Botón único */}
-                <div className="flex justify-center mt-8">
-                  <Button
-                    onClick={() => onClose(true)}
-                    className="bg-gradient-to-r from-gtd-clarity-500 via-gtd-action-500 to-gtd-focus-500 hover:from-gtd-clarity-600 hover:via-gtd-action-600 hover:to-gtd-focus-600 text-white font-medium px-8 py-2 rounded-lg transition-all duration-200"
-                  >
-                    ¡Empecemos! 🚀
-                  </Button>
-                </div>
-              </CardContent>
+                  {/* Botón al final del contenido */}
+                  <div className="flex justify-center mt-8">
+                    <Button
+                      onClick={() => onClose(true)}
+                      className="bg-gradient-to-r from-gtd-clarity-500 via-gtd-action-500 to-gtd-focus-500 hover:from-gtd-clarity-600 hover:via-gtd-action-600 hover:to-gtd-focus-600 text-white font-medium px-8 py-2 rounded-lg transition-all duration-200"
+                    >
+                      ¡Empecemos! 🚀
+                    </Button>
+                  </div>
+                </CardContent>
+              </div>
             </Card>
           </motion.div>
         </motion.div>
