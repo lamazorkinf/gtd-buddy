@@ -73,7 +73,7 @@ export default function TestUserWelcome({ isOpen, onClose }: TestUserWelcomeProp
       {isOpen && (
         <>
           <motion.div
-            className="fixed inset-0 z-[9999] flex items-center justify-center px-4 py-8 md:py-12" // Ajustado aquí para padding vertical
+            className="fixed inset-0 z-[9999] flex items-center justify-center px-8 py-12 md:py-16" // Ajustado aquí para padding vertical
             initial="hidden"
             animate="visible"
             exit="hidden"
