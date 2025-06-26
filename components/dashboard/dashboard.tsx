@@ -360,22 +360,29 @@ export default function Dashboard() {
                     {nextActionTasks.slice(0, 10).map((task) => (
                       <div
                         key={task.id}
-                        className="p-2 bg-green-50 rounded border-l-4 border-green-400 flex items-start gap-2"
+                        className="p-2 bg-green-50 rounded border-l-4 border-green-400 flex items-start gap-2 relative"
                       >
                         <Checkbox
                           checked={task.completed}
                           onCheckedChange={() => handleToggleComplete(task.id, task.completed)}
                           className="mt-1"
                         />
-                        <div className="flex-1">
-                          <div className="font-medium text-sm flex justify-between">
-                            <span>{task.title}</span>
-                            {task.dueDate && (
-                              <span className="text-xs text-green-600 font-mono">{format(task.dueDate, "HH:mm")}</span>
-                            )}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm pr-6">
+                            <span className="break-words">{task.title}</span>
                           </div>
                           <div className="text-xs text-green-600">Prioridad: {task.priority}</div>
                         </div>
+                        {task.dueDate && (
+                          <div className="absolute top-2 right-2 flex-shrink-0">
+                            <div
+                              className="relative group cursor-pointer"
+                              title={format(task.dueDate, "dd/MM/yyyy HH:mm")}
+                            >
+                              <Clock className="h-4 w-4 text-green-600 hover:text-green-800 transition-colors" />
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                     {nextActionTasks.length === 0 && (
