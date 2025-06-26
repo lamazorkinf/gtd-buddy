@@ -63,8 +63,8 @@ export function checkSubscriptionStatus(user: User | null): SubscriptionStatus {
     }
   }
 
-  // Verificar período de prueba sin fecha de expiración
-  if (user.isInTrialPeriod === true && user.subscriptionStatus === "trial") {
+  // Verificar período de prueba solo con subscriptionStatus
+  if (user.subscriptionStatus === "trial") {
     return {
       isActive: true,
       isExpired: false,

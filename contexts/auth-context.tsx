@@ -69,7 +69,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 subscriptionEndDate: userDataFromFirestore.subscriptionEndDate,
                 firstName: userDataFromFirestore.firstName,
                 lastName: userDataFromFirestore.lastName,
-                isInTrialPeriod: userDataFromFirestore.isInTrialPeriod === true, // Asegurar que sea booleano
                 trialStartDate: userDataFromFirestore.trialStartDate,
               }
 
@@ -95,7 +94,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 photoURL: firebaseUser.photoURL,
                 role: "user",
                 subscriptionStatus: "trial", // Cambiar a "trial" para nuevos usuarios
-                isInTrialPeriod: true, // Nuevos usuarios comienzan en período de prueba
               }
               // Optionally create the user document here if it doesn't exist
               // await setDoc(userDocRef, { ...newUser, createdAt: serverTimestamp() });
@@ -160,7 +158,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           lastName: lastName,
           role: "user",
           subscriptionStatus: "trial",
-          isInTrialPeriod: true,
           trialStartDate: serverTimestamp(),
           subscriptionEndDate: trialEndDate, // Agregar fecha de expiración del trial
           createdAt: serverTimestamp(),
@@ -199,7 +196,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             lastName: lastName,
             role: "user",
             subscriptionStatus: "trial",
-            isInTrialPeriod: true,
             trialStartDate: serverTimestamp(),
             subscriptionEndDate: trialEndDate, // Agregar fecha de expiración del trial
           }

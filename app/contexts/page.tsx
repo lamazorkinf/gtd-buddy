@@ -83,7 +83,7 @@ export default function ContextsPage() {
                 variant="outline"
                 size="sm"
                 onClick={signOut}
-                className="flex items-center gap-2 text-gtd-neutral-700 hover:text-gtd-neutral-900 border-gtd-neutral-200 hover:bg-gtd-neutral-100"
+                className="flex items-center gap-2 text-gtd-neutral-700 hover:text-gtd-neutral-900 border-gtd-neutral-200 hover:bg-gtd-neutral-100 bg-transparent"
               >
                 <LogOut className="h-4 w-4" />
                 <span className="hidden sm:inline">Salir</span>
@@ -111,7 +111,7 @@ export default function ContextsPage() {
         <ModalTransition isOpen={showTaskForm} onClose={handleCloseTaskForm}>
           <TaskForm
             onClose={handleCloseTaskForm}
-            defaultCategory="Próximas acciones" // O la categoría más adecuada
+            defaultCategory="Próximas acciones"
             defaultContextId={taskForContext}
           />
         </ModalTransition>

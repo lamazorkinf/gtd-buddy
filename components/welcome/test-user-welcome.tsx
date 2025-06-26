@@ -73,7 +73,7 @@ export default function TestUserWelcome({ isOpen, onClose }: TestUserWelcomeProp
       {isOpen && (
         <>
           <motion.div
-            className="fixed inset-0 z-[9999] flex items-center justify-center px-4 py-12" // Ajustado aquí para padding vertical
+            className="fixed inset-0 z-[9999] flex items-center justify-center px-4 py-8 md:py-12" // Ajustado aquí para padding vertical
             initial="hidden"
             animate="visible"
             exit="hidden"
@@ -121,20 +121,13 @@ export default function TestUserWelcome({ isOpen, onClose }: TestUserWelcomeProp
                   {/* Contenido del mensaje */}
                   <div className="space-y-4 text-gtd-neutral-700 leading-relaxed">
                     <p>
-                      Quiero darte las gracias de corazón por estar probando esta app. Si hoy la estás viendo es porque
-                      confío plenamente en vos: sé que sos de esas personas que siempre me bancaron y apoyaron en este
-                      camino.
+                      Quiero darte las gracias por estar probando esta app.
                     </p>
 
                     <p>
                       Esta etapa es clave para el proyecto y tu mirada, tus comentarios y tu tiempo valen oro para mí.
                       Más allá de los errores o cosas a mejorar que encuentres, lo que más valoro es tu honestidad y el
                       hecho de que te tomes unos minutos para ayudarme a crecer.
-                    </p>
-
-                    <p>
-                      Sin gente como vos, que me acompaña y me motiva, esto no tendría sentido. Así que te agradezco
-                      infinitamente que seas parte de esto desde el principio.
                     </p>
 
                     <p>

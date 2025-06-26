@@ -2,28 +2,26 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, User, LogOut, CalendarIcon as CalendarIconLucide, Plus } from "lucide-react" // Renamed Calendar to CalendarIconLucide
+import { ArrowLeft, User, LogOut, CalendarIcon as CalendarIconLucide, Plus } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
 import CalendarView from "@/components/calendar/calendar-view"
 import TaskForm from "@/components/tasks/task-form"
 import ModalTransition from "@/components/transitions/modal-transition"
-import type { Task } from "@/types/task" // Import Task type
+import type { Task } from "@/types/task"
 
 export default function CalendarPage() {
   const [showTaskForm, setShowTaskForm] = useState(false)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
-  const [editingTask, setEditingTask] = useState<Task | undefined>(undefined) // For editing existing tasks
+  const [editingTask, setEditingTask] = useState<Task | undefined>(undefined)
   const { user, signOut } = useAuth()
 
   const handleCreateOrEditTask = (dateOrTask?: Date | Task) => {
     if (dateOrTask instanceof Date || dateOrTask === undefined) {
-      // Creating new task
       setSelectedDate(dateOrTask || new Date())
       setEditingTask(undefined)
     } else {
-      // Editing existing task
-      setSelectedDate(dateOrTask.dueDate || new Date()) // Use task's due date or current if undefined
+      setSelectedDate(dateOrTask.dueDate || new Date())
       setEditingTask(dateOrTask)
     }
     setShowTaskForm(true)
@@ -76,7 +74,7 @@ export default function CalendarPage() {
                 variant="outline"
                 size="sm"
                 onClick={signOut}
-                className="flex items-center gap-2 text-gtd-neutral-700 hover:text-gtd-neutral-900 border-gtd-neutral-200 hover:bg-gtd-neutral-100"
+                className="flex items-center gap-2 text-gtd-neutral-700 hover:text-gtd-neutral-900 border-gtd-neutral-200 hover:bg-gtd-neutral-100 bg-transparent"
               >
                 <LogOut className="h-4 w-4" />
                 <span className="hidden sm:inline">Salir</span>
@@ -92,8 +90,8 @@ export default function CalendarPage() {
         <ModalTransition isOpen={showTaskForm} onClose={handleCloseForm}>
           <TaskForm
             onClose={handleCloseForm}
-            task={editingTask} // Pass editingTask
-            defaultDueDate={editingTask ? undefined : selectedDate || undefined} // Pass selectedDate only if not editing
+            task={editingTask}
+            defaultDueDate={editingTask ? undefined : selectedDate || undefined}
           />
         </ModalTransition>
       </main>
