@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/contexts/auth-context"
-import { Mail, Lock, Edit3, Eye, EyeOff, Loader2 } from "lucide-react"
+import { Mail, Lock, Chrome, Edit3, Eye, EyeOff, Loader2 } from "lucide-react"
 
 export default function AuthPage() {
   const searchParams = useSearchParams()
@@ -152,6 +152,29 @@ export default function AuthPage() {
               </TabsList>
 
               <TabsContent value="signin" className="space-y-6 pt-6">
+                <Button
+                  onClick={handleGoogleAuth}
+                  disabled={formLoading}
+                  variant="outline"
+                  className="w-full py-3 text-md rounded-lg border-gtd-neutral-300 hover:bg-gtd-neutral-100 text-gtd-neutral-800 bg-white"
+                >
+                  {formLoading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Chrome className="mr-2 h-5 w-5 text-red-500" />
+                  )}
+                  Continuar con Google
+                </Button>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-gtd-neutral-200" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white/80 px-2 text-gtd-neutral-600">O continúa con email</span>
+                  </div>
+                </div>
+
                 <div className="space-y-4">
                   <div className="relative">
                     <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-gtd-neutral-400" />
@@ -205,6 +228,29 @@ export default function AuthPage() {
               </TabsContent>
 
               <TabsContent value="signup" className="space-y-6 pt-6">
+                <Button
+                  onClick={handleGoogleAuth}
+                  disabled={formLoading}
+                  variant="outline"
+                  className="w-full py-3 text-md rounded-lg border-gtd-neutral-300 hover:bg-gtd-neutral-100 text-gtd-neutral-800 bg-white"
+                >
+                  {formLoading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Chrome className="mr-2 h-5 w-5 text-red-500" />
+                  )}
+                  Continuar con Google
+                </Button>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-gtd-neutral-200" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white/80 px-2 text-gtd-neutral-600">O regístrate con email</span>
+                  </div>
+                </div>
+
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="relative">

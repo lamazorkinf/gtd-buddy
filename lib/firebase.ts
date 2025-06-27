@@ -1,7 +1,6 @@
-import { initializeApp } from "firebase/app"
+import { initializeApp, getApps } from "firebase/app"
 import { getAuth, GoogleAuthProvider } from "firebase/auth"
 import { getFirestore } from "firebase/firestore"
-import { getStorage } from "firebase/storage"
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -12,24 +11,14 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 }
 
-// Verificar que todas las variables de entorno estén presentes
-if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId) {
-  throw new Error("Missing Firebase configuration. Please check your environment variables.")
-}
+// Initialize Firebase only if it hasn't been initialized yet
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
 
-// Inicializar Firebase solo una vez (patrón singleton)
-const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
 export const db = getFirestore(app)
-export const storage = getStorage(app)
-export const googleProvider = new GoogleAuthProvider()
 
-// Configurar el proveedor de Google
+// Configure Google provider
+export const googleProvider = new GoogleAuthProvider()
 googleProvider.setCustomParameters({
   prompt: "select_account",
 })
-
-// Configuración para depuración
-if (process.env.NODE_ENV !== "production") {
-  console.log("Firebase initialized with project:", firebaseConfig.projectId)
-}
