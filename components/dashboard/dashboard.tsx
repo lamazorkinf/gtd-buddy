@@ -168,7 +168,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen gtd-gradient-bg">
+    <div className="min-h-screen gtd-gradient-bg w-full max-w-7xl mx-auto">
       {/* Alerta de suscripción próxima a expirar */}
       {subscriptionStatus.isInTrial && user?.subscriptionEndDate && (
         <Alert className="mx-4 mt-4 border-yellow-200 bg-yellow-50">
@@ -202,7 +202,7 @@ export default function Dashboard() {
             <div className="flex items-center gap-4">
               {/* Botón de Contextos */}
               <Link href="/contexts">
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
                   <Target className="h-4 w-4" />
                   <span className="hidden sm:inline">Contextos</span>
                   <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 text-xs">
@@ -213,7 +213,7 @@ export default function Dashboard() {
 
               {/* Botón de Calendario */}
               <Link href="/calendar">
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
                   <Calendar className="h-4 w-4" />
                   <span className="hidden sm:inline">Calendario</span>
                 </Button>
@@ -223,7 +223,7 @@ export default function Dashboard() {
                 <User className="h-4 w-4" />
                 <span className="hidden sm:inline">{user?.displayName || user?.email}</span>
               </div>
-              <Button variant="outline" size="sm" onClick={signOut} className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={signOut} className="flex items-center gap-2 bg-transparent">
                 <LogOut className="h-4 w-4" />
                 <span className="hidden sm:inline">Salir</span>
               </Button>
@@ -361,14 +361,14 @@ export default function Dashboard() {
                     {nextActionTasks.slice(0, 10).map((task) => (
                       <div
                         key={task.id}
-                        className="p-2 bg-green-50 rounded border-l-4 border-green-400 flex items-start gap-2 relative"
+                        className="p-2 bg-green-50 rounded border-l-4 border-green-400 flex items-start gap-2 relative text-left"
                       >
                         <Checkbox
                           checked={task.completed}
                           onCheckedChange={() => handleToggleComplete(task.id, task.completed)}
                           className="mt-1"
                         />
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 text-left">
                           <div className="font-medium text-sm">
                             <span className="break-words">{task.title}</span>
                           </div>
@@ -418,7 +418,7 @@ export default function Dashboard() {
                           onClick={handleGoToOrganize}
                           size="sm"
                           variant="outline"
-                          className="w-full text-xs border-red-300 text-red-700 hover:bg-red-50"
+                          className="w-full text-xs border-red-300 text-red-700 hover:bg-red-50 bg-transparent"
                         >
                           <Settings className="mr-1 h-3 w-3" />
                           Ir a Organizar

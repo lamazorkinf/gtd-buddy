@@ -6,21 +6,8 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Progress } from "@/components/ui/progress"
-import {
-  Target,
-  MoreVertical,
-  Edit,
-  Trash2,
-  Plus,
-  Calendar,
-  CheckCircle,
-  Clock,
-  Pause,
-  Lightbulb,
-  Loader2,
-} from "lucide-react"
+import { Target, Edit, Calendar, CheckCircle, Clock, Pause, Lightbulb, Loader2 } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import type { Context } from "@/types/task"
@@ -158,7 +145,7 @@ export default function ContextList({ onEditContext, onCreateTask }: ContextList
           return (
             <Card
               key={context.id}
-              className="hover:shadow-lg transition-shadow duration-300 bg-white/80 backdrop-blur-sm border border-gtd-neutral-100"
+              className="hover:shadow-lg transition-shadow duration-300 bg-white/95 border border-gtd-neutral-100"
             >
               <CardHeader className="border-b border-gtd-neutral-100">
                 <div className="flex items-start justify-between">
@@ -172,37 +159,14 @@ export default function ContextList({ onEditContext, onCreateTask }: ContextList
                       {statusConfig.emoji} {statusConfig.label}
                     </Badge>
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-gtd-neutral-500 hover:bg-gtd-neutral-100"
-                      >
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onClick={() => onEditContext(context)}
-                        className="text-gtd-neutral-700 hover:!bg-gtd-clarity-50"
-                      >
-                        <Edit className="mr-2 h-4 w-4 text-gtd-clarity-500" /> Editar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => onCreateTask(context.id)}
-                        className="text-gtd-neutral-700 hover:!bg-gtd-focus-50"
-                      >
-                        <Plus className="mr-2 h-4 w-4 text-gtd-focus-500" /> Añadir Tarea
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleDeleteContext(context.id)}
-                        className="text-red-600 hover:!text-red-700 hover:!bg-red-50"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" /> Eliminar
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onEditContext(context)}
+                    className="h-8 w-8 text-gtd-neutral-500 hover:bg-gtd-neutral-100"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent className="pt-4 space-y-4">
@@ -240,24 +204,6 @@ export default function ContextList({ onEditContext, onCreateTask }: ContextList
                       {format(context.lastReviewed, "dd MMM", { locale: es })}
                     </div>
                   )}
-                </div>
-                <div className="flex gap-2 pt-3 border-t border-gtd-neutral-100">
-                  <Button
-                    onClick={() => onCreateTask(context.id)}
-                    size="sm"
-                    variant="outline"
-                    className="flex-1 text-gtd-focus-600 border-gtd-focus-300 hover:bg-gtd-focus-50 hover:text-gtd-focus-700"
-                  >
-                    <Plus className="mr-2 h-4 w-4" /> Nueva Tarea
-                  </Button>
-                  <Button
-                    onClick={() => onEditContext(context)}
-                    size="sm"
-                    variant="outline"
-                    className="text-gtd-clarity-600 border-gtd-clarity-300 hover:bg-gtd-clarity-50 hover:text-gtd-clarity-700"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
                 </div>
               </CardContent>
             </Card>

@@ -45,7 +45,7 @@ export default function PageTransition({ children }: PageTransitionProps) {
         exit="out"
         variants={pageVariants}
         transition={pageTransition}
-        className="flex-1 text-center pr-8 pl-px pb-4"
+        className="w-full min-h-screen flex flex-col justify-center items-center pb-4"
       >
         {children}
       </motion.div>
