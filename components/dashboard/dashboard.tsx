@@ -174,15 +174,22 @@ export default function Dashboard() {
         <Alert className="mx-4 mt-4 border-yellow-200 bg-yellow-50">
           <Clock className="h-4 w-4 text-yellow-600" />
           <AlertDescription className="text-yellow-800">
-            <strong>Período de prueba activo.</strong> Tu acceso expira el{" "}
-            {new Date(
-              user.subscriptionEndDate.seconds ? user.subscriptionEndDate.seconds * 1000 : user.subscriptionEndDate,
-            ).toLocaleDateString()}
-            .{" "}
-            <Link href="/subscription" className="underline font-medium">
-              Suscríbete ahora
-            </Link>{" "}
-            para continuar sin interrupciones.
+            <strong>
+              Tu período de prueba termina el{" "}
+              {new Date(
+                user.subscriptionEndDate.seconds ? user.subscriptionEndDate.seconds * 1000 : user.subscriptionEndDate,
+              ).toLocaleDateString("es-ES", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+              .
+            </strong>{" "}
+            <Link href="/subscription" className="underline font-medium hover:text-yellow-900">
+              Suscríbete ahora para continuar sin interrupciones
+            </Link>
+            .
           </AlertDescription>
         </Alert>
       )}

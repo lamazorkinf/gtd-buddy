@@ -127,7 +127,7 @@ export default function AuthPage() {
             </CardTitle>
             <CardDescription className="text-gtd-neutral-700 mt-1">
               {activeTab === "signup"
-                ? "Crea tu cuenta para organizar tu vida."
+                ? "Comienza tu período de prueba de 7 días"
                 : "Inicia sesión para acceder a tus tareas."}
             </CardDescription>
           </CardHeader>
@@ -330,7 +330,7 @@ export default function AuthPage() {
                       className="w-full bg-gradient-to-r from-gtd-confidence-500 to-gtd-focus-500 hover:from-gtd-confidence-600 hover:to-gtd-focus-600 text-white py-3 text-md rounded-lg font-semibold"
                     >
                       {formLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      {formLoading ? "Registrando..." : "Crear Cuenta"}
+                      {formLoading ? "Registrando..." : "Comenzar Prueba Gratuita"}
                     </Button>
                   </div>
                   <div className="text-center mt-4">
