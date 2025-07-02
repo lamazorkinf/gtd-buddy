@@ -10,12 +10,20 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { CalendarIcon, Plus, Edit, Clock, Trash2, ListChecks } from "lucide-react"
-import { format } from "date-fns"
+import { CalendarIcon, Plus, Edit, Clock, Trash2, ListChecks, Calendar, AlertCircle } from "lucide-react"
+import { format, isBefore, startOfDay, isValid } from "date-fns"
+import { es } from "date-fns/locale"
 import type { Task, GTDCategory, Priority, Subtask } from "@/types/task"
 import { useTasks } from "@/hooks/use-tasks"
 import { useContexts } from "@/hooks/use-contexts"
 import { v4 as uuidv4 } from "uuid"
+import SubtaskEditModal from "./subtask-edit-modal"
+
+const safeDate = (value: unknown): Date | undefined => {
+  if (!value) return undefined
+  const date = value instanceof Date ? value : new Date(value as string | number)
+  return isValid(date) ? date : undefined
+}
 
 interface TaskFormProps {
   task?: Task
@@ -48,9 +56,10 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
   const [subtasks, setSubtasks] = useState<Subtask[]>(task?.subtasks || [])
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("")
   const [loading, setLoading] = useState(false)
-  const [isCreatingContext, setIsCreatingContext] = useState(false) // Corregido: inicializado con false
+  const [isCreatingContext, setIsCreatingContext] = useState(false)
   const [newContextName, setNewContextName] = useState("")
   const [newContextDescription, setNewContextDescription] = useState("")
+  const [editingSubtask, setEditingSubtask] = useState<Subtask | null>(null)
 
   const { addTask, updateTask } = useTasks()
   const { contexts, addContext } = useContexts()
@@ -101,16 +110,20 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
     setSubtasks(subtasks.filter((st) => st.id !== subtaskId))
   }
 
-  const handleUpdateSubtaskTitle = (subtaskId: string, newTitle: string) => {
-    setSubtasks(subtasks.map((st) => (st.id === subtaskId ? { ...st, title: newTitle } : st)))
+  const handleEditSubtask = (subtask: Subtask) => {
+    setEditingSubtask(subtask)
+  }
+
+  const handleSaveSubtask = (updatedSubtask: Subtask) => {
+    setSubtasks(subtasks.map((st) => (st.id === updatedSubtask.id ? updatedSubtask : st)))
+    setEditingSubtask(null)
   }
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const dateValue = e.target.value
     if (dateValue) {
-      // Crear la fecha en la zona horaria local para evitar problemas de UTC
       const [year, month, day] = dateValue.split("-").map(Number)
-      const localDate = new Date(year, month - 1, day) // month - 1 porque los meses en JS van de 0-11
+      const localDate = new Date(year, month - 1, day)
       setDueDate(localDate)
     } else {
       setDueDate(undefined)
@@ -119,11 +132,21 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
 
   const formatDateForInput = (date: Date | undefined): string => {
     if (!date) return ""
-    // Usar la fecha local sin conversión UTC
     const year = date.getFullYear()
     const month = String(date.getMonth() + 1).padStart(2, "0")
     const day = String(date.getDate()).padStart(2, "0")
     return `${year}-${month}-${day}`
+  }
+
+  const isSubtaskOverdue = (rawDate: unknown): boolean => {
+    const d = safeDate(rawDate)
+    return d ? isBefore(d, startOfDay(new Date())) : false
+  }
+
+  const isSubtaskDueToday = (rawDate: unknown): boolean => {
+    const d = safeDate(rawDate)
+    if (!d) return false
+    return format(d, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd")
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -149,7 +172,6 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
       if (estimatedMinutes && estimatedMinutes > 0) taskData.estimatedMinutes = estimatedMinutes
       if (contextId) taskData.contextId = contextId
 
-      // Siempre incluir subtasks, incluso si está vacío
       taskData.subtasks = subtasks
 
       if (isEditing && task?.id) {
@@ -178,7 +200,6 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
   }
 
   useEffect(() => {
-    // Solo manejar la creación de nuevo contexto, no resetear contextId en edición
     if (contextId === "new") {
       setContextId(undefined)
       setIsCreatingContext(true)
@@ -261,31 +282,59 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
                   Subtareas del Proyecto
                 </h4>
                 <div className="space-y-2">
-                  {subtasks.map((st, index) => (
-                    <div key={st.id || index} className="flex items-center gap-2 p-2 bg-white rounded border">
-                      <Checkbox
-                        id={`subtask-${st.id}`}
-                        checked={st.completed}
-                        onCheckedChange={() => handleToggleSubtask(st.id)}
-                      />
-                      <Input
-                        type="text"
-                        value={st.title}
-                        onChange={(e) => handleUpdateSubtaskTitle(st.id, e.target.value)}
-                        className={`flex-grow text-sm ${st.completed ? "line-through text-gray-500" : ""}`}
-                        placeholder="Descripción de la subtarea"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleRemoveSubtask(st.id)}
-                        className="h-7 w-7 text-red-500 hover:bg-red-100"
+                  {subtasks.map((st, index) => {
+                    const isOverdue = isSubtaskOverdue(st.dueDate) && !st.completed
+                    const isDueToday = isSubtaskDueToday(st.dueDate)
+
+                    return (
+                      <div
+                        key={st.id || index}
+                        className={`flex items-center gap-2 p-3 bg-white rounded border ${isOverdue ? "border-red-300 bg-red-50" : "border-gray-200"}`}
                       >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
+                        <Checkbox
+                          id={`subtask-${st.id}`}
+                          checked={st.completed}
+                          onCheckedChange={() => handleToggleSubtask(st.id)}
+                        />
+                        <div className="flex-grow">
+                          <div className={`text-sm font-medium ${st.completed ? "line-through text-gray-500" : ""}`}>
+                            {st.title}
+                          </div>
+                          {st.dueDate && (
+                            <div
+                              className={`text-xs mt-1 flex items-center gap-1 ${
+                                isOverdue ? "text-red-600" : isDueToday ? "text-orange-600" : "text-gray-500"
+                              }`}
+                            >
+                              {isOverdue ? <AlertCircle className="h-3 w-3" /> : <Calendar className="h-3 w-3" />}
+                              {safeDate(st.dueDate) &&
+                                format(safeDate(st.dueDate) as Date, "dd MMM yyyy", { locale: es })}
+                              {isOverdue && " (Vencida)"}
+                              {isDueToday && " (Hoy)"}
+                            </div>
+                          )}
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEditSubtask(st)}
+                          className="h-7 w-7 text-blue-500 hover:bg-blue-100"
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemoveSubtask(st.id)}
+                          className="h-7 w-7 text-red-500 hover:bg-red-100"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )
+                  })}
                 </div>
                 <div className="flex items-center gap-2 pt-2 border-t">
                   <Input
@@ -483,6 +532,16 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
           </form>
         </CardContent>
       </Card>
+
+      {/* Modal para editar subtarea */}
+      {editingSubtask && (
+        <SubtaskEditModal
+          subtask={editingSubtask}
+          isOpen={!!editingSubtask}
+          onClose={() => setEditingSubtask(null)}
+          onSave={handleSaveSubtask}
+        />
+      )}
     </div>
   )
 }

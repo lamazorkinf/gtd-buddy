@@ -1,159 +1,118 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import type React from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Plus, LogOut, User, Calendar, Inbox, ArrowRight, Clock, Target, Settings } from "lucide-react"
+import { Plus, LogOut, Calendar, ArrowRight, Clock, Target, Layers, Hourglass, View, CalendarClock } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
 import { useTasks } from "@/hooks/use-tasks"
-import type { Task } from "@/types/task"
+import type { Task, Subtask } from "@/types/task"
 import TaskForm from "@/components/tasks/task-form"
 import TaskList from "@/components/tasks/task-list"
 import QuickCapture from "@/components/gtd/quick-capture"
 import InboxProcessor from "@/components/gtd/inbox-processor"
-import WeeklyReviewComponent from "@/components/gtd/weekly-review"
-import { useContexts } from "@/hooks/use-contexts"
 import ModalTransition from "@/components/transitions/modal-transition"
-import { format } from "date-fns"
-import { es } from "date-fns/locale"
-import TestUserWelcome from "@/components/welcome/test-user-welcome"
-import { doc, updateDoc, getDoc, setDoc } from "firebase/firestore"
-import { db } from "@/lib/firebase"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { isValid, isBefore, startOfDay, addDays, isSameDay, isAfter } from "date-fns"
+import { AnimatePresence } from "framer-motion"
+import { DashboardPanel } from "./dashboard-panel"
+
+const safeDate = (value: unknown): Date | undefined => {
+  if (!value) return undefined
+  if (typeof value === "object" && value !== null && "toDate" in value) {
+    try {
+      return (value as any).toDate()
+    } catch {
+      return undefined
+    }
+  }
+  if (value instanceof Date) {
+    return isValid(value) ? value : undefined
+  }
+  try {
+    const date = new Date(value as string | number)
+    return isValid(date) ? date : undefined
+  } catch {
+    return undefined
+  }
+}
+
+type DisplayableItem = (Task & { itemType: "task" }) | (Subtask & { itemType: "subtask"; parentTask: Task })
 
 export default function Dashboard() {
   const [showTaskForm, setShowTaskForm] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | undefined>()
   const [activeTab, setActiveTab] = useState("overview")
   const [showTestWelcome, setShowTestWelcome] = useState(false)
-  const [firestoreUser, setFirestoreUser] = useState<any>(null)
+  const [expandedPanel, setExpandedPanel] = useState<string | null>(null)
   const { user, subscriptionStatus, signOut } = useAuth()
-  const { contexts } = useContexts()
   const { tasks, updateTask } = useTasks()
   const router = useRouter()
-  const redirectRef = useRef(false) // Para evitar múltiples redirecciones
 
-  // Verificar acceso al dashboard usando la nueva lógica
+  const [todayItems, setTodayItems] = useState<DisplayableItem[]>([])
+  const [overdueItems, setOverdueItems] = useState<DisplayableItem[]>([])
+  const [thisWeekItems, setThisWeekItems] = useState<DisplayableItem[]>([])
+
   useEffect(() => {
-    if (!user || redirectRef.current) return
-
-    // Si no puede acceder al dashboard, redirigir inmediatamente
-    if (!subscriptionStatus.canAccessDashboard) {
-      console.log("Acceso denegado - redirigiendo a suscripción:", subscriptionStatus.reason)
-      redirectRef.current = true // Marcar que ya estamos redirigiendo
-      router.replace("/subscription") // Usar replace en lugar de push para evitar historial
+    if (!user) {
+      router.replace("/auth")
       return
     }
+    if (!subscriptionStatus.canAccessDashboard) {
+      router.replace("/subscription")
+    }
+  }, [user, subscriptionStatus, router])
 
-    console.log("Acceso permitido al dashboard:", subscriptionStatus.reason)
-  }, [user, subscriptionStatus.canAccessDashboard, subscriptionStatus.reason, router])
-
-  // Obtener datos actualizados de Firestore
   useEffect(() => {
-    const fetchUserData = async () => {
-      if (user?.uid) {
-        try {
-          const userDocRef = doc(db, "users", user.uid)
-          const userDoc = await getDoc(userDocRef)
-          if (userDoc.exists()) {
-            const userData = userDoc.data()
-            setFirestoreUser(userData)
+    const today = startOfDay(new Date())
+    const tomorrow = addDays(today, 1)
+    const nextWeek = addDays(today, 8)
 
-            // Verificar si es usuario test con datos de Firestore
-            if (
-              (userData.role === "test" || userData.subscriptionStatus === "test") &&
-              userData.showMessage !== false
-            ) {
-              setTimeout(() => {
-                setShowTestWelcome(true)
-              }, 1000)
-            }
-          }
-        } catch (error) {
-          console.error("Error al obtener datos del usuario:", error)
+    const newTodayItems: DisplayableItem[] = []
+    const newOverdueItems: DisplayableItem[] = []
+    const newThisWeekItems: DisplayableItem[] = []
+
+    tasks.forEach((task) => {
+      const processItem = (item: Task | Subtask, itemType: "task" | "subtask") => {
+        if (item.completed) return
+        const dueDate = item.dueDate ? startOfDay(safeDate(item.dueDate)!) : null
+        if (!dueDate) return
+
+        const displayItem: DisplayableItem =
+          itemType === "task"
+            ? { ...(item as Task), itemType: "task" }
+            : { ...(item as Subtask), itemType: "subtask", parentTask: task }
+
+        if (isSameDay(dueDate, today)) {
+          newTodayItems.push(displayItem)
+        } else if (isBefore(dueDate, today)) {
+          newOverdueItems.push(displayItem)
+        } else if (isAfter(dueDate, today) && isBefore(dueDate, nextWeek)) {
+          newThisWeekItems.push(displayItem)
         }
       }
+
+      processItem(task, "task")
+      task.subtasks?.forEach((subtask) => processItem(subtask, "subtask"))
+    })
+
+    const sortByDueDate = (a: DisplayableItem, b: DisplayableItem) => {
+      const dateA = safeDate(a.dueDate)
+      const dateB = safeDate(b.dueDate)
+      if (!dateA) return 1
+      if (!dateB) return -1
+      return dateA.getTime() - dateB.getTime()
     }
 
-    fetchUserData()
-  }, [user?.uid])
-
-  const handleCloseTestWelcome = async (dontShowAgain = false) => {
-    setShowTestWelcome(false)
-
-    if (dontShowAgain && user?.uid) {
-      try {
-        const userDocRef = doc(db, "users", user.uid)
-
-        // Primero verificar si el documento existe
-        const userDoc = await getDoc(userDocRef)
-
-        if (userDoc.exists()) {
-          // Si existe, actualizar
-          await updateDoc(userDocRef, {
-            showMessage: false,
-          })
-        } else {
-          // Si no existe, crear el documento con los datos básicos
-          await setDoc(userDocRef, {
-            uid: user.uid,
-            email: user.email,
-            displayName: user.displayName,
-            firstName: user.firstName || "",
-            lastName: user.lastName || "",
-            role: "test", // Asumimos que es test si está usando este modal
-            subscriptionStatus: "test",
-            showMessage: false,
-            createdAt: new Date(),
-          })
-        }
-
-        // Actualizar estado local
-        setFirestoreUser((prev) => ({ ...prev, showMessage: false }))
-      } catch (error) {
-        console.error("Error al actualizar showMessage:", error)
-      }
-    }
-  }
-
-  // Si no puede acceder, no renderizar nada (la redirección ya se ejecutó)
-  if (!subscriptionStatus.canAccessDashboard) {
-    return null
-  }
-
-  // Análisis GTD
-  const inboxTasks = tasks.filter((task) => task.category === "Inbox")
-  const todayTasks = tasks.filter(
-    (task) => task.dueDate && task.dueDate.toDateString() === new Date().toDateString() && !task.completed,
-  )
-  const overdueTasks = tasks.filter((task) => task.dueDate && task.dueDate < new Date() && !task.completed)
-
-  // IDs de tareas que ya están en "Para hoy" o "Urgente" para excluirlas de "Próximas acciones"
-  const excludedTaskIds = new Set([...todayTasks.map((task) => task.id), ...overdueTasks.map((task) => task.id)])
-
-  // Próximas acciones filtradas (excluyendo las que ya están en otras categorías)
-  const nextActionTasks = tasks.filter(
-    (task) => task.category === "Próximas acciones" && !task.completed && !excludedTaskIds.has(task.id),
-  )
-
-  const multitaskTasks = tasks.filter((task) => task.category === "Multitarea" && !task.completed)
-  const waitingTasks = tasks.filter((task) => task.category === "A la espera" && !task.completed)
-  const somedayTasks = tasks.filter((task) => task.category === "Algún día")
-
-  const handleEditTask = (task: Task) => {
-    setEditingTask(task)
-    setShowTaskForm(true)
-  }
-
-  const handleCloseForm = () => {
-    setShowTaskForm(false)
-    setEditingTask(undefined)
-  }
+    setTodayItems(newTodayItems.sort(sortByDueDate))
+    setOverdueItems(newOverdueItems.sort(sortByDueDate))
+    setThisWeekItems(newThisWeekItems.sort(sortByDueDate))
+  }, [tasks])
 
   const handleToggleComplete = async (taskId: string, completed: boolean) => {
     try {
@@ -163,376 +122,304 @@ export default function Dashboard() {
     }
   }
 
-  const handleGoToOrganize = () => {
-    setActiveTab("organize")
+  const handleToggleSubtask = async (taskId: string, subtaskId: string) => {
+    const task = tasks.find((t) => t.id === taskId)
+    if (!task?.subtasks) return
+    const updatedSubtasks = task.subtasks.map((st) => (st.id === subtaskId ? { ...st, completed: !st.completed } : st))
+    try {
+      await updateTask(taskId, { subtasks: updatedSubtasks })
+    } catch (error) {
+      console.error("Error al actualizar subtarea:", error)
+    }
+  }
+
+  const handlePanelClick = (panelId: string) => {
+    setExpandedPanel((prev) => (prev === panelId ? null : panelId))
+  }
+
+  const inboxTasks = tasks.filter((task) => task.category === "Inbox")
+  const nextActionTasks = tasks.filter((task) => task.category === "Próximas acciones" && !task.completed)
+  const multitaskTasks = tasks.filter((task) => task.category === "Multitarea" && !task.completed)
+  const waitingTasks = tasks.filter((task) => task.category === "A la espera" && !task.completed)
+
+  const renderUnifiedItem = (item: DisplayableItem) => {
+    const handleItemToggle = (e: React.MouseEvent) => {
+      e.stopPropagation()
+      if (item.itemType === "task") {
+        handleToggleComplete(item.id, item.completed)
+      } else {
+        handleToggleSubtask(item.parentTask.id, item.id)
+      }
+    }
+
+    return (
+      <div
+        key={`${item.itemType}-${item.id}`}
+        className="p-2 bg-white/50 rounded border-l-4 border-gray-400 flex items-start gap-3 hover:bg-white/80 transition-colors"
+        onClick={handleItemToggle}
+      >
+        <Checkbox checked={item.completed} className="mt-1" />
+        <div className="flex-1">
+          <span className={`font-medium text-sm break-words ${item.completed ? "line-through text-gray-500" : ""}`}>
+            {item.title}
+          </span>
+          {item.itemType === "subtask" && <div className="text-xs text-gray-500">en: {item.parentTask.title}</div>}
+        </div>
+      </div>
+    )
+  }
+
+  const renderTaskItem = (task: Task) => (
+    <div
+      key={task.id}
+      className="p-2 bg-white/50 rounded border-l-4 border-gray-300 flex items-start gap-3"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <Checkbox
+        checked={task.completed}
+        onCheckedChange={() => handleToggleComplete(task.id, task.completed)}
+        onClick={(e) => e.stopPropagation()}
+        className="mt-1"
+      />
+      <div className="flex-1">
+        <span className="font-medium text-sm break-words">{task.title}</span>
+      </div>
+    </div>
+  )
+
+  if (!user || !subscriptionStatus.canAccessDashboard) {
+    return null
   }
 
   return (
-    <div className="min-h-screen gtd-gradient-bg w-full max-w-7xl mx-auto">
-      {/* Alerta de suscripción próxima a expirar */}
-      {subscriptionStatus.isInTrial && user?.subscriptionEndDate && (
-        <Alert className="mx-4 mt-4 border-yellow-200 bg-yellow-50">
-          <Clock className="h-4 w-4 text-yellow-600" />
-          <AlertDescription className="text-yellow-800">
-            <strong>
-              Tu período de prueba termina el{" "}
-              {new Date(
-                user.subscriptionEndDate.seconds ? user.subscriptionEndDate.seconds * 1000 : user.subscriptionEndDate,
-              ).toLocaleDateString("es-ES", {
-                weekday: "long",
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-              .
-            </strong>{" "}
-            <Link href="/subscription" className="underline font-medium hover:text-yellow-900">
-              Suscríbete ahora para continuar sin interrupciones
-            </Link>
-            .
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Header */}
+    <div className="gtd-gradient-bg w-full max-w-7xl mx-auto flex flex-col h-screen">
       <header className="bg-white/90 backdrop-blur-sm shadow-sm border-b border-gtd-neutral-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-3">
-              <Link href="/">
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-gtd-clarity-400 to-gtd-action-400 bg-clip-text text-transparent font-heading cursor-pointer">
-                  GTD Buddy
-                </h1>
-              </Link>
-            </div>
-
+            <Link href="/">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-gtd-clarity-400 to-gtd-action-400 bg-clip-text text-transparent font-heading">
+                GTD Buddy
+              </h1>
+            </Link>
             <div className="flex items-center gap-4">
-              {/* Botón de Contextos */}
               <Link href="/contexts">
                 <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
-                  <Target className="h-4 w-4" />
-                  <span className="hidden sm:inline">Contextos</span>
-                  <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 text-xs">
-                    {contexts.filter((c) => c.status === "active" || !c.status).length}
-                  </Badge>
+                  <Target className="h-4 w-4" /> <span className="hidden sm:inline">Contextos</span>
                 </Button>
               </Link>
-
-              {/* Botón de Calendario */}
               <Link href="/calendar">
                 <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
-                  <Calendar className="h-4 w-4" />
-                  <span className="hidden sm:inline">Calendario</span>
+                  <Calendar className="h-4 w-4" /> <span className="hidden sm:inline">Calendario</span>
                 </Button>
               </Link>
-
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <User className="h-4 w-4" />
-                <span className="hidden sm:inline">{user?.displayName || user?.email}</span>
-              </div>
-              <Button variant="outline" size="sm" onClick={signOut} className="flex items-center gap-2 bg-transparent">
+              <Button variant="outline" size="sm" onClick={signOut}>
                 <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Salir</span>
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Captura Rápida - Siempre visible */}
-        <div className="mb-8">
-          <QuickCapture />
-        </div>
+      <main className="flex-grow overflow-y-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-8">
+            <QuickCapture />
+          </div>
 
-        {/* Navegación GTD - Solo las pestañas del flujo GTD */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger
-              value="overview"
-              className="flex items-center gap-2 data-[state=active]:bg-gtd-confidence-400 data-[state=active]:text-white"
-            >
-              ⚡ <span className="hidden sm:inline">Hacer</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="inbox"
-              className="flex items-center gap-2 data-[state=active]:bg-gtd-action-400 data-[state=active]:text-white"
-            >
-              📥 <span className="hidden sm:inline">Procesar</span>
-              {inboxTasks.length > 0 && (
-                <Badge
-                  variant="destructive"
-                  className="ml-1 h-6 w-6 p-0 text-xs flex items-center justify-center bg-gtd-action-600"
-                >
-                  {inboxTasks.length}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger
-              value="organize"
-              className="flex items-center gap-2 data-[state=active]:bg-gtd-clarity-400 data-[state=active]:text-white"
-            >
-              📂 <span className="hidden sm:inline">Organizar</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="review"
-              className="flex items-center gap-2 data-[state=active]:bg-gtd-focus-400 data-[state=active]:text-white"
-            >
-              🔄 <span className="hidden sm:inline">Revisar</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="capture"
-              className="flex items-center gap-2 data-[state=active]:bg-gtd-neutral-400 data-[state=active]:text-white"
-            >
-              💡 <span className="hidden sm:inline">Capturar</span>
-            </TabsTrigger>
-          </TabsList>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="overview">⚡ Hacer</TabsTrigger>
+              <TabsTrigger value="inbox">
+                📥 Procesar {inboxTasks.length > 0 && <Badge className="ml-2">{inboxTasks.length}</Badge>}
+              </TabsTrigger>
+              <TabsTrigger value="organize">📂 Organizar</TabsTrigger>
+            </TabsList>
 
-          {/* Tab: Hacer (Overview enfocado en acción) */}
-          <TabsContent value="overview" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-gray-900 font-heading">¿Qué Hacer Ahora?</h2>
-              <Button
-                onClick={() => setShowTaskForm(true)}
-                className="gtd-gradient-action hover:from-gtd-action-500 hover:to-gtd-action-700 text-white gtd-transition"
-              >
-                <Plus className="mr-2 h-4 w-4" />⚡ Nueva Tarea
-              </Button>
-            </div>
+            <TabsContent value="overview" className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-900 font-heading">¿Qué Hacer Ahora?</h2>
+                {expandedPanel ? (
+                  <Button onClick={() => setExpandedPanel(null)} variant="secondary">
+                    <View className="mr-2 h-4 w-4" /> Ver todo
+                  </Button>
+                ) : (
+                  <Button onClick={() => setShowTaskForm(true)} className="gtd-gradient-action text-white">
+                    <Plus className="mr-2 h-4 w-4" /> Nueva Tarea
+                  </Button>
+                )}
+              </div>
 
-            {/* Alertas importantes */}
-            {inboxTasks.length > 0 && (
-              <Card className="border-red-200 bg-red-50">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Inbox className="h-5 w-5 text-red-600" />
-                      <span className="font-semibold text-red-800">
-                        Tienes {inboxTasks.length} elementos sin procesar en tu Inbox
-                      </span>
-                    </div>
-                    <Button onClick={() => setActiveTab("inbox")} size="sm" className="bg-red-600 hover:bg-red-700">
-                      Procesar Ahora
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Vista enfocada en acción */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Tareas de hoy */}
-              <Card className="border-gtd-focus-400 bg-gtd-focus-50">
-                <CardContent className="p-6">
-                  <h3 className="font-semibold text-blue-800 mb-4 flex items-center gap-2">
-                    <Calendar className="h-5 w-5" />
-                    Para Hoy ({todayTasks.length})
-                  </h3>
-                  <div className="space-y-2">
-                    {todayTasks.slice(0, 5).map((task) => (
-                      <div
-                        key={task.id}
-                        className="p-2 bg-blue-50 rounded border-l-4 border-blue-400 flex items-start gap-2"
-                      >
-                        <Checkbox
-                          checked={task.completed}
-                          onCheckedChange={() => handleToggleComplete(task.id, task.completed)}
-                          className="mt-1"
-                        />
-                        <div className="flex-1">
-                          <div className="font-medium text-sm flex justify-between">
-                            <span>{task.title}</span>
-                            {task.dueDate && (
-                              <span className="text-xs text-blue-600 font-mono">{format(task.dueDate, "HH:mm")}</span>
-                            )}
-                          </div>
-                          <div className="text-xs text-blue-600">{task.category}</div>
+              <div className="flex flex-col gap-6">
+                {/* Top Row - Always Visible Content */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <Card className="bg-blue-50 border-blue-200 flex flex-col">
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between text-base font-semibold text-blue-800">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-5 w-5" /> Para Hoy
                         </div>
+                        <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                          {todayItems.length}
+                        </Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex-grow overflow-hidden">
+                      <div className="space-y-2 h-full max-h-96 overflow-y-auto pr-2">
+                        {todayItems.length > 0 ? (
+                          todayItems.map(renderUnifiedItem)
+                        ) : (
+                          <p className="text-sm text-gray-500 p-2">Nada para hoy. ¡Disfruta!</p>
+                        )}
                       </div>
-                    ))}
-                    {todayTasks.length === 0 && (
-                      <p className="text-sm text-gray-500">No hay tareas programadas para hoy</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-red-50 border-red-200 flex flex-col">
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between text-base font-semibold text-red-800">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-5 w-5" /> Urgente
+                        </div>
+                        <Badge variant="secondary" className="bg-red-100 text-red-800">
+                          {overdueItems.length}
+                        </Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex-grow overflow-hidden">
+                      <div className="space-y-2 h-full max-h-96 overflow-y-auto pr-2">
+                        {overdueItems.length > 0 ? (
+                          overdueItems.map(renderUnifiedItem)
+                        ) : (
+                          <p className="text-sm text-gray-500 p-2">¡Sin tareas vencidas!</p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-yellow-50 border-yellow-200 flex flex-col">
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between text-base font-semibold text-yellow-800">
+                        <div className="flex items-center gap-2">
+                          <CalendarClock className="h-5 w-5" /> Esta Semana
+                        </div>
+                        <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                          {thisWeekItems.length}
+                        </Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex-grow overflow-hidden">
+                      <div className="space-y-2 h-full max-h-96 overflow-y-auto pr-2">
+                        {thisWeekItems.length > 0 ? (
+                          thisWeekItems.map(renderUnifiedItem)
+                        ) : (
+                          <p className="text-sm text-gray-500 p-2">Planifica tu semana.</p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
 
-              {/* Próximas acciones */}
-              <Card className="border-gtd-confidence-400 bg-gtd-confidence-50">
-                <CardContent className="p-6">
-                  <h3 className="font-semibold text-green-800 mb-4 flex items-center gap-2">
-                    <ArrowRight className="h-5 w-5" />
-                    Próximas Acciones ({nextActionTasks.length})
-                  </h3>
-                  <div className="space-y-2 max-h-80 overflow-y-auto pr-2">
-                    {nextActionTasks.slice(0, 10).map((task) => (
-                      <div
-                        key={task.id}
-                        className="p-2 bg-green-50 rounded border-l-4 border-green-400 flex items-start gap-2 relative text-left"
+                {/* Bottom Row - Expandable Panels */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                  <AnimatePresence>
+                    {!expandedPanel || expandedPanel === "nextActions" ? (
+                      <DashboardPanel
+                        panelId="nextActions"
+                        title="Próximas Acciones"
+                        icon={<ArrowRight className="h-5 w-5" />}
+                        count={nextActionTasks.length}
+                        expandedPanel={expandedPanel}
+                        onPanelClick={handlePanelClick}
+                        cardClassName="bg-green-50 border-green-200"
+                        titleClassName="text-green-800"
+                        badgeClassName="bg-green-100 text-green-800"
                       >
-                        <Checkbox
-                          checked={task.completed}
-                          onCheckedChange={() => handleToggleComplete(task.id, task.completed)}
-                          className="mt-1"
-                        />
-                        <div className="flex-1 min-w-0 text-left">
-                          <div className="font-medium text-sm">
-                            <span className="break-words">{task.title}</span>
-                          </div>
-                          {task.dueDate && (
-                            <div className="text-xs text-gray-500 mt-1">
-                              {format(task.dueDate, "EEEE dd/MM/yyyy HH:mm", { locale: es })}
-                            </div>
+                        <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+                          {nextActionTasks.length > 0 ? (
+                            nextActionTasks.map(renderTaskItem)
+                          ) : (
+                            <p className="text-sm text-gray-500 p-2">Define tus próximas acciones.</p>
                           )}
-                          <div className="text-xs text-green-600">Prioridad: {task.priority}</div>
                         </div>
-                      </div>
-                    ))}
-                    {nextActionTasks.length === 0 && (
-                      <p className="text-sm text-gray-500">No hay próximas acciones definidas</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                      </DashboardPanel>
+                    ) : null}
 
-              {/* Vencidas/Urgentes */}
-              <Card className="border-gtd-action-400 bg-gtd-action-50">
-                <CardContent className="p-6">
-                  <h3 className="font-semibold text-red-800 mb-4 flex items-center gap-2">
-                    <Clock className="h-5 w-5" />
-                    Urgente ({overdueTasks.length})
-                  </h3>
-                  <div className="space-y-2">
-                    {overdueTasks.slice(0, 5).map((task) => (
-                      <div key={task.id} className="space-y-2">
-                        <div className="p-2 bg-red-50 rounded border-l-4 border-red-400 flex items-start gap-2">
-                          <Checkbox
-                            checked={task.completed}
-                            onCheckedChange={() => handleToggleComplete(task.id, task.completed)}
-                            className="mt-1"
-                          />
-                          <div className="flex-1">
-                            <div className="font-medium text-sm flex justify-between">
-                              <span>{task.title}</span>
-                              {task.dueDate && (
-                                <span className="text-xs text-red-600 font-mono">{format(task.dueDate, "HH:mm")}</span>
-                              )}
-                            </div>
-                            <div className="text-xs text-red-600">Vencida: {task.dueDate?.toLocaleDateString()}</div>
-                          </div>
+                    {!expandedPanel || expandedPanel === "multitask" ? (
+                      <DashboardPanel
+                        panelId="multitask"
+                        title="Multitarea"
+                        icon={<Layers className="h-5 w-5" />}
+                        count={multitaskTasks.length}
+                        expandedPanel={expandedPanel}
+                        onPanelClick={handlePanelClick}
+                        cardClassName="bg-purple-50 border-purple-200"
+                        titleClassName="text-purple-800"
+                        badgeClassName="bg-purple-100 text-purple-800"
+                      >
+                        <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+                          {multitaskTasks.length > 0 ? (
+                            multitaskTasks.map((task) => renderTaskItem(task))
+                          ) : (
+                            <p className="text-sm text-gray-500 p-2">No hay proyectos activos.</p>
+                          )}
                         </div>
-                        <Button
-                          onClick={handleGoToOrganize}
-                          size="sm"
-                          variant="outline"
-                          className="w-full text-xs border-red-300 text-red-700 hover:bg-red-50 bg-transparent"
-                        >
-                          <Settings className="mr-1 h-3 w-3" />
-                          Ir a Organizar
-                        </Button>
-                      </div>
-                    ))}
-                    {overdueTasks.length === 0 && <p className="text-sm text-gray-500">¡No hay tareas vencidas!</p>}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                      </DashboardPanel>
+                    ) : null}
 
-            {/* Resumen de categorías */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <Card className="text-center">
-                <CardContent className="p-4">
-                  <div className="text-2xl font-bold text-purple-600">{multitaskTasks.length}</div>
-                  <div className="text-sm text-gray-600">Multitarea</div>
-                </CardContent>
-              </Card>
-              <Card className="text-center">
-                <CardContent className="p-4">
-                  <div className="text-2xl font-bold text-orange-600">{waitingTasks.length}</div>
-                  <div className="text-sm text-gray-600">En Espera</div>
-                </CardContent>
-              </Card>
-              <Card className="text-center">
-                <CardContent className="p-4">
-                  <div className="text-2xl font-bold text-green-600">{somedayTasks.length}</div>
-                  <div className="text-sm text-gray-600">Algún Día</div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
+                    {!expandedPanel || expandedPanel === "waiting" ? (
+                      <DashboardPanel
+                        panelId="waiting"
+                        title="En Espera"
+                        icon={<Hourglass className="h-5 w-5" />}
+                        count={waitingTasks.length}
+                        expandedPanel={expandedPanel}
+                        onPanelClick={handlePanelClick}
+                        cardClassName="bg-orange-50 border-orange-200"
+                        titleClassName="text-orange-800"
+                        badgeClassName="bg-orange-100 text-orange-800"
+                      >
+                        <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+                          {waitingTasks.length > 0 ? (
+                            waitingTasks.map(renderTaskItem)
+                          ) : (
+                            <p className="text-sm text-gray-500 p-2">Nada en espera de momento.</p>
+                          )}
+                        </div>
+                      </DashboardPanel>
+                    ) : null}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </TabsContent>
 
-          {/* Tab: Procesar Inbox */}
-          <TabsContent value="inbox">
-            {inboxTasks.length > 0 ? (
+            {/* Other Tabs */}
+            <TabsContent value="inbox">
               <InboxProcessor inboxTasks={inboxTasks} />
-            ) : (
-              <Card className="text-center">
-                <CardContent className="p-8">
-                  <Inbox className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-green-700 mb-2 font-heading">¡Inbox Limpio!</h3>
-                  <p className="text-gray-600">
-                    Todas las tareas han sido procesadas y organizadas. Usa la captura rápida para añadir nuevas ideas.
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
+            </TabsContent>
+            <TabsContent value="organize">
+              <TaskList
+                onEditTask={(task) => {
+                  setShowTaskForm(true)
+                  setEditingTask(task)
+                }}
+              />
+            </TabsContent>
+          </Tabs>
 
-          {/* Tab: Organizar */}
-          <TabsContent value="organize">
-            <TaskList onEditTask={handleEditTask} />
-          </TabsContent>
-
-          {/* Tab: Revisar */}
-          <TabsContent value="review">
-            <WeeklyReviewComponent />
-          </TabsContent>
-
-          {/* Tab: Capturar */}
-          <TabsContent value="capture" className="space-y-6">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold font-heading mb-4">Captura Todo lo que Tienes en Mente</h2>
-              <p className="text-gray-600 mb-8">
-                El primer paso del GTD: libera tu mente anotando todas las tareas, ideas y responsabilidades.
-              </p>
-            </div>
-
-            <div className="max-w-2xl mx-auto">
-              <QuickCapture />
-
-              <Card className="mt-6">
-                <CardContent className="p-6">
-                  <h3 className="font-semibold mb-4 font-heading">Tips para una Captura Efectiva:</h3>
-                  <ul className="space-y-2 text-sm text-gray-600">
-                    <li>
-                      • <strong>Anota todo:</strong> No filtres, solo captura cada pensamiento
-                    </li>
-                    <li>
-                      • <strong>Sé específico:</strong> "Llamar a Juan sobre el proyecto" vs "Llamar a Juan"
-                    </li>
-                    <li>
-                      • <strong>Una idea por tarea:</strong> Divide ideas complejas en elementos separados
-                    </li>
-                    <li>
-                      • <strong>No organices ahora:</strong> Solo captura, organizarás después
-                    </li>
-                    <li>
-                      • <strong>Usa siempre el mismo lugar:</strong> Tu Inbox es tu contenedor confiable
-                    </li>
-                  </ul>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
-
-        {/* Task Form Modal con nueva transición */}
-        <ModalTransition isOpen={showTaskForm} onClose={handleCloseForm}>
-          <TaskForm task={editingTask} onClose={handleCloseForm} />
-        </ModalTransition>
-
-        {/* Test User Welcome Modal */}
-        <TestUserWelcome isOpen={showTestWelcome} onClose={handleCloseTestWelcome} />
+          <ModalTransition
+            isOpen={showTaskForm}
+            onClose={() => {
+              setShowTaskForm(false)
+              setEditingTask(undefined)
+            }}
+          >
+            <TaskForm
+              task={editingTask}
+              onClose={() => {
+                setShowTaskForm(false)
+                setEditingTask(undefined)
+              }}
+            />
+          </ModalTransition>
+        </div>
       </main>
     </div>
   )

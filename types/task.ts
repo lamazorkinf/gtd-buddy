@@ -18,6 +18,7 @@ export interface Subtask {
   id: string
   title: string
   completed: boolean
+  dueDate?: Date // Nueva propiedad para fecha de vencimiento
 }
 
 export interface Task {
