@@ -4,8 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { CheckCircle, ArrowRight, Clock, Archive, ChevronDown, ChevronUp, Target, Calendar, Zap } from "lucide-react"
+import { CheckCircle, ArrowRight, Clock, Archive, Target, Calendar, Zap } from "lucide-react"
 import type { Task, GTDCategory } from "@/types/task"
 import { useTasks } from "@/hooks/use-tasks"
 
@@ -16,7 +15,6 @@ interface InboxProcessorProps {
 export default function InboxProcessor({ inboxTasks }: InboxProcessorProps) {
   const [currentTaskIndex, setCurrentTaskIndex] = useState(0)
   const [processing, setProcessing] = useState(false)
-  const [showGuidance, setShowGuidance] = useState(false)
   const [hoveredCategory, setHoveredCategory] = useState<GTDCategory | null>(null)
   const { updateTask, deleteTask } = useTasks()
 
@@ -133,18 +131,18 @@ export default function InboxProcessor({ inboxTasks }: InboxProcessorProps) {
   return (
     <div className="space-y-8">
       {/* Header con progreso mejorado */}
-      <div className="text-center space-y-4">
+      <div className="text-center space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-3xl font-bold font-heading bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+          <h2 className="text-lg font-bold font-heading bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
             Procesar Inbox
           </h2>
-          <Badge variant="outline" className="text-xl px-4 py-2 border-purple-300 bg-purple-50">
+          <Badge variant="outline" className="text-sm px-2 py-1 border-purple-300 bg-purple-50">
             {currentTaskIndex + 1} de {inboxTasks.length}
           </Badge>
         </div>
 
         {/* Barra de progreso mejorada */}
-        <div className="relative w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+        <div className="relative w-full bg-gray-200 rounded-full h-2 overflow-hidden">
           <div
             className="absolute top-0 left-0 h-full bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 rounded-full transition-all duration-500 ease-out"
             style={{ width: `${((currentTaskIndex + 1) / inboxTasks.length) * 100}%` }}
@@ -155,57 +153,35 @@ export default function InboxProcessor({ inboxTasks }: InboxProcessorProps) {
 
       {/* Tarea actual - Título destacado */}
       <Card className="border-2 border-purple-200 shadow-lg bg-gradient-to-br from-white to-purple-50">
-        <CardHeader className="text-center pb-4">
-          <CardTitle className="text-4xl font-bold font-heading text-gray-800 leading-tight">
+        <CardHeader className="text-center pb-3">
+          <CardTitle className="text-2xl font-bold font-heading text-gray-800 leading-tight">
             {currentTask.title}
           </CardTitle>
           {currentTask.description && (
-            <p className="text-lg text-gray-600 mt-3 leading-relaxed">{currentTask.description}</p>
+            <p className="text-base text-gray-600 mt-3 leading-relaxed">{currentTask.description}</p>
           )}
         </CardHeader>
 
-        <CardContent className="space-y-8">
-          {/* Preguntas GTD - Comprimidas y plegables */}
-          <Collapsible open={showGuidance} onOpenChange={setShowGuidance}>
-            <CollapsibleTrigger asChild>
-              <Button variant="outline" className="w-full justify-between bg-blue-50 border-blue-200 hover:bg-blue-100">
-                <span className="font-semibold text-blue-800">
-                  {showGuidance ? "Ocultar" : "Ver"} Preguntas de Aclaración GTD
-                </span>
-                {showGuidance ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="mt-3">
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <ul className="text-sm text-blue-700 space-y-1">
-                  <li>• ¿Qué es exactamente esta tarea?</li>
-                  <li>• ¿Es accionable?</li>
-                  <li>• ¿Cuál es el próximo paso específico?</li>
-                  <li>• ¿Puedo hacerlo en menos de 2 minutos?</li>
-                </ul>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-
+        <CardContent className="space-y-4">
           {/* Zona central - Dos caminos principales */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Regla de 2 minutos - Destacada */}
             <Card className="bg-gradient-to-br from-yellow-50 to-amber-100 border-2 border-yellow-300 shadow-md hover:shadow-lg transition-all duration-200">
-              <CardContent className="p-6 text-center">
+              <CardContent className="p-4 text-center">
                 <div className="mb-4">
-                  <div className="bg-yellow-200 rounded-full p-3 w-fit mx-auto mb-3">
-                    <Zap className="h-8 w-8 text-yellow-700" />
+                  <div className="bg-yellow-200 rounded-full p-2 w-fit mx-auto mb-3">
+                    <Zap className="h-6 w-6 text-yellow-700" />
                   </div>
-                  <h4 className="font-bold text-xl text-yellow-800 mb-2">Regla de 2 Minutos</h4>
-                  <p className="text-sm text-yellow-700 mb-4">
+                  <h4 className="font-bold text-lg text-yellow-800 mb-2">Regla de 2 Minutos</h4>
+                  <p className="text-xs text-yellow-700 mb-4">
                     Si puedes hacerlo ahora en menos de 2 minutos, hazlo inmediatamente.
                   </p>
                 </div>
                 <Button
                   onClick={handleQuickAction}
                   disabled={processing}
-                  className="w-full bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-white font-semibold py-3 text-lg shadow-md"
-                  size="lg"
+                  className="w-full bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-white font-semibold py-2 text-base shadow-md"
+                  size="default"
                 >
                   ✅ Hacer Ahora
                 </Button>
@@ -214,19 +190,19 @@ export default function InboxProcessor({ inboxTasks }: InboxProcessorProps) {
 
             {/* No es accionable - Destacada */}
             <Card className="bg-gradient-to-br from-gray-50 to-slate-100 border-2 border-gray-300 shadow-md hover:shadow-lg transition-all duration-200">
-              <CardContent className="p-6 text-center">
+              <CardContent className="p-4 text-center">
                 <div className="mb-4">
-                  <div className="bg-gray-200 rounded-full p-3 w-fit mx-auto mb-3">
-                    <Archive className="h-8 w-8 text-gray-700" />
+                  <div className="bg-gray-200 rounded-full p-2 w-fit mx-auto mb-3">
+                    <Archive className="h-6 w-6 text-gray-700" />
                   </div>
-                  <h4 className="font-bold text-xl text-gray-800 mb-2">No es Accionable</h4>
-                  <p className="text-sm text-gray-700 mb-4">Si no requiere acción, elimínala.</p>
+                  <h4 className="font-bold text-lg text-gray-800 mb-2">No es Accionable</h4>
+                  <p className="text-xs text-gray-700 mb-4">Si no requiere acción, elimínala.</p>
                 </div>
                 <Button
                   onClick={handleDelete}
                   disabled={processing}
-                  className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-3 text-lg shadow-md"
-                  size="lg"
+                  className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-2 text-base shadow-md"
+                  size="default"
                 >
                   🗑️ Eliminar
                 </Button>
@@ -237,7 +213,7 @@ export default function InboxProcessor({ inboxTasks }: InboxProcessorProps) {
           {/* Categorías GTD - Con colores de fondo y efectos */}
           <div className="space-y-4">
             <div className="text-center">
-              <h4 className="font-bold text-xl text-gray-800 mb-2">O Organizar en Categoría GTD:</h4>
+              <h4 className="font-bold text-lg text-gray-800 mb-2">U Organizar en Categoría GTD:</h4>
               <p className="text-gray-600">Selecciona dónde debe ir esta tarea en tu sistema</p>
             </div>
 
@@ -253,7 +229,7 @@ export default function InboxProcessor({ inboxTasks }: InboxProcessorProps) {
                     disabled={processing}
                     variant="outline"
                     className={`
-                      h-auto p-6 justify-start text-left transition-all duration-300 transform
+                      h-auto p-4 justify-start text-left transition-all duration-300 transform
                       bg-gradient-to-br ${category.bgColor} ${category.borderColor} ${category.hoverColor}
                       ${isHovered ? "scale-105 shadow-lg" : "hover:scale-102 shadow-md"}
                       border-2
@@ -263,13 +239,13 @@ export default function InboxProcessor({ inboxTasks }: InboxProcessorProps) {
                   >
                     <div className="flex items-start gap-4 w-full">
                       <div
-                        className={`p-2 rounded-lg bg-white/50 ${isHovered ? "bg-white/80" : ""} transition-all duration-200`}
+                        className={`p-1.5 rounded-lg bg-white/50 ${isHovered ? "bg-white/80" : ""} transition-all duration-200`}
                       >
-                        <Icon className={`h-6 w-6 ${category.textColor}`} />
+                        <Icon className={`h-5 w-5 ${category.textColor}`} />
                       </div>
                       <div className="flex-1">
-                        <div className={`font-bold text-lg ${category.textColor} mb-1`}>{category.title}</div>
-                        <div className={`text-sm ${category.textColor} opacity-80`}>{category.description}</div>
+                        <div className={`font-bold text-base ${category.textColor} mb-1`}>{category.title}</div>
+                        <div className={`text-xs ${category.textColor} opacity-80`}>{category.description}</div>
                       </div>
                       {isHovered && <ArrowRight className={`h-5 w-5 ${category.textColor} animate-pulse`} />}
                     </div>
@@ -285,7 +261,7 @@ export default function InboxProcessor({ inboxTasks }: InboxProcessorProps) {
               onClick={() => setCurrentTaskIndex((prev) => prev + 1)}
               disabled={processing}
               variant="ghost"
-              className="w-full py-4 text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-all duration-200"
+              className="w-full py-3 text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-all duration-200"
             >
               <span className="mr-2">⏭️</span>
               Saltar por Ahora (procesaré después)

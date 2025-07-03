@@ -8,10 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Plus, LogOut, Calendar, ArrowRight, Clock, Target, Layers, Hourglass, View, CalendarClock } from "lucide-react"
+import { Plus, LogOut, Calendar, ArrowRight, Clock, Layers, Hourglass, CalendarClock, User } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
 import { useTasks } from "@/hooks/use-tasks"
+import { useContexts } from "@/hooks/use-contexts"
 import type { Task, Subtask } from "@/types/task"
 import TaskForm from "@/components/tasks/task-form"
 import TaskList from "@/components/tasks/task-list"
@@ -50,8 +51,10 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("overview")
   const [showTestWelcome, setShowTestWelcome] = useState(false)
   const [expandedPanel, setExpandedPanel] = useState<string | null>(null)
+  const [selectedContexts, setSelectedContexts] = useState<string[]>([])
   const { user, subscriptionStatus, signOut } = useAuth()
   const { tasks, updateTask } = useTasks()
+  const { contexts } = useContexts()
   const router = useRouter()
 
   const [todayItems, setTodayItems] = useState<DisplayableItem[]>([])
@@ -68,6 +71,12 @@ export default function Dashboard() {
     }
   }, [user, subscriptionStatus, router])
 
+  // Filtrar tareas por contextos seleccionados
+  const filterTasksByContext = (taskList: Task[]) => {
+    if (selectedContexts.length === 0) return taskList
+    return taskList.filter((task) => !task.contextId || selectedContexts.includes(task.contextId))
+  }
+
   useEffect(() => {
     const today = startOfDay(new Date())
     const tomorrow = addDays(today, 1)
@@ -77,7 +86,10 @@ export default function Dashboard() {
     const newOverdueItems: DisplayableItem[] = []
     const newThisWeekItems: DisplayableItem[] = []
 
-    tasks.forEach((task) => {
+    // Filtrar tareas por contexto antes de procesarlas
+    const filteredTasks = filterTasksByContext(tasks)
+
+    filteredTasks.forEach((task) => {
       const processItem = (item: Task | Subtask, itemType: "task" | "subtask") => {
         if (item.completed) return
         const dueDate = item.dueDate ? startOfDay(safeDate(item.dueDate)!) : null
@@ -112,7 +124,7 @@ export default function Dashboard() {
     setTodayItems(newTodayItems.sort(sortByDueDate))
     setOverdueItems(newOverdueItems.sort(sortByDueDate))
     setThisWeekItems(newThisWeekItems.sort(sortByDueDate))
-  }, [tasks])
+  }, [tasks, selectedContexts])
 
   const handleToggleComplete = async (taskId: string, completed: boolean) => {
     try {
@@ -137,12 +149,23 @@ export default function Dashboard() {
     setExpandedPanel((prev) => (prev === panelId ? null : panelId))
   }
 
-  const inboxTasks = tasks.filter((task) => task.category === "Inbox")
-  const nextActionTasks = tasks.filter((task) => task.category === "Próximas acciones" && !task.completed)
-  const multitaskTasks = tasks.filter((task) => task.category === "Multitarea" && !task.completed)
-  const waitingTasks = tasks.filter((task) => task.category === "A la espera" && !task.completed)
+  const handleContextToggle = (contextId: string) => {
+    setSelectedContexts((prev) =>
+      prev.includes(contextId) ? prev.filter((id) => id !== contextId) : [...prev, contextId],
+    )
+  }
 
-  const renderUnifiedItem = (item: DisplayableItem) => {
+  const handleSelectAllContexts = () => {
+    setSelectedContexts([])
+  }
+
+  const inboxTasks = tasks.filter((task) => task.category === "Inbox")
+  const filteredTasks = filterTasksByContext(tasks)
+  const nextActionTasks = filteredTasks.filter((task) => task.category === "Próximas acciones" && !task.completed)
+  const multitaskTasks = filteredTasks.filter((task) => task.category === "Multitarea" && !task.completed)
+  const waitingTasks = filteredTasks.filter((task) => task.category === "A la espera" && !task.completed)
+
+  const renderUnifiedItem = (item: DisplayableItem, index: number) => {
     const handleItemToggle = (e: React.MouseEvent) => {
       e.stopPropagation()
       if (item.itemType === "task") {
@@ -152,9 +175,12 @@ export default function Dashboard() {
       }
     }
 
+    // Generar key única combinando tipo, id y índice para evitar duplicados
+    const uniqueKey = `${item.itemType}-${item.id || "no-id"}-${index}`
+
     return (
       <div
-        key={`${item.itemType}-${item.id}`}
+        key={uniqueKey}
         className="p-2 bg-white/50 rounded border-l-4 border-gray-400 flex items-start gap-3 hover:bg-white/80 transition-colors"
         onClick={handleItemToggle}
       >
@@ -169,23 +195,28 @@ export default function Dashboard() {
     )
   }
 
-  const renderTaskItem = (task: Task) => (
-    <div
-      key={task.id}
-      className="p-2 bg-white/50 rounded border-l-4 border-gray-300 flex items-start gap-3"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <Checkbox
-        checked={task.completed}
-        onCheckedChange={() => handleToggleComplete(task.id, task.completed)}
+  const renderTaskItem = (task: Task, index: number) => {
+    // Generar key única con índice para evitar duplicados
+    const uniqueKey = `task-${task.id || "no-id"}-${index}`
+
+    return (
+      <div
+        key={uniqueKey}
+        className="p-2 bg-white/50 rounded border-l-4 border-gray-300 flex items-start gap-3"
         onClick={(e) => e.stopPropagation()}
-        className="mt-1"
-      />
-      <div className="flex-1">
-        <span className="font-medium text-sm break-words">{task.title}</span>
+      >
+        <Checkbox
+          checked={task.completed}
+          onCheckedChange={() => handleToggleComplete(task.id, task.completed)}
+          onClick={(e) => e.stopPropagation()}
+          className="mt-1"
+        />
+        <div className="flex-1">
+          <span className="font-medium text-sm break-words">{task.title}</span>
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   if (!user || !subscriptionStatus.canAccessDashboard) {
     return null
@@ -202,16 +233,25 @@ export default function Dashboard() {
               </h1>
             </Link>
             <div className="flex items-center gap-4">
-              <Link href="/contexts">
-                <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
-                  <Target className="h-4 w-4" /> <span className="hidden sm:inline">Contextos</span>
-                </Button>
-              </Link>
               <Link href="/calendar">
                 <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
                   <Calendar className="h-4 w-4" /> <span className="hidden sm:inline">Calendario</span>
                 </Button>
               </Link>
+              <Link href="/profile">
+                <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
+                  <User className="h-4 w-4" /> <span className="hidden sm:inline">Perfil</span>
+                </Button>
+              </Link>
+              {/* Botón de Nueva Tarea en el header */}
+              <Button
+                onClick={() => setShowTaskForm(true)}
+                size="sm"
+                className="gtd-gradient-action text-white flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Nueva Tarea</span>
+              </Button>
               <Button variant="outline" size="sm" onClick={signOut}>
                 <LogOut className="h-4 w-4" />
               </Button>
@@ -230,24 +270,44 @@ export default function Dashboard() {
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="overview">⚡ Hacer</TabsTrigger>
               <TabsTrigger value="inbox">
-                📥 Procesar {inboxTasks.length > 0 && <Badge className="ml-2">{inboxTasks.length}</Badge>}
+                📥 Bandeja de Entrada {inboxTasks.length > 0 && <Badge className="ml-2">{inboxTasks.length}</Badge>}
               </TabsTrigger>
               <TabsTrigger value="organize">📂 Organizar</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-900 font-heading">¿Qué Hacer Ahora?</h2>
-                {expandedPanel ? (
-                  <Button onClick={() => setExpandedPanel(null)} variant="secondary">
-                    <View className="mr-2 h-4 w-4" /> Ver todo
-                  </Button>
-                ) : (
-                  <Button onClick={() => setShowTaskForm(true)} className="gtd-gradient-action text-white">
-                    <Plus className="mr-2 h-4 w-4" /> Nueva Tarea
-                  </Button>
-                )}
-              </div>
+              {/* Filtros por contexto */}
+              {contexts.length > 0 && (
+                <div className="bg-white/50 rounded-lg p-3 border border-gray-200">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      variant={selectedContexts.length === 0 ? "default" : "outline"}
+                      size="sm"
+                      onClick={handleSelectAllContexts}
+                      className="h-7 px-3 text-xs"
+                    >
+                      Todos
+                    </Button>
+                    {contexts.map((context) => (
+                      <Button
+                        key={context.id}
+                        variant={selectedContexts.includes(context.id) ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handleContextToggle(context.id)}
+                        className="h-7 px-3 text-xs"
+                      >
+                        {context.name}
+                      </Button>
+                    ))}
+                  </div>
+                  {selectedContexts.length > 0 && (
+                    <div className="mt-2 text-xs text-gray-500">
+                      Mostrando tareas de:{" "}
+                      {selectedContexts.map((id) => contexts.find((c) => c.id === id)?.name).join(", ")}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="flex flex-col gap-6">
                 {/* Top Row - Always Visible Content */}
@@ -266,7 +326,7 @@ export default function Dashboard() {
                     <CardContent className="flex-grow overflow-hidden">
                       <div className="space-y-2 h-full max-h-96 overflow-y-auto pr-2">
                         {todayItems.length > 0 ? (
-                          todayItems.map(renderUnifiedItem)
+                          todayItems.map((item, index) => renderUnifiedItem(item, index))
                         ) : (
                           <p className="text-sm text-gray-500 p-2">Nada para hoy. ¡Disfruta!</p>
                         )}
@@ -287,7 +347,7 @@ export default function Dashboard() {
                     <CardContent className="flex-grow overflow-hidden">
                       <div className="space-y-2 h-full max-h-96 overflow-y-auto pr-2">
                         {overdueItems.length > 0 ? (
-                          overdueItems.map(renderUnifiedItem)
+                          overdueItems.map((item, index) => renderUnifiedItem(item, index))
                         ) : (
                           <p className="text-sm text-gray-500 p-2">¡Sin tareas vencidas!</p>
                         )}
@@ -308,7 +368,7 @@ export default function Dashboard() {
                     <CardContent className="flex-grow overflow-hidden">
                       <div className="space-y-2 h-full max-h-96 overflow-y-auto pr-2">
                         {thisWeekItems.length > 0 ? (
-                          thisWeekItems.map(renderUnifiedItem)
+                          thisWeekItems.map((item, index) => renderUnifiedItem(item, index))
                         ) : (
                           <p className="text-sm text-gray-500 p-2">Planifica tu semana.</p>
                         )}
@@ -322,6 +382,7 @@ export default function Dashboard() {
                   <AnimatePresence>
                     {!expandedPanel || expandedPanel === "nextActions" ? (
                       <DashboardPanel
+                        key="nextActions-panel"
                         panelId="nextActions"
                         title="Próximas Acciones"
                         icon={<ArrowRight className="h-5 w-5" />}
@@ -334,7 +395,7 @@ export default function Dashboard() {
                       >
                         <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                           {nextActionTasks.length > 0 ? (
-                            nextActionTasks.map(renderTaskItem)
+                            nextActionTasks.map((task, index) => renderTaskItem(task, index))
                           ) : (
                             <p className="text-sm text-gray-500 p-2">Define tus próximas acciones.</p>
                           )}
@@ -344,6 +405,7 @@ export default function Dashboard() {
 
                     {!expandedPanel || expandedPanel === "multitask" ? (
                       <DashboardPanel
+                        key="multitask-panel"
                         panelId="multitask"
                         title="Multitarea"
                         icon={<Layers className="h-5 w-5" />}
@@ -356,7 +418,7 @@ export default function Dashboard() {
                       >
                         <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                           {multitaskTasks.length > 0 ? (
-                            multitaskTasks.map((task) => renderTaskItem(task))
+                            multitaskTasks.map((task, index) => renderTaskItem(task, index))
                           ) : (
                             <p className="text-sm text-gray-500 p-2">No hay proyectos activos.</p>
                           )}
@@ -366,6 +428,7 @@ export default function Dashboard() {
 
                     {!expandedPanel || expandedPanel === "waiting" ? (
                       <DashboardPanel
+                        key="waiting-panel"
                         panelId="waiting"
                         title="En Espera"
                         icon={<Hourglass className="h-5 w-5" />}
@@ -378,7 +441,7 @@ export default function Dashboard() {
                       >
                         <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                           {waitingTasks.length > 0 ? (
-                            waitingTasks.map(renderTaskItem)
+                            waitingTasks.map((task, index) => renderTaskItem(task, index))
                           ) : (
                             <p className="text-sm text-gray-500 p-2">Nada en espera de momento.</p>
                           )}

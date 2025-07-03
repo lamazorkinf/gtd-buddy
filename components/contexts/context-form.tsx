@@ -7,11 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, Plus, Edit, Target, Loader2 } from "lucide-react"
-import { format } from "date-fns"
-import { es } from "date-fns/locale"
+import { Plus, Edit, Target, Loader2 } from "lucide-react"
 import type { Context } from "@/types/task"
 import { useContexts } from "@/hooks/use-contexts"
 
@@ -21,19 +17,14 @@ interface ContextFormProps {
 }
 
 const CONTEXT_STATUSES: { value: Context["status"]; label: string; color: string; emoji: string }[] = [
-  { value: "active", label: "Activo", color: "text-gtd-confidence-700", emoji: "🎯" },
-  { value: "on_hold", label: "En Pausa", color: "text-yellow-700", emoji: "⏸️" },
-  { value: "completed", label: "Completado", color: "text-gtd-focus-700", emoji: "✅" },
-  { value: "someday", label: "Algún Día", color: "text-gtd-neutral-700", emoji: "🌱" },
+  { value: "active", label: "Activo", color: "text-gtd-confidence-700", emoji: "🟢" },
+  { value: "inactive", label: "Inactivo", color: "text-gtd-neutral-700", emoji: "⚪" },
 ]
 
 export default function ContextForm({ context, onClose }: ContextFormProps) {
   const [name, setName] = useState(context?.name || "")
   const [description, setDescription] = useState(context?.description || "")
   const [status, setStatus] = useState<Context["status"]>(context?.status || "active")
-  const [targetDate, setTargetDate] = useState<Date | undefined>(
-    context?.targetDate ? new Date(context.targetDate) : undefined,
-  )
   const [loading, setLoading] = useState(false)
 
   const { addContext, updateContext } = useContexts()
@@ -44,7 +35,7 @@ export default function ContextForm({ context, onClose }: ContextFormProps) {
 
     setLoading(true)
     try {
-      const dataToSave: Partial<Context> = { name: name.trim(), description, status, targetDate }
+      const dataToSave: Partial<Context> = { name: name.trim(), description, status }
 
       if (context && context.id) {
         await updateContext(context.id, dataToSave)
@@ -57,7 +48,6 @@ export default function ContextForm({ context, onClose }: ContextFormProps) {
         setName("")
         setDescription("")
         setStatus("active")
-        setTargetDate(undefined)
       }
       onClose?.()
     } catch (error) {
@@ -110,47 +100,24 @@ export default function ContextForm({ context, onClose }: ContextFormProps) {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="context-status" className="text-sm font-medium text-gtd-neutral-700 mb-1 block">
-                Estado
-              </label>
-              <Select value={status || "active"} onValueChange={(value: Context["status"]) => setStatus(value)}>
-                <SelectTrigger id="context-status" className="border-gtd-neutral-300 text-gtd-neutral-800">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CONTEXT_STATUSES.map((statusOption) => (
-                    <SelectItem key={statusOption.value} value={statusOption.value}>
-                      <span className={statusOption.color}>
-                        {statusOption.emoji} {statusOption.label}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label htmlFor="context-target-date" className="text-sm font-medium text-gtd-neutral-700 mb-1 block">
-                Fecha Objetivo (opcional)
-              </label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    id="context-target-date"
-                    variant="outline"
-                    className="w-full justify-start text-left font-normal border-gtd-neutral-300 text-gtd-neutral-800 hover:bg-gtd-neutral-50"
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4 text-gtd-neutral-500" />
-                    {targetDate ? format(targetDate, "PPP", { locale: es }) : "Seleccionar fecha"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar mode="single" selected={targetDate} onSelect={setTargetDate} initialFocus />
-                </PopoverContent>
-              </Popover>
-            </div>
+          <div>
+            <label htmlFor="context-status" className="text-sm font-medium text-gtd-neutral-700 mb-1 block">
+              Estado
+            </label>
+            <Select value={status || "active"} onValueChange={(value: Context["status"]) => setStatus(value)}>
+              <SelectTrigger id="context-status" className="border-gtd-neutral-300 text-gtd-neutral-800">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CONTEXT_STATUSES.map((statusOption) => (
+                  <SelectItem key={statusOption.value} value={statusOption.value}>
+                    <span className={statusOption.color}>
+                      {statusOption.emoji} {statusOption.label}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="bg-gtd-clarity-50 p-4 rounded-lg border-l-4 border-gtd-clarity-400">
@@ -183,7 +150,7 @@ export default function ContextForm({ context, onClose }: ContextFormProps) {
                 type="button"
                 variant="outline"
                 onClick={onClose}
-                className="border-gtd-neutral-300 text-gtd-neutral-700 hover:bg-gtd-neutral-100"
+                className="border-gtd-neutral-300 text-gtd-neutral-700 hover:bg-gtd-neutral-100 bg-transparent"
               >
                 Cancelar
               </Button>

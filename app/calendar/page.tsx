@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, User, LogOut, CalendarIcon as CalendarIconLucide, Plus } from "lucide-react"
+import { Plus, LogOut, LayoutDashboard, User } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
 import CalendarView from "@/components/calendar/calendar-view"
@@ -34,66 +34,55 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="min-h-screen selection:bg-gtd-action-300 selection:text-white">
-      <header className="bg-white/90 backdrop-blur-sm shadow-sm border-b border-gtd-neutral-100">
+    <div className="min-h-screen gtd-gradient-bg w-full max-w-7xl mx-auto flex flex-col">
+      <header className="bg-white/90 backdrop-blur-sm shadow-sm border-b border-gtd-neutral-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-3">
+            <Link href="/">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-gtd-clarity-400 to-gtd-action-400 bg-clip-text text-transparent font-heading">
+                GTD Buddy
+              </h1>
+            </Link>
+            <div className="flex items-center gap-4">
               <Link href="/">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="flex items-center gap-2 text-gtd-neutral-700 hover:text-gtd-clarity-600 hover:bg-gtd-clarity-50"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  <span className="hidden sm:inline">Volver al Dashboard</span>
+                <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
+                  <LayoutDashboard className="h-4 w-4" /> <span className="hidden sm:inline">Dashboard</span>
                 </Button>
               </Link>
-              <div className="flex items-center gap-2">
-                <CalendarIconLucide className="h-6 w-6 text-gtd-clarity-500" />
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-gtd-clarity-600 to-gtd-action-500 bg-clip-text text-transparent font-heading">
-                  Calendario GTD
-                </h1>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
+              <Link href="/profile">
+                <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
+                  <User className="h-4 w-4" /> <span className="hidden sm:inline">Perfil</span>
+                </Button>
+              </Link>
+              {/* Botón de Nueva Tarea en el header */}
               <Button
                 onClick={() => handleCreateOrEditTask(selectedDate || new Date())}
-                className="bg-gradient-to-r from-gtd-clarity-500 to-gtd-action-500 hover:from-gtd-clarity-600 hover:to-gtd-action-600 text-white"
                 size="sm"
+                className="gtd-gradient-action text-white flex items-center gap-2"
               >
-                <Plus className="mr-2 h-4 w-4" />
-                Nueva Tarea
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Nueva Tarea</span>
               </Button>
-              <div className="flex items-center gap-2 text-sm text-gtd-neutral-700">
-                <User className="h-4 w-4" />
-                <span className="hidden sm:inline">{user?.displayName || user?.email}</span>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={signOut}
-                className="flex items-center gap-2 text-gtd-neutral-700 hover:text-gtd-neutral-900 border-gtd-neutral-200 hover:bg-gtd-neutral-100 bg-transparent"
-              >
+              <Button variant="outline" size="sm" onClick={signOut}>
                 <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Salir</span>
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <CalendarView onCreateOrEditTask={handleCreateOrEditTask} />
+      <main className="flex-grow overflow-y-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <CalendarView onCreateOrEditTask={handleCreateOrEditTask} />
 
-        <ModalTransition isOpen={showTaskForm} onClose={handleCloseForm}>
-          <TaskForm
-            onClose={handleCloseForm}
-            task={editingTask}
-            defaultDueDate={editingTask ? undefined : selectedDate || undefined}
-          />
-        </ModalTransition>
+          <ModalTransition isOpen={showTaskForm} onClose={handleCloseForm}>
+            <TaskForm
+              onClose={handleCloseForm}
+              task={editingTask}
+              defaultDueDate={editingTask ? undefined : selectedDate || undefined}
+            />
+          </ModalTransition>
+        </div>
       </main>
     </div>
   )

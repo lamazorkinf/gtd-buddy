@@ -70,8 +70,16 @@ export function useContexts() {
   }
 
   const updateContext = async (contextId: string, updates: Partial<Context>) => {
+    // Elimina todas las propiedades cuyo valor sea undefined
+    const cleanUpdates: Record<string, unknown> = {}
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value !== undefined) {
+        cleanUpdates[key] = value
+      }
+    })
+
     const updatesWithTimestamp = {
-      ...updates,
+      ...cleanUpdates,
       updatedAt: serverTimestamp(),
     }
 

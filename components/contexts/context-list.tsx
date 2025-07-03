@@ -1,18 +1,12 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { Target, Edit, Calendar, CheckCircle, Clock, Pause, Lightbulb, Loader2 } from "lucide-react"
-import { format } from "date-fns"
-import { es } from "date-fns/locale"
+import { Edit, Target, Loader2 } from "lucide-react"
 import type { Context } from "@/types/task"
 import { useContexts } from "@/hooks/use-contexts"
-import { useTasks } from "@/hooks/use-tasks"
 
 interface ContextListProps {
   onEditContext: (context: Context) => void
@@ -21,67 +15,33 @@ interface ContextListProps {
 
 const CONTEXT_STATUS_CONFIG: Record<
   Context["status"] & string,
-  { icon: React.ElementType; label: string; color: string; emoji: string; progressColor: string }
+  { label: string; color: string; emoji: string; badgeClass: string }
 > = {
   active: {
-    icon: Target,
     label: "Activo",
-    color: "bg-gtd-confidence-100 text-gtd-confidence-800 border-gtd-confidence-300",
-    emoji: "🎯",
-    progressColor: "bg-gtd-confidence-500",
+    color: "text-gtd-confidence-700",
+    emoji: "🟢",
+    badgeClass: "bg-green-100 text-green-800 border-green-300",
   },
-  on_hold: {
-    icon: Pause,
-    label: "En Pausa",
-    color: "bg-yellow-100 text-yellow-800 border-yellow-300",
-    emoji: "⏸️",
-    progressColor: "bg-yellow-500",
-  },
-  completed: {
-    icon: CheckCircle,
-    label: "Completado",
-    color: "bg-gtd-focus-100 text-gtd-focus-800 border-gtd-focus-300",
-    emoji: "✅",
-    progressColor: "bg-gtd-focus-500",
-  },
-  someday: {
-    icon: Lightbulb,
-    label: "Algún Día",
-    color: "bg-gtd-neutral-200 text-gtd-neutral-800 border-gtd-neutral-300",
-    emoji: "🌱",
-    progressColor: "bg-gtd-neutral-500",
+  inactive: {
+    label: "Inactivo",
+    color: "text-gtd-neutral-700",
+    emoji: "⚪",
+    badgeClass: "bg-gray-100 text-gray-800 border-gray-300",
   },
 }
 
 export default function ContextList({ onEditContext, onCreateTask }: ContextListProps) {
   const [selectedStatus, setSelectedStatus] = useState<Context["status"] | "all">("all")
   const { contexts, loading, deleteContext } = useContexts()
-  const { getTasksByContextId } = useTasks() // Removed 'tasks' as it's not directly used here
 
   const filteredContexts = contexts.filter(
     (context) =>
       selectedStatus === "all" || context.status === selectedStatus || (!context.status && selectedStatus === "active"),
   )
 
-  const getContextProgress = (contextId: string) => {
-    const contextTasks = getTasksByContextId(contextId)
-    if (contextTasks.length === 0) return { progress: 0, completed: 0, total: 0 }
-    const completedTasks = contextTasks.filter((task) => task.completed).length
-    return {
-      progress: Math.round((completedTasks / contextTasks.length) * 100),
-      completed: completedTasks,
-      total: contextTasks.length,
-    }
-  }
-
   const handleDeleteContext = async (contextId: string) => {
-    const { total: totalTasks } = getContextProgress(contextId)
-    const confirmMessage =
-      totalTasks > 0
-        ? `Este contexto tiene ${totalTasks} tareas asociadas. ¿Eliminar el contexto? Las tareas quedarán sin contexto asignado.`
-        : "¿Eliminar este contexto? No se puede deshacer."
-
-    if (!confirm(confirmMessage)) return
+    if (!confirm("¿Eliminar este contexto? No se puede deshacer.")) return
 
     try {
       await deleteContext(contextId)
@@ -136,26 +96,20 @@ export default function ContextList({ onEditContext, onCreateTask }: ContextList
         })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredContexts.map((context) => {
-          const { progress, completed, total } = getContextProgress(context.id)
           const statusConfig = CONTEXT_STATUS_CONFIG[context.status || "active"]
-          const StatusIcon = statusConfig.icon
 
           return (
             <Card
               key={context.id}
-              className="hover:shadow-lg transition-shadow duration-300 bg-white/95 border border-gtd-neutral-100"
+              className="hover:shadow-md transition-shadow duration-300 bg-white/95 border border-gtd-neutral-100"
             >
-              <CardHeader className="border-b border-gtd-neutral-100">
+              <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <StatusIcon className={`h-6 w-6 ${statusConfig.color.split(" ")[1]}`} />{" "}
-                      {/* Use text color for icon */}
-                      <CardTitle className="text-xl font-heading text-gtd-clarity-700">{context.name}</CardTitle>
-                    </div>
-                    <Badge variant="outline" className={`${statusConfig.color} text-xs`}>
+                    <CardTitle className="text-lg font-heading text-gtd-clarity-700">{context.name}</CardTitle>
+                    <Badge variant="outline" className={`${statusConfig.badgeClass} text-xs mt-1`}>
                       {statusConfig.emoji} {statusConfig.label}
                     </Badge>
                   </div>
@@ -169,42 +123,10 @@ export default function ContextList({ onEditContext, onCreateTask }: ContextList
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="pt-4 space-y-4">
+              <CardContent className="pt-0">
                 {context.description && (
-                  <p className="text-sm text-gtd-neutral-600 italic bg-gtd-neutral-50 p-3 rounded-md border-l-4 border-gtd-neutral-200">
-                    {context.description}
-                  </p>
+                  <p className="text-sm text-gtd-neutral-600 mt-2 line-clamp-2">{context.description}</p>
                 )}
-                {total > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gtd-neutral-600">Progreso</span>
-                      <span className={`font-medium ${statusConfig.color.split(" ")[1]}`}>{progress}%</span>
-                    </div>
-                    <Progress
-                      value={progress}
-                      className="h-2 [&>*]:bg-gradient-to-r [&>*]:from-gtd-clarity-400 [&>*]:to-gtd-action-400"
-                    />
-                    <div className="flex justify-between text-xs text-gtd-neutral-500">
-                      <span>{completed} completadas</span>
-                      <span>{total} total</span>
-                    </div>
-                  </div>
-                )}
-                <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-gtd-neutral-500">
-                  {context.targetDate && (
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-3.5 w-3.5" /> Meta:{" "}
-                      {format(context.targetDate, "dd MMM yyyy", { locale: es })}
-                    </div>
-                  )}
-                  {context.lastReviewed && (
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5" /> Revisado:{" "}
-                      {format(context.lastReviewed, "dd MMM", { locale: es })}
-                    </div>
-                  )}
-                </div>
               </CardContent>
             </Card>
           )

@@ -6,12 +6,11 @@ export interface Context {
   id: string
   name: string
   description?: string
-  status?: "active" | "on_hold" | "completed" | "someday"
+  status?: "active" | "inactive"
   userId: string
   createdAt: Date
   updatedAt?: Date
   lastReviewed?: Date
-  targetDate?: Date
 }
 
 export interface Subtask {

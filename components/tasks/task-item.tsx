@@ -5,19 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import {
-  Calendar,
-  MoreVertical,
-  Edit,
-  Trash2,
-  AlertCircle,
-  Inbox,
-  ArrowRight,
-  FolderOpen,
-  Clock,
-  ListChecks,
-} from "lucide-react"
+import { Calendar, Edit, AlertCircle, Inbox, ArrowRight, FolderOpen, Clock, ListChecks } from "lucide-react"
 import { format, isBefore, startOfDay, isValid } from "date-fns"
 import { es } from "date-fns/locale"
 import type { Task, Subtask } from "@/types/task"
@@ -109,19 +97,6 @@ export default function TaskItem({ task, onEdit }: TaskItemProps) {
     }
   }
 
-  const handleDelete = async () => {
-    if (confirm("¿Estás seguro de que quieres eliminar esta tarea?")) {
-      setLoading(true)
-      try {
-        await deleteTask(task.id)
-      } catch (error) {
-        console.error("Error al eliminar tarea:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-  }
-
   const handleToggleSubtask = async (subtaskId: string) => {
     if (!task.subtasks) return
     const updatedSubtasks = task.subtasks.map((st) => (st.id === subtaskId ? { ...st, completed: !st.completed } : st))
@@ -192,31 +167,15 @@ export default function TaskItem({ task, onEdit }: TaskItemProps) {
                   {task.title}
                 </label>
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 p-0 flex-shrink-0 text-slate-500 hover:text-slate-700"
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                      <span className="sr-only">Más opciones</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onEdit(task)} className="flex items-center gap-2">
-                      <Edit className="mr-2 h-4 w-4" />
-                      Editar
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={handleDelete}
-                      className="text-red-600 focus:text-red-600 flex items-center gap-2"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Eliminar
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 p-0 flex-shrink-0 text-slate-500 hover:text-slate-700"
+                  onClick={() => onEdit(task)}
+                >
+                  <Edit className="h-4 w-4" />
+                  <span className="sr-only">Editar tarea</span>
+                </Button>
               </div>
 
               {task.description && (
