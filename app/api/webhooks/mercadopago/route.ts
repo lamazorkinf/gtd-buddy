@@ -9,18 +9,31 @@ function validateMercadoPagoSignature(request: NextRequest, body: string): boole
   try {
     const signature = request.headers.get("x-signature")
     const requestId = request.headers.get("x-request-id")
+    const webhookSecret = process.env.MP_WEBHOOK_SECRET
     
     if (!signature || !requestId) {
       console.log("⚠️ Faltan headers de validación")
-      return true // Permitir en desarrollo, en producción debería ser false
+      return !webhookSecret // Si no hay secret configurado, permitir. Si hay secret, requerir headers
     }
 
-    // En producción, aquí validarías la firma con tu webhook secret
-    // const webhookSecret = process.env.MP_WEBHOOK_SECRET
-    // const expectedSignature = crypto.createHmac('sha256', webhookSecret).update(body).digest('hex')
-    // return signature === expectedSignature
+    if (!webhookSecret) {
+      console.log("⚠️ Webhook secret no configurado, saltando validación")
+      return true
+    }
+
+    // Validar la firma con el webhook secret
+    const expectedSignature = crypto.createHmac('sha256', webhookSecret).update(body).digest('hex')
+    const isValid = signature === `sha256=${expectedSignature}`
     
-    return true // Temporal para desarrollo
+    if (!isValid) {
+      console.error("❌ Firma de webhook inválida")
+      console.log("🔍 Signature recibida:", signature)
+      console.log("🔍 Signature esperada:", `sha256=${expectedSignature}`)
+    } else {
+      console.log("✅ Webhook signature válida")
+    }
+    
+    return isValid
   } catch (error) {
     console.error("❌ Error validando firma:", error)
     return false
