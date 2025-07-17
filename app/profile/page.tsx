@@ -220,7 +220,11 @@ export default function ProfilePage() {
                             Tu suscripción está activa y tienes acceso a todas las funcionalidades.
                           </p>
                           <div className="flex gap-2">
-                            <Button variant="outline" size="sm">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => router.push('/subscription/cancel')}
+                            >
                               Gestionar Suscripción
                             </Button>
                             <Button variant="outline" size="sm">
