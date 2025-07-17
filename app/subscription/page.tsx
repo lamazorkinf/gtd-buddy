@@ -54,10 +54,22 @@ export default function SubscriptionPage() {
         return
       }
 
-      const response = await fetch("/api/create-subscription", {
+      const shouldShowTrialOption =
+        !subscriptionStatus.isExpired &&
+        !user?.subscriptionEndDate &&
+        user?.subscriptionStatus !== "trial" &&
+        !user?.isInTrialPeriod
+
+      // Si es período de prueba, usar API diferente
+      const apiEndpoint = shouldShowTrialOption ? "/api/start-trial" : "/api/create-subscription"
+      const requestBody = shouldShowTrialOption 
+        ? { userId: user.uid }
+        : { userId: user.uid, email: user.email }
+
+      const response = await fetch(apiEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.uid, email: user.email }),
+        body: JSON.stringify(requestBody),
       })
 
       const text = await response.text()
@@ -83,7 +95,12 @@ export default function SubscriptionPage() {
       }
 
       if (data.success) {
-        router.push("/subscription/success")
+        // Si es trial, redirigir al dashboard. Si es suscripción, a success
+        if (shouldShowTrialOption) {
+          router.push("/")
+        } else {
+          router.push("/subscription/success")
+        }
         return // Redirection will happen
       }
 

@@ -36,6 +36,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Authentication & Subscription Flow:**
 - Firebase Auth with email/password and Google OAuth
 - Trial period system (7 days for new users)
+  - New users automatically get `subscriptionStatus: "trial"`
+  - Trial starts on first login/signup (`trialStartDate`)
+  - Trial expires after 7 days (`subscriptionEndDate`)
+  - Users can only have one trial period per account
+  - Use `/api/start-trial` to manually activate trial
 - Subscription status verification throughout app
 - Test users (role: "test") bypass all restrictions
 - Auth context provides user, loading, and subscription status
@@ -90,6 +95,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Environment Variables Required
 
+**Firebase (required):**
 - `NEXT_PUBLIC_FIREBASE_API_KEY`
 - `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
 - `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
@@ -97,6 +103,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
 - `NEXT_PUBLIC_FIREBASE_APP_ID`
 - `FIREBASE_SERVICE_ACCOUNT` (JSON string for admin SDK)
+
+**MercadoPago (required for subscriptions):**
+- `MP_ACCESS_TOKEN` - MercadoPago access token
+- `MP_PLAN_ID` - MercadoPago subscription plan ID
+
+**Application:**
+- `NEXT_PUBLIC_APP_URL` - Application base URL for redirects
 
 ### Build Configuration Notes
 

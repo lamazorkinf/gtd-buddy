@@ -1,14 +1,19 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { Clock, ArrowLeft, RefreshCw } from "lucide-react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useAuth } from "@/contexts/auth-context"
+import { Clock, ArrowLeft, RefreshCw, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function SubscriptionPendingPage() {
+  const { user } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [timeLeft, setTimeLeft] = useState(300) // 5 minutos en segundos
+  const [isChecking, setIsChecking] = useState(false)
+  const [paymentResolved, setPaymentResolved] = useState(false)
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -22,18 +27,57 @@ export default function SubscriptionPendingPage() {
       })
     }, 1000)
 
-    // Auto-refresh cada 30 segundos para verificar el estado (simulado)
-    const refreshTimer = setInterval(() => {
-      console.log("🔄 Verificando estado del pago...")
-      // Aquí harías una llamada a tu API para verificar el estado real
-      // Si el estado cambia, redirigir a /subscription/success o /subscription/failure
-    }, 30000)
+    // Función para verificar el estado del pago
+    const checkPaymentStatus = async () => {
+      if (!user?.uid || isChecking || paymentResolved) return
+      
+      setIsChecking(true)
+      try {
+        const paymentId = searchParams.get("payment_id")
+        const subscriptionId = searchParams.get("subscription_id") || searchParams.get("preapproval_id")
+        
+        const response = await fetch("/api/verify-payment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: user.uid,
+            paymentId,
+            subscriptionId,
+          }),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          console.log("🔍 Estado verificado:", data.subscriptionStatus)
+          
+          if (data.subscriptionStatus === "active") {
+            setPaymentResolved(true)
+            setTimeout(() => router.push("/subscription/success"), 1000)
+          } else if (data.subscriptionStatus === "cancelled") {
+            setPaymentResolved(true)
+            setTimeout(() => router.push("/subscription/failure"), 1000)
+          }
+        }
+      } catch (error) {
+        console.error("❌ Error verificando estado:", error)
+      } finally {
+        setIsChecking(false)
+      }
+    }
+
+    // Auto-refresh cada 30 segundos para verificar el estado
+    const refreshTimer = setInterval(checkPaymentStatus, 30000)
+    
+    // Verificar inmediatamente al cargar
+    if (user) {
+      checkPaymentStatus()
+    }
 
     return () => {
       clearInterval(timer)
       clearInterval(refreshTimer)
     }
-  }, [])
+  }, [user, isChecking, paymentResolved, searchParams, router])
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -41,11 +85,39 @@ export default function SubscriptionPendingPage() {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
   }
 
-  const handleRefresh = () => {
-    // Idealmente, esto debería llamar a una API para verificar el estado
-    // y luego redirigir o actualizar la UI según la respuesta.
-    // Por ahora, solo recarga la página.
-    window.location.reload()
+  const handleRefresh = async () => {
+    if (!user?.uid || isChecking) return
+    
+    setIsChecking(true)
+    try {
+      const paymentId = searchParams.get("payment_id")
+      const subscriptionId = searchParams.get("subscription_id") || searchParams.get("preapproval_id")
+      
+      const response = await fetch("/api/verify-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.uid,
+          paymentId,
+          subscriptionId,
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.subscriptionStatus === "active") {
+          setPaymentResolved(true)
+          router.push("/subscription/success")
+        } else if (data.subscriptionStatus === "cancelled") {
+          setPaymentResolved(true)
+          router.push("/subscription/failure")
+        }
+      }
+    } catch (error) {
+      console.error("❌ Error en refresh:", error)
+    } finally {
+      setIsChecking(false)
+    }
   }
 
   const handleGoHome = () => {
@@ -82,14 +154,22 @@ export default function SubscriptionPendingPage() {
             </ul>
           </div>
 
-          <Button
-            onClick={handleRefresh}
-            variant="outline"
-            className="w-full border-yellow-400 text-yellow-700 hover:bg-yellow-100 py-3"
-          >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Actualizar Estado
-          </Button>
+          {paymentResolved ? (
+            <div className="text-center text-green-600 mb-4">
+              <CheckCircle className="h-8 w-8 mx-auto mb-2" />
+              <p className="font-medium">¡Pago procesado! Redirigiendo...</p>
+            </div>
+          ) : (
+            <Button
+              onClick={handleRefresh}
+              variant="outline"
+              className="w-full border-yellow-400 text-yellow-700 hover:bg-yellow-100 py-3"
+              disabled={isChecking}
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${isChecking ? 'animate-spin' : ''}`} />
+              {isChecking ? "Verificando..." : "Actualizar Estado"}
+            </Button>
+          )}
 
           <Button
             onClick={handleGoHome}

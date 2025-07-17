@@ -227,7 +227,7 @@ export default function LandingPage() {
               <div className="bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 p-10 text-white">
                 <CardTitle className="text-4xl font-bold font-heading mb-2">Plan Pro</CardTitle>
                 <p className="text-6xl font-extrabold mb-2">
-                  $1.99 <span className="text-2xl font-normal">/ mes</span>
+                  $2.500 <span className="text-2xl font-normal">ARS / mes</span>
                 </p>
                 <p className="text-purple-100 text-lg">Todas las funcionalidades incluidas.</p>
               </div>

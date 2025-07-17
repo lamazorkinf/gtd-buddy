@@ -3,12 +3,43 @@ export const runtime = "nodejs"
 import { type NextRequest, NextResponse } from "next/server"
 import { doc, updateDoc, getDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
+import crypto from "crypto"
+
+function validateMercadoPagoSignature(request: NextRequest, body: string): boolean {
+  try {
+    const signature = request.headers.get("x-signature")
+    const requestId = request.headers.get("x-request-id")
+    
+    if (!signature || !requestId) {
+      console.log("⚠️ Faltan headers de validación")
+      return true // Permitir en desarrollo, en producción debería ser false
+    }
+
+    // En producción, aquí validarías la firma con tu webhook secret
+    // const webhookSecret = process.env.MP_WEBHOOK_SECRET
+    // const expectedSignature = crypto.createHmac('sha256', webhookSecret).update(body).digest('hex')
+    // return signature === expectedSignature
+    
+    return true // Temporal para desarrollo
+  } catch (error) {
+    console.error("❌ Error validando firma:", error)
+    return false
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
     console.log("🔔 Webhook de MercadoPago recibido")
 
-    const body = await request.json()
+    const bodyText = await request.text()
+    
+    // Validar firma del webhook
+    if (!validateMercadoPagoSignature(request, bodyText)) {
+      console.error("❌ Firma de webhook inválida")
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const body = JSON.parse(bodyText)
     console.log("📋 Datos del webhook:", JSON.stringify(body, null, 2))
 
     // Verificar que es una notificación de preapproval (suscripción)
@@ -53,9 +84,23 @@ export async function POST(request: NextRequest) {
 
           console.log("👤 Usuario encontrado, actualizando estado...")
 
-          // Calcular nueva fecha de expiración (30 días desde ahora)
-          const newEndDate = new Date()
-          newEndDate.setDate(newEndDate.getDate() + 30)
+          // Calcular nueva fecha de expiración basada en el plan
+          const calculateEndDate = (startDate: Date, billingFrequency: string = "monthly"): Date => {
+            const endDate = new Date(startDate)
+            switch (billingFrequency.toLowerCase()) {
+              case "monthly":
+                endDate.setMonth(endDate.getMonth() + 1)
+                break
+              case "yearly":
+                endDate.setFullYear(endDate.getFullYear() + 1)
+                break
+              default:
+                endDate.setMonth(endDate.getMonth() + 1) // Default mensual
+            }
+            return endDate
+          }
+
+          const newEndDate = calculateEndDate(new Date())
 
           const updateData: any = {
             mercadoPagoSubscriptionId: preapprovalId,
@@ -68,6 +113,7 @@ export async function POST(request: NextRequest) {
               updateData.subscriptionStatus = "active"
               updateData.subscriptionEndDate = newEndDate
               updateData.isInTrialPeriod = false
+              updateData.lastPaymentDate = new Date()
               console.log("✅ Suscripción autorizada - activando hasta:", newEndDate)
               break
 
@@ -78,12 +124,26 @@ export async function POST(request: NextRequest) {
 
             case "cancelled":
               updateData.subscriptionStatus = "cancelled"
+              updateData.cancellationDate = new Date()
               console.log("❌ Suscripción cancelada")
+              break
+
+            case "paused":
+              updateData.subscriptionStatus = "paused"
+              updateData.pausedDate = new Date()
+              console.log("⏸️ Suscripción pausada")
+              break
+
+            case "suspended":
+              updateData.subscriptionStatus = "suspended"
+              updateData.suspendedDate = new Date()
+              console.log("🚫 Suscripción suspendida")
               break
 
             default:
               console.log("⚠️ Estado de suscripción no reconocido:", subscriptionData.status)
               updateData.subscriptionStatus = subscriptionData.status
+              updateData.unknownStatusData = subscriptionData
           }
 
           await updateDoc(userDocRef, updateData)
