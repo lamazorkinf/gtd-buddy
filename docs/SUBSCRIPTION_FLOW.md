@@ -16,7 +16,7 @@ GTD Buddy utiliza MercadoPago para manejar suscripciones mensuales de $2.500 ARS
 - `test` - Usuario de prueba (acceso ilimitado)
 
 ### Campos Importantes en Usuario
-```typescript
+\`\`\`typescript
 {
   subscriptionStatus: "trial" | "active" | "pending_payment" | "cancelled" | "paused" | "suspended" | "test"
   subscriptionEndDate: Date // Fecha de expiración
@@ -25,7 +25,7 @@ GTD Buddy utiliza MercadoPago para manejar suscripciones mensuales de $2.500 ARS
   lastPaymentDate: Date // Último pago exitoso
   cancellationDate: Date // Fecha de cancelación
 }
-```
+\`\`\`
 
 ## Flujo de Período de Prueba
 
@@ -101,7 +101,7 @@ GTD Buddy utiliza MercadoPago para manejar suscripciones mensuales de $2.500 ARS
 
 ## Variables de Entorno Requeridas
 
-```env
+\`\`\`env
 # MercadoPago
 MP_ACCESS_TOKEN=your_mercadopago_access_token
 MP_PLAN_ID=your_mercadopago_plan_id
@@ -110,13 +110,13 @@ MP_PLAN_ID=your_mercadopago_plan_id
 NEXT_PUBLIC_APP_URL=https://your-app-domain.com
 
 # Firebase (ver .env.example para lista completa)
-```
+\`\`\`
 
 ## Verificación de Acceso
 
 La función `checkSubscriptionStatus()` en `/lib/subscription-utils.ts` determina si un usuario puede acceder al dashboard:
 
-```typescript
+\`\`\`typescript
 // Usuarios test siempre tienen acceso
 if (user.role === "test") return { canAccessDashboard: true }
 
@@ -126,7 +126,7 @@ if (user.subscriptionEndDate > now()) {
     return { canAccessDashboard: true }
   }
 }
-```
+\`\`\`
 
 ## Flujo de Cancelación
 
