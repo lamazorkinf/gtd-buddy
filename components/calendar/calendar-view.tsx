@@ -44,14 +44,17 @@ export default function CalendarView({ onCreateOrEditTask }: CalendarViewProps) 
   // Filtrar tareas por fecha seleccionada
   const tasksForSelectedDate = tasks.filter((task) => {
     if (!task.dueDate) return false
-    const taskDate = task.dueDate instanceof Date ? task.dueDate : (task.dueDate as any)?.toDate() || new Date(task.dueDate)
+    const taskDate =
+      task.dueDate instanceof Date ? task.dueDate : (task.dueDate as any)?.toDate() || new Date(task.dueDate)
     return isSameDay(taskDate, selectedDate)
   })
 
   // Obtener días del mes actual
   const monthStart = startOfMonth(currentDate)
   const monthEnd = endOfMonth(currentDate)
-  const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd })
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 })
+  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 })
+  const monthDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd })
 
   // Obtener días de la semana actual
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 })
@@ -65,7 +68,8 @@ export default function CalendarView({ onCreateOrEditTask }: CalendarViewProps) 
   const getDayTasks = (date: Date) => {
     return tasks.filter((task) => {
       if (!task.dueDate) return false
-      const taskDate = task.dueDate instanceof Date ? task.dueDate : (task.dueDate as any)?.toDate() || new Date(task.dueDate)
+      const taskDate =
+        task.dueDate instanceof Date ? task.dueDate : (task.dueDate as any)?.toDate() || new Date(task.dueDate)
       return isSameDay(taskDate, date)
     })
   }
@@ -125,48 +129,57 @@ export default function CalendarView({ onCreateOrEditTask }: CalendarViewProps) 
         const pendingTasks = dayTasks.filter((task) => !task.completed)
         const isSelected = isSameDay(date, selectedDate)
         const isTodayDate = isToday(date)
+        const isCurrentMonth = date.getMonth() === currentDate.getMonth()
 
         return (
           <div
             key={date.toISOString()}
             className={`
-              min-h-[120px] p-2 border rounded-lg cursor-pointer transition-all hover:bg-gray-50
-              ${isSelected ? "bg-blue-50 border-blue-300 ring-2 ring-blue-200" : "border-gray-200"}
-              ${isTodayDate ? "bg-yellow-50 border-yellow-300" : ""}
-            `}
+            min-h-[120px] p-2 border rounded-lg cursor-pointer transition-all hover:bg-gray-50
+            ${isSelected ? "bg-blue-50 border-blue-300 ring-2 ring-blue-200" : "border-gray-200"}
+            ${isTodayDate ? "bg-yellow-50 border-yellow-300" : ""}
+            ${!isCurrentMonth ? "opacity-40" : ""}
+          `}
             onClick={() => handleDateSelect(date)}
           >
             <div className="flex items-center justify-between mb-2">
               <span
                 className={`
-                  text-sm font-medium
-                  ${isTodayDate ? "text-yellow-800 font-bold" : "text-gray-700"}
-                  ${isSelected ? "text-blue-800" : ""}
-                `}
+                text-sm font-medium
+                ${isTodayDate ? "text-yellow-800 font-bold" : "text-gray-700"}
+                ${isSelected ? "text-blue-800" : ""}
+                ${!isCurrentMonth ? "text-gray-400" : ""}
+              `}
               >
                 {format(date, "d")}
               </span>
             </div>
 
-            <div className="space-y-1">
-              {pendingTasks.slice(0, 2).map((task) => (
-                <div key={task.id} className="text-xs p-1 bg-red-100 text-red-800 rounded truncate" title={task.title}>
-                  {task.title}
-                </div>
-              ))}
-              {completedTasks.slice(0, 1).map((task) => (
-                <div
-                  key={task.id}
-                  className="text-xs p-1 bg-green-100 text-green-800 rounded truncate line-through"
-                  title={task.title}
-                >
-                  {task.title}
-                </div>
-              ))}
-              {dayTasks.length > 3 && (
-                <div className="text-xs text-gray-500 text-center">+{dayTasks.length - 3} más</div>
-              )}
-            </div>
+            {isCurrentMonth && (
+              <div className="space-y-1">
+                {pendingTasks.slice(0, 2).map((task) => (
+                  <div
+                    key={task.id}
+                    className="text-xs p-1 bg-red-100 text-red-800 rounded truncate"
+                    title={task.title}
+                  >
+                    {task.title}
+                  </div>
+                ))}
+                {completedTasks.slice(0, 1).map((task) => (
+                  <div
+                    key={task.id}
+                    className="text-xs p-1 bg-green-100 text-green-800 rounded truncate line-through"
+                    title={task.title}
+                  >
+                    {task.title}
+                  </div>
+                ))}
+                {dayTasks.length > 3 && (
+                  <div className="text-xs text-gray-500 text-center">+{dayTasks.length - 3} más</div>
+                )}
+              </div>
+            )}
           </div>
         )
       })}
@@ -392,7 +405,12 @@ export default function CalendarView({ onCreateOrEditTask }: CalendarViewProps) 
                     {task.description && <p className="text-sm text-gray-600 mt-1">{task.description}</p>}
                     {task.dueDate && (
                       <p className="text-xs text-gray-500 mt-1">
-                        {format(task.dueDate instanceof Date ? task.dueDate : (task.dueDate as any)?.toDate() || new Date(task.dueDate), "HH:mm")}
+                        {format(
+                          task.dueDate instanceof Date
+                            ? task.dueDate
+                            : (task.dueDate as any)?.toDate() || new Date(task.dueDate),
+                          "HH:mm",
+                        )}
                       </p>
                     )}
                   </div>
