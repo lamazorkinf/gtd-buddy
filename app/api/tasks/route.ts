@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Preparar datos de la tarea
-    const taskData = {
+    const taskData: any = {
       title: title.trim(),
       description: description?.trim() || "",
       category,

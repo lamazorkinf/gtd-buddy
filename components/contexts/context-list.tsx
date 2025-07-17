@@ -140,7 +140,7 @@ export default function ContextList({ onEditContext, onCreateTask }: ContextList
             <p className="text-gtd-neutral-500 mb-4">
               {selectedStatus === "all"
                 ? "Crea tu primer contexto para organizar tareas relacionadas."
-                : `No hay contextos con estado "${CONTEXT_STATUS_CONFIG[selectedStatus as Context["status"]]?.label}".`}
+                : `No hay contextos con estado "${CONTEXT_STATUS_CONFIG[selectedStatus as keyof typeof CONTEXT_STATUS_CONFIG]?.label}".`}
             </p>
           </CardContent>
         </Card>

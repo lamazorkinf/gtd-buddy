@@ -178,7 +178,7 @@ export default function ProfilePage() {
                           {format(
                             user.subscriptionEndDate instanceof Date
                               ? user.subscriptionEndDate
-                              : new Date(user.subscriptionEndDate.seconds * 1000),
+                              : new Date((user.subscriptionEndDate as any)?.seconds * 1000 || user.subscriptionEndDate),
                             "dd 'de' MMMM 'de' yyyy",
                             { locale: es },
                           )}

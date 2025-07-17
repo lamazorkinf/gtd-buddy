@@ -104,13 +104,13 @@ export default function ContextForm({ context, onClose }: ContextFormProps) {
             <label htmlFor="context-status" className="text-sm font-medium text-gtd-neutral-700 mb-1 block">
               Estado
             </label>
-            <Select value={status || "active"} onValueChange={(value: Context["status"]) => setStatus(value)}>
+            <Select value={status || "active"} onValueChange={(value) => setStatus(value as Context["status"])}>
               <SelectTrigger id="context-status" className="border-gtd-neutral-300 text-gtd-neutral-800">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {CONTEXT_STATUSES.map((statusOption) => (
-                  <SelectItem key={statusOption.value} value={statusOption.value}>
+                  <SelectItem key={statusOption.value} value={statusOption.value || "active"}>
                     <span className={statusOption.color}>
                       {statusOption.emoji} {statusOption.label}
                     </span>

@@ -143,13 +143,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const trialEndDate = new Date()
         trialEndDate.setDate(trialEndDate.getDate() + 7)
 
-        const newUserFirestoreData: Omit<User, "uid" | "email" | "photoURL" | "displayName"> & {
-          email: string | null
-          photoURL: string | null
-          displayName: string | null
-          createdAt: any
-          uid: string
-        } = {
+        const newUserFirestoreData = {
           uid: firebaseUser.uid,
           email: firebaseUser.email,
           displayName: displayName || null,
@@ -159,7 +153,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           role: "user",
           subscriptionStatus: "trial",
           trialStartDate: serverTimestamp(),
-          subscriptionEndDate: trialEndDate, // Agregar fecha de expiración del trial
+          subscriptionEndDate: trialEndDate,
           createdAt: serverTimestamp(),
         }
         await setDoc(userDocRef, newUserFirestoreData)
@@ -188,7 +182,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const trialEndDate = new Date()
           trialEndDate.setDate(trialEndDate.getDate() + 7)
 
-          const newUser: Omit<User, "uid"> = {
+          const newUser = {
             email: firebaseUser.email,
             displayName: firebaseUser.displayName,
             photoURL: firebaseUser.photoURL,
@@ -197,7 +191,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             role: "user",
             subscriptionStatus: "trial",
             trialStartDate: serverTimestamp(),
-            subscriptionEndDate: trialEndDate, // Agregar fecha de expiración del trial
+            subscriptionEndDate: trialEndDate,
           }
           await setDoc(userDocRef, { ...newUser, createdAt: serverTimestamp(), uid: firebaseUser.uid })
         }

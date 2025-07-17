@@ -32,14 +32,19 @@ export function useContexts() {
     const q = query(collection(db, "contexts"), where("userId", "==", user.uid), orderBy("createdAt", "desc"))
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const contextsData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-        lastReviewed: doc.data().lastReviewed?.toDate() || undefined,
-        targetDate: doc.data().targetDate?.toDate() || undefined,
-      })) as Context[]
+      const contextsData = snapshot.docs.map((doc) => {
+        const data = doc.data()
+        return {
+          id: doc.id,
+          name: data.name || '',
+          userId: data.userId || user.uid,
+          description: data.description,
+          status: data.status || 'active',
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+          lastReviewed: data.lastReviewed?.toDate() || undefined,
+        } as Context
+      })
 
       setContexts(contextsData)
       setLoading(false)
@@ -60,7 +65,7 @@ export function useContexts() {
     // Añadir campos opcionales si existen
     if (contextData.description) cleanData.description = contextData.description
     if (contextData.status) cleanData.status = contextData.status
-    if (contextData.targetDate) cleanData.targetDate = contextData.targetDate
+    if (contextData.updatedAt) cleanData.updatedAt = contextData.updatedAt
     if (contextData.lastReviewed) cleanData.lastReviewed = contextData.lastReviewed
 
     // Añadir updatedAt

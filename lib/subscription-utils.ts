@@ -37,7 +37,7 @@ export function checkSubscriptionStatus(user: User | null): SubscriptionStatus {
     const endDate =
       user.subscriptionEndDate instanceof Date
         ? user.subscriptionEndDate
-        : new Date(user.subscriptionEndDate.seconds * 1000) // Firestore Timestamp
+        : new Date((user.subscriptionEndDate as any)?.seconds * 1000 || user.subscriptionEndDate) // Firestore Timestamp
 
     const isExpired = now > endDate
 

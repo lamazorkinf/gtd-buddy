@@ -44,7 +44,7 @@ export default function CalendarView({ onCreateOrEditTask }: CalendarViewProps) 
   // Filtrar tareas por fecha seleccionada
   const tasksForSelectedDate = tasks.filter((task) => {
     if (!task.dueDate) return false
-    const taskDate = task.dueDate instanceof Date ? task.dueDate : task.dueDate.toDate()
+    const taskDate = task.dueDate instanceof Date ? task.dueDate : (task.dueDate as any)?.toDate() || new Date(task.dueDate)
     return isSameDay(taskDate, selectedDate)
   })
 
@@ -65,7 +65,7 @@ export default function CalendarView({ onCreateOrEditTask }: CalendarViewProps) 
   const getDayTasks = (date: Date) => {
     return tasks.filter((task) => {
       if (!task.dueDate) return false
-      const taskDate = task.dueDate instanceof Date ? task.dueDate : task.dueDate.toDate()
+      const taskDate = task.dueDate instanceof Date ? task.dueDate : (task.dueDate as any)?.toDate() || new Date(task.dueDate)
       return isSameDay(taskDate, date)
     })
   }
@@ -269,14 +269,19 @@ export default function CalendarView({ onCreateOrEditTask }: CalendarViewProps) 
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <CardTitle className="text-2xl font-bold text-gray-900 font-heading">
-                {typeof getPeriodTitle() === "string" ? (
-                  getPeriodTitle()
-                ) : (
-                  <div>
-                    <div className="text-2xl font-bold text-gray-900">{getPeriodTitle().dateRange}</div>
-                    <div className="text-sm font-normal text-gray-500 mt-1">{getPeriodTitle().weekNumber}</div>
-                  </div>
-                )}
+                {(() => {
+                  const title = getPeriodTitle()
+                  if (typeof title === "string") {
+                    return title
+                  } else {
+                    return (
+                      <div>
+                        <div className="text-2xl font-bold text-gray-900">{title.dateRange}</div>
+                        <div className="text-sm font-normal text-gray-500 mt-1">{title.weekNumber}</div>
+                      </div>
+                    )
+                  }
+                })()}
               </CardTitle>
             </div>
 
@@ -387,7 +392,7 @@ export default function CalendarView({ onCreateOrEditTask }: CalendarViewProps) 
                     {task.description && <p className="text-sm text-gray-600 mt-1">{task.description}</p>}
                     {task.dueDate && (
                       <p className="text-xs text-gray-500 mt-1">
-                        {format(task.dueDate instanceof Date ? task.dueDate : task.dueDate.toDate(), "HH:mm")}
+                        {format(task.dueDate instanceof Date ? task.dueDate : (task.dueDate as any)?.toDate() || new Date(task.dueDate), "HH:mm")}
                       </p>
                     )}
                   </div>

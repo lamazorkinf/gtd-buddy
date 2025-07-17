@@ -164,8 +164,8 @@ export default function SubscriptionPage() {
                     <span className="block text-sm mt-1">
                       Expiró el:{" "}
                       {new Date(
-                        user.subscriptionEndDate.seconds
-                          ? user.subscriptionEndDate.seconds * 1000
+                        (user.subscriptionEndDate as any)?.seconds
+                          ? (user.subscriptionEndDate as any).seconds * 1000
                           : user.subscriptionEndDate,
                       ).toLocaleDateString()}
                     </span>

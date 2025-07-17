@@ -43,12 +43,12 @@ export function useTasks() {
 
       // Migrar projectId a contextId si existe
       const migratedTasks = tasksData.map((task) => {
-        const newTask = { ...task }
+        const newTask = { ...task } as any
         if (newTask.projectId && !newTask.contextId) {
           newTask.contextId = newTask.projectId
           delete newTask.projectId
         }
-        return newTask
+        return newTask as Task
       })
 
       setTasks(migratedTasks)
