@@ -41,4 +41,3 @@ export interface Context {
   createdAt: Date;
   updatedAt: Date;
 }
-
