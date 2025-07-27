@@ -1,0 +1,29 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "env": {
+    "NEXT_PUBLIC_FIREBASE_API_KEY": "@firebase_api_key",
+    "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN": "@firebase_auth_domain",
+    "NEXT_PUBLIC_FIREBASE_PROJECT_ID": "@firebase_project_id",
+    "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET": "@firebase_storage_bucket",
+    "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "@firebase_messaging_sender_id",
+    "NEXT_PUBLIC_FIREBASE_APP_ID": "@firebase_app_id",
+    "FIREBASE_SERVICE_ACCOUNT": "@firebase_service_account",
+    "MP_ACCESS_TOKEN": "@mp_access_token",
+    "MP_PLAN_ID": "@mp_plan_id",
+    "NEXT_PUBLIC_APP_URL": "@app_url"
+  },
+  "regions": ["iad1"],
+  "functions": {
+    "app/api/mercadopago/webhook/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/start-trial/route.ts": {
+      "maxDuration": 10
+    },
+    "app/api/cancel-subscription/route.ts": {
+      "maxDuration": 10
+    }
+  }
+}
