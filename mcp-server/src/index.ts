@@ -16,6 +16,13 @@ import {
 // Initialize Firebase
 initializeFirebase();
 
+// Get default user ID from environment
+const DEFAULT_USER_ID = process.env.DEFAULT_USER_ID;
+
+if (!DEFAULT_USER_ID) {
+  console.error('WARNING: DEFAULT_USER_ID not set. You will need to provide userId in all requests.');
+}
+
 // Define available tools
 const tools: Tool[] = [
   {
@@ -56,7 +63,7 @@ const tools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        userId: { type: 'string', description: 'User ID to filter tasks' },
+        userId: { type: 'string', description: 'User ID (optional if DEFAULT_USER_ID is set)' },
         category: { 
           type: 'string', 
           enum: ['inbox', 'nextActions', 'multiStep', 'waiting', 'someday'],
@@ -65,7 +72,7 @@ const tools: Tool[] = [
         contextId: { type: 'string', description: 'Filter by context' },
         completed: { type: 'boolean', description: 'Filter by completion status' },
       },
-      required: ['userId'],
+      required: [],
     },
   },
   {
@@ -132,9 +139,9 @@ const tools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        userId: { type: 'string', description: 'User ID to list contexts for' },
+        userId: { type: 'string', description: 'User ID (optional if DEFAULT_USER_ID is set)' },
       },
-      required: ['userId'],
+      required: [],
     },
   },
 ];
@@ -168,10 +175,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     switch (name) {
       case 'create_task': {
+        const userId = (args.userId as string) || DEFAULT_USER_ID;
+        if (!userId) {
+          throw new Error('userId is required (set DEFAULT_USER_ID in environment or provide userId)');
+        }
+
         const taskData: Partial<Task> = {
           title: args.title as string,
           description: (args.description as string) || '',
-          userId: args.userId as string,
+          userId,
           category: (args.category as GTDCategory) || 'inbox',
           priority: (args.priority as Priority) || 'media',
           contextId: args.contextId as string | undefined,
@@ -198,8 +210,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'list_tasks': {
+        const userId = (args.userId as string) || DEFAULT_USER_ID;
+        if (!userId) {
+          throw new Error('userId is required (set DEFAULT_USER_ID in environment or provide userId)');
+        }
+
         let query = db.collection('tasks')
-          .where('userId', '==', args.userId as string);
+          .where('userId', '==', userId);
 
         if (args.category) {
           query = query.where('category', '==', args.category as string);
@@ -270,9 +287,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'create_context': {
+        const userId = (args.userId as string) || DEFAULT_USER_ID;
+        if (!userId) {
+          throw new Error('userId is required (set DEFAULT_USER_ID in environment or provide userId)');
+        }
+
         const contextData: Partial<Context> = {
           name: args.name as string,
-          userId: args.userId as string,
+          userId,
           color: (args.color as string) || '#3B82F6',
           icon: (args.icon as string) || '📁',
           createdAt: new Date(),
@@ -293,8 +315,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'list_contexts': {
+        const userId = (args.userId as string) || DEFAULT_USER_ID;
+        if (!userId) {
+          throw new Error('userId is required (set DEFAULT_USER_ID in environment or provide userId)');
+        }
+
         const snapshot = await db.collection('contexts')
-          .where('userId', '==', args.userId as string)
+          .where('userId', '==', userId)
           .get();
 
         const contexts: Context[] = [];

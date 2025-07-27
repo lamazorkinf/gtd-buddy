@@ -32,7 +32,13 @@ npm install
 npm run build
 ```
 
-2. Agrega el servidor a tu configuración de Claude Desktop. 
+2. Obtén tu User ID de Firebase:
+   - Inicia sesión en tu aplicación GTD Buddy
+   - Abre las herramientas de desarrollo del navegador (F12)
+   - Ve a la consola y ejecuta: `JSON.parse(localStorage.getItem('firebase:authUser:*')).uid`
+   - Copia el ID que aparece
+
+3. Agrega el servidor a tu configuración de Claude Desktop. 
 
 En Windows, edita: `%APPDATA%\Claude\claude_desktop_config.json`
 
@@ -44,14 +50,17 @@ En Windows, edita: `%APPDATA%\Claude\claude_desktop_config.json`
       "args": ["D:\\Proyectos\\gtd-buddy\\mcp-server\\run-mcp.js"],
       "env": {
         "FIREBASE_SERVICE_ACCOUNT": "{...tu JSON de service account en una sola línea...}",
-        "FIREBASE_PROJECT_ID": "tu-project-id"
+        "FIREBASE_PROJECT_ID": "tu-project-id",
+        "DEFAULT_USER_ID": "tu-user-id-de-firebase"
       }
     }
   }
 }
 \`\`\`
 
-**Nota importante**: El JSON de `FIREBASE_SERVICE_ACCOUNT` debe estar en una sola línea, sin saltos de línea.
+**Notas importantes**: 
+- El JSON de `FIREBASE_SERVICE_ACCOUNT` debe estar en una sola línea, sin saltos de línea
+- `DEFAULT_USER_ID` es el ID de tu usuario en Firebase (obtenido en el paso 2)
 
 ## Desarrollo
 
@@ -120,6 +129,18 @@ Parámetros:
 
 ## Ejemplo de Uso en Claude
 
+Una vez configurado con tu `DEFAULT_USER_ID`, puedes usar comandos simples como:
+
 \`\`\`
-Usa la herramienta create_task para crear una nueva tarea llamada "Revisar emails" para el usuario "user123" en la categoría "nextActions" con prioridad "alta".
+Crea una tarea llamada "Revisar emails" en la categoría "nextActions" con prioridad "alta"
 \`\`\`
+
+\`\`\`
+Lista todas mis tareas pendientes
+\`\`\`
+
+\`\`\`
+Crea un contexto llamado "Oficina" con el color #3B82F6
+\`\`\`
+
+Ya no necesitas especificar el userId en cada comando, el servidor usará automáticamente tu DEFAULT_USER_ID.
