@@ -5,19 +5,19 @@ Un servidor MCP (Model Context Protocol) para gestionar tareas siguiendo la meto
 ## Instalación
 
 1. Navega al directorio del servidor MCP:
-```bash
+\`\`\`bash
 cd mcp-server
-```
+\`\`\`
 
 2. Instala las dependencias:
-```bash
+\`\`\`bash
 npm install
-```
+\`\`\`
 
 3. Configura las variables de entorno:
-```bash
+\`\`\`bash
 cp .env.example .env
-```
+\`\`\`
 
 4. Edita el archivo `.env` con tus credenciales de Firebase:
    - `FIREBASE_SERVICE_ACCOUNT`: JSON completo de la cuenta de servicio de Firebase
@@ -27,7 +27,7 @@ cp .env.example .env
 
 Agrega el servidor a tu configuración de Claude Desktop (`claude_desktop_config.json`):
 
-```json
+\`\`\`json
 {
   "mcpServers": {
     "gtd-buddy": {
@@ -40,19 +40,19 @@ Agrega el servidor a tu configuración de Claude Desktop (`claude_desktop_config
     }
   }
 }
-```
+\`\`\`
 
 ## Desarrollo
 
 Para ejecutar en modo desarrollo:
-```bash
+\`\`\`bash
 npm run dev
-```
+\`\`\`
 
 Para compilar:
-```bash
+\`\`\`bash
 npm run build
-```
+\`\`\`
 
 ## Herramientas Disponibles
 
@@ -109,6 +109,6 @@ Parámetros:
 
 ## Ejemplo de Uso en Claude
 
-```
+\`\`\`
 Usa la herramienta create_task para crear una nueva tarea llamada "Revisar emails" para el usuario "user123" en la categoría "nextActions" con prioridad "alta".
-```
+\`\`\`
