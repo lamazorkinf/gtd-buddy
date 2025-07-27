@@ -26,11 +26,11 @@ cp .env.example .env
 ## Configuración en Claude Desktop
 
 1. Primero, compila el servidor:
-```bash
+\`\`\`bash
 cd mcp-server
 npm install
 npm run build
-```
+\`\`\`
 
 2. Obtén tu User ID de Firebase:
    - Inicia sesión en tu aplicación GTD Buddy
