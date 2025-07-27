@@ -5,19 +5,12 @@ import {
   ListToolsRequestSchema,
   Tool,
 } from '@modelcontextprotocol/sdk/types.js';
-import { z } from 'zod';
 import { initializeFirebase, db } from './firebase.js';
 import { 
   Task, 
   Context, 
   GTDCategory, 
-  Priority,
-  createTaskSchema,
-  updateTaskSchema,
-  listTasksSchema,
-  deleteTaskSchema,
-  createContextSchema,
-  listContextsSchema
+  Priority
 } from './types.js';
 
 // Initialize Firebase
@@ -28,32 +21,121 @@ const tools: Tool[] = [
   {
     name: 'create_task',
     description: 'Create a new GTD task',
-    inputSchema: createTaskSchema,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Task title' },
+        description: { type: 'string', description: 'Task description' },
+        userId: { type: 'string', description: 'User ID who owns the task' },
+        category: { 
+          type: 'string', 
+          enum: ['inbox', 'nextActions', 'multiStep', 'waiting', 'someday'],
+          description: 'GTD category (defaults to inbox)' 
+        },
+        priority: { 
+          type: 'string', 
+          enum: ['baja', 'media', 'alta'],
+          description: 'Task priority (defaults to media)' 
+        },
+        contextId: { type: 'string', description: 'Context ID for the task' },
+        energyLevel: { 
+          type: 'number', 
+          minimum: 1, 
+          maximum: 5,
+          description: 'Energy level required (1-5)' 
+        },
+        dueDate: { type: 'string', description: 'Due date in ISO format' },
+        isQuickAction: { type: 'boolean', description: 'Is this a 2-minute task?' },
+      },
+      required: ['title', 'userId'],
+    },
   },
   {
     name: 'list_tasks',
     description: 'List tasks with optional filters',
-    inputSchema: listTasksSchema,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        userId: { type: 'string', description: 'User ID to filter tasks' },
+        category: { 
+          type: 'string', 
+          enum: ['inbox', 'nextActions', 'multiStep', 'waiting', 'someday'],
+          description: 'Filter by GTD category' 
+        },
+        contextId: { type: 'string', description: 'Filter by context' },
+        completed: { type: 'boolean', description: 'Filter by completion status' },
+      },
+      required: ['userId'],
+    },
   },
   {
     name: 'update_task',
     description: 'Update an existing task',
-    inputSchema: updateTaskSchema,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        taskId: { type: 'string', description: 'Task ID to update' },
+        title: { type: 'string', description: 'New task title' },
+        description: { type: 'string', description: 'New task description' },
+        category: { 
+          type: 'string', 
+          enum: ['inbox', 'nextActions', 'multiStep', 'waiting', 'someday'],
+          description: 'New GTD category' 
+        },
+        priority: { 
+          type: 'string', 
+          enum: ['baja', 'media', 'alta'],
+          description: 'New priority' 
+        },
+        contextId: { type: 'string', description: 'New context ID' },
+        energyLevel: { 
+          type: 'number', 
+          minimum: 1, 
+          maximum: 5,
+          description: 'New energy level' 
+        },
+        dueDate: { type: 'string', description: 'New due date in ISO format' },
+        completed: { type: 'boolean', description: 'Mark as completed/uncompleted' },
+        isQuickAction: { type: 'boolean', description: 'Update quick action status' },
+      },
+      required: ['taskId'],
+    },
   },
   {
     name: 'delete_task',
     description: 'Delete a task',
-    inputSchema: deleteTaskSchema,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        taskId: { type: 'string', description: 'Task ID to delete' },
+      },
+      required: ['taskId'],
+    },
   },
   {
     name: 'create_context',
     description: 'Create a new GTD context',
-    inputSchema: createContextSchema,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Context name' },
+        userId: { type: 'string', description: 'User ID who owns the context' },
+        color: { type: 'string', description: 'Context color (hex format)' },
+        icon: { type: 'string', description: 'Context icon (emoji)' },
+      },
+      required: ['name', 'userId'],
+    },
   },
   {
     name: 'list_contexts',
     description: 'List all contexts for a user',
-    inputSchema: listContextsSchema,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        userId: { type: 'string', description: 'User ID to list contexts for' },
+      },
+      required: ['userId'],
+    },
   },
 ];
 
@@ -79,21 +161,24 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
+  if (!args) {
+    throw new Error('No arguments provided');
+  }
+
   try {
     switch (name) {
       case 'create_task': {
-        const validatedArgs = createTaskSchema.parse(args);
         const taskData: Partial<Task> = {
-          title: validatedArgs.title,
-          description: validatedArgs.description || '',
-          userId: validatedArgs.userId,
-          category: validatedArgs.category || 'inbox',
-          priority: validatedArgs.priority || 'media',
-          contextId: validatedArgs.contextId,
-          energyLevel: validatedArgs.energyLevel || 3,
-          dueDate: validatedArgs.dueDate ? new Date(validatedArgs.dueDate) : null,
+          title: args.title as string,
+          description: (args.description as string) || '',
+          userId: args.userId as string,
+          category: (args.category as GTDCategory) || 'inbox',
+          priority: (args.priority as Priority) || 'media',
+          contextId: args.contextId as string | undefined,
+          energyLevel: (args.energyLevel as number) || 3,
+          dueDate: args.dueDate ? new Date(args.dueDate as string) : null,
           completed: false,
-          isQuickAction: validatedArgs.isQuickAction || false,
+          isQuickAction: (args.isQuickAction as boolean) || false,
           subtasks: [],
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -113,18 +198,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'list_tasks': {
-        const validatedArgs = listTasksSchema.parse(args);
         let query = db.collection('tasks')
-          .where('userId', '==', validatedArgs.userId);
+          .where('userId', '==', args.userId as string);
 
-        if (validatedArgs.category) {
-          query = query.where('category', '==', validatedArgs.category);
+        if (args.category) {
+          query = query.where('category', '==', args.category as string);
         }
-        if (validatedArgs.contextId) {
-          query = query.where('contextId', '==', validatedArgs.contextId);
+        if (args.contextId) {
+          query = query.where('contextId', '==', args.contextId as string);
         }
-        if (validatedArgs.completed !== undefined) {
-          query = query.where('completed', '==', validatedArgs.completed);
+        if (args.completed !== undefined) {
+          query = query.where('completed', '==', args.completed as boolean);
         }
 
         const snapshot = await query.get();
@@ -152,12 +236,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'update_task': {
-        const validatedArgs = updateTaskSchema.parse(args);
-        const { taskId, ...updates } = validatedArgs;
+        const taskId = args.taskId as string;
+        const { taskId: _, ...updates } = args;
         
         const updateData: any = { ...updates, updatedAt: new Date() };
         if (updates.dueDate) {
-          updateData.dueDate = new Date(updates.dueDate);
+          updateData.dueDate = new Date(updates.dueDate as string);
         }
 
         await db.collection('tasks').doc(taskId).update(updateData);
@@ -173,26 +257,24 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'delete_task': {
-        const validatedArgs = deleteTaskSchema.parse(args);
-        await db.collection('tasks').doc(validatedArgs.taskId).delete();
+        await db.collection('tasks').doc(args.taskId as string).delete();
 
         return {
           content: [
             {
               type: 'text',
-              text: JSON.stringify({ success: true, taskId: validatedArgs.taskId }, null, 2),
+              text: JSON.stringify({ success: true, taskId: args.taskId }, null, 2),
             },
           ],
         };
       }
 
       case 'create_context': {
-        const validatedArgs = createContextSchema.parse(args);
         const contextData: Partial<Context> = {
-          name: validatedArgs.name,
-          userId: validatedArgs.userId,
-          color: validatedArgs.color || '#3B82F6',
-          icon: validatedArgs.icon || '📁',
+          name: args.name as string,
+          userId: args.userId as string,
+          color: (args.color as string) || '#3B82F6',
+          icon: (args.icon as string) || '📁',
           createdAt: new Date(),
           updatedAt: new Date(),
         };
@@ -211,9 +293,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'list_contexts': {
-        const validatedArgs = listContextsSchema.parse(args);
         const snapshot = await db.collection('contexts')
-          .where('userId', '==', validatedArgs.userId)
+          .where('userId', '==', args.userId as string)
           .get();
 
         const contexts: Context[] = [];

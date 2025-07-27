@@ -25,22 +25,33 @@ cp .env.example .env
 
 ## Configuración en Claude Desktop
 
-Agrega el servidor a tu configuración de Claude Desktop (`claude_desktop_config.json`):
+1. Primero, compila el servidor:
+```bash
+cd mcp-server
+npm install
+npm run build
+```
+
+2. Agrega el servidor a tu configuración de Claude Desktop. 
+
+En Windows, edita: `%APPDATA%\Claude\claude_desktop_config.json`
 
 ```json
 {
   "mcpServers": {
     "gtd-buddy": {
       "command": "node",
-      "args": ["D:/Proyectos/gtd-buddy/mcp-server/dist/index.js"],
+      "args": ["D:\\Proyectos\\gtd-buddy\\mcp-server\\run-mcp.js"],
       "env": {
-        "FIREBASE_SERVICE_ACCOUNT": "{...tu JSON de service account...}",
+        "FIREBASE_SERVICE_ACCOUNT": "{...tu JSON de service account en una sola línea...}",
         "FIREBASE_PROJECT_ID": "tu-project-id"
       }
     }
   }
 }
 ```
+
+**Nota importante**: El JSON de `FIREBASE_SERVICE_ACCOUNT` debe estar en una sola línea, sin saltos de línea.
 
 ## Desarrollo
 
