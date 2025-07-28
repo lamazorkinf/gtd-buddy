@@ -38,13 +38,20 @@ async function verifyAuth(request: NextRequest): Promise<string | null> {
 }
 
 export async function POST(request: NextRequest) {
+  // Add CORS headers
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  };
+
   try {
     // Verify authentication
     const userId = await verifyAuth(request);
     if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
-        { status: 401 }
+        { status: 401, headers }
       );
     }
 
@@ -73,7 +80,7 @@ export async function POST(request: NextRequest) {
         const docRef = await adminDb.collection('tasks').add(taskData);
         const newTask = { id: docRef.id, ...taskData };
 
-        return NextResponse.json({ success: true, task: newTask });
+        return NextResponse.json({ success: true, task: newTask }, { headers });
       }
 
       case 'list_tasks': {
@@ -104,7 +111,7 @@ export async function POST(request: NextRequest) {
           } as Task);
         });
 
-        return NextResponse.json({ success: true, tasks });
+        return NextResponse.json({ success: true, tasks }, { headers });
       }
 
       case 'update_task': {
@@ -116,7 +123,7 @@ export async function POST(request: NextRequest) {
         if (!taskDoc.exists || taskDoc.data()?.userId !== userId) {
           return NextResponse.json(
             { error: 'Task not found or unauthorized' },
-            { status: 404 }
+            { status: 404, headers }
           );
         }
         
@@ -127,7 +134,7 @@ export async function POST(request: NextRequest) {
 
         await adminDb.collection('tasks').doc(taskId).update(updateData);
 
-        return NextResponse.json({ success: true, taskId, updates });
+        return NextResponse.json({ success: true, taskId, updates }, { headers });
       }
 
       case 'delete_task': {
@@ -138,13 +145,13 @@ export async function POST(request: NextRequest) {
         if (!taskDoc.exists || taskDoc.data()?.userId !== userId) {
           return NextResponse.json(
             { error: 'Task not found or unauthorized' },
-            { status: 404 }
+            { status: 404, headers }
           );
         }
         
         await adminDb.collection('tasks').doc(taskId).delete();
 
-        return NextResponse.json({ success: true, taskId });
+        return NextResponse.json({ success: true, taskId }, { headers });
       }
 
       case 'create_context': {
@@ -160,7 +167,7 @@ export async function POST(request: NextRequest) {
         const docRef = await adminDb.collection('contexts').add(contextData);
         const newContext = { id: docRef.id, ...contextData };
 
-        return NextResponse.json({ success: true, context: newContext });
+        return NextResponse.json({ success: true, context: newContext }, { headers });
       }
 
       case 'list_contexts': {
@@ -179,22 +186,34 @@ export async function POST(request: NextRequest) {
           } as Context);
         });
 
-        return NextResponse.json({ success: true, contexts });
+        return NextResponse.json({ success: true, contexts }, { headers });
       }
 
       default:
         return NextResponse.json(
           { error: `Unknown action: ${action}` },
-          { status: 400 }
+          { status: 400, headers }
         );
     }
   } catch (error) {
     console.error('MCP API error:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers }
     );
   }
+}
+
+// Handle OPTIONS for CORS preflight
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
 }
 
 // Also support GET for listing available actions
@@ -232,5 +251,11 @@ export async function GET() {
     }
   ];
 
-  return NextResponse.json({ actions });
+  return NextResponse.json({ actions }, {
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    }
+  });
 }
