@@ -2,6 +2,10 @@
 
 Un servidor MCP (Model Context Protocol) para gestionar tareas siguiendo la metodología GTD (Getting Things Done).
 
+Este servidor soporta dos modos de operación:
+- **Stdio**: Para usar con Claude Desktop (comunicación por entrada/salida estándar)
+- **SSE**: Para integración con aplicaciones web (Server-Sent Events sobre HTTP)
+
 ## Instalación
 
 1. Navega al directorio del servidor MCP:
@@ -62,14 +66,82 @@ En Windows, edita: `%APPDATA%\Claude\claude_desktop_config.json`
 - El JSON de `FIREBASE_SERVICE_ACCOUNT` debe estar en una sola línea, sin saltos de línea
 - `DEFAULT_USER_ID` es el ID de tu usuario en Firebase (obtenido en el paso 2)
 
+## Servidor SSE (Server-Sent Events)
+
+El servidor SSE permite integrar el MCP con aplicaciones web mediante un endpoint HTTP.
+
+### Configuración del servidor SSE
+
+1. Configura las variables de entorno adicionales en tu `.env`:
+\`\`\`bash
+PORT=3001  # Puerto para el servidor SSE (por defecto 3001)
+ALLOWED_ORIGINS=http://localhost:3000,https://tuapp.com  # Orígenes permitidos para CORS
+\`\`\`
+
+2. Compila el proyecto:
+\`\`\`bash
+npm run build
+\`\`\`
+
+3. Inicia el servidor SSE:
+\`\`\`bash
+npm run start:sse
+# o para desarrollo:
+npm run dev:sse
+\`\`\`
+
+### Endpoints disponibles
+
+- `GET /health` - Endpoint de verificación de salud
+- `GET /sse` - Endpoint SSE para conexión MCP
+
+### Ejemplo de uso del endpoint SSE
+
+\`\`\`javascript
+// Conectar al servidor SSE
+const eventSource = new EventSource('http://localhost:3001/sse');
+
+// Enviar mensajes al servidor MCP
+fetch('http://localhost:3001/sse', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    jsonrpc: '2.0',
+    method: 'tools/call',
+    params: {
+      name: 'list_tasks',
+      arguments: {
+        userId: 'tu-user-id'
+      }
+    },
+    id: 1
+  })
+});
+
+// Recibir respuestas
+eventSource.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  console.log('Respuesta del MCP:', data);
+};
+\`\`\`
+
 ## Desarrollo
 
 Para ejecutar en modo desarrollo:
+
+**Servidor Stdio (Claude Desktop):**
 \`\`\`bash
 npm run dev
 \`\`\`
 
-Para compilar:
+**Servidor SSE (Web):**
+\`\`\`bash
+npm run dev:sse
+\`\`\`
+
+Para compilar ambos servidores:
 \`\`\`bash
 npm run build
 \`\`\`
