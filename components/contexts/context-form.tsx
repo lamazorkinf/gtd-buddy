@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Plus, Edit, Target, Loader2 } from "lucide-react"
+import { Loader2, Lightbulb } from "lucide-react"
 import type { Context } from "@/types/task"
 import { useContexts } from "@/hooks/use-contexts"
+import { modernTheme } from "@/lib/theme"
 
 interface ContextFormProps {
   context?: Context
@@ -17,8 +17,8 @@ interface ContextFormProps {
 }
 
 const CONTEXT_STATUSES: { value: Context["status"]; label: string; color: string; emoji: string }[] = [
-  { value: "active", label: "Activo", color: "text-gtd-confidence-700", emoji: "🟢" },
-  { value: "inactive", label: "Inactivo", color: "text-gtd-neutral-700", emoji: "⚪" },
+  { value: "active", label: "Activo", color: "text-green-700", emoji: "" },
+  { value: "inactive", label: "Inactivo", color: "text-gray-700", emoji: "" },
 ]
 
 export default function ContextForm({ context, onClose }: ContextFormProps) {
@@ -59,21 +59,9 @@ export default function ContextForm({ context, onClose }: ContextFormProps) {
   }
 
   return (
-    <Card className="w-full max-w-2xl mx-auto bg-white/90 backdrop-blur-sm border border-gtd-neutral-100 shadow-xl">
-      <CardHeader className="border-b border-gtd-neutral-100">
-        <CardTitle className="flex items-center gap-3 font-heading text-xl text-gtd-clarity-700">
-          {context ? (
-            <Edit className="h-5 w-5 text-gtd-clarity-500" />
-          ) : (
-            <Plus className="h-5 w-5 text-gtd-clarity-500" />
-          )}
-          {context ? "Editar Contexto" : "Nuevo Contexto"}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="context-name" className="text-sm font-medium text-gtd-neutral-700 mb-1 block">
+            <label htmlFor="context-name" className={`text-sm font-medium ${modernTheme.colors.primaryText} mb-1 block`}>
               Nombre del Contexto *
             </label>
             <Input
@@ -82,12 +70,12 @@ export default function ContextForm({ context, onClose }: ContextFormProps) {
               onChange={(e) => setName(e.target.value)}
               placeholder="ej: Trabajo, Casa, Teléfono, Proyecto X"
               required
-              className="text-md border-gtd-neutral-300 focus:border-gtd-clarity-500 focus:ring-gtd-clarity-500"
+              className={`text-md ${modernTheme.container.radius}`}
             />
           </div>
 
           <div>
-            <label htmlFor="context-description" className="text-sm font-medium text-gtd-neutral-700 mb-1 block">
+            <label htmlFor="context-description" className={`text-sm font-medium ${modernTheme.colors.primaryText} mb-1 block`}>
               Descripción
             </label>
             <Textarea
@@ -96,23 +84,23 @@ export default function ContextForm({ context, onClose }: ContextFormProps) {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe el contexto, objetivos específicos, criterios de éxito..."
               rows={3}
-              className="text-md border-gtd-neutral-300 focus:border-gtd-clarity-500 focus:ring-gtd-clarity-500"
+              className={`text-md ${modernTheme.container.radius}`}
             />
           </div>
 
           <div>
-            <label htmlFor="context-status" className="text-sm font-medium text-gtd-neutral-700 mb-1 block">
+            <label htmlFor="context-status" className={`text-sm font-medium ${modernTheme.colors.primaryText} mb-1 block`}>
               Estado
             </label>
             <Select value={status || "active"} onValueChange={(value) => setStatus(value as Context["status"])}>
-              <SelectTrigger id="context-status" className="border-gtd-neutral-300 text-gtd-neutral-800">
+              <SelectTrigger id="context-status" className={`${modernTheme.container.radius}`}>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className={`${modernTheme.container.radius}`}>
                 {CONTEXT_STATUSES.map((statusOption) => (
                   <SelectItem key={statusOption.value} value={statusOption.value || "active"}>
                     <span className={statusOption.color}>
-                      {statusOption.emoji} {statusOption.label}
+                      {statusOption.label}
                     </span>
                   </SelectItem>
                 ))}
@@ -120,12 +108,12 @@ export default function ContextForm({ context, onClose }: ContextFormProps) {
             </Select>
           </div>
 
-          <div className="bg-gtd-clarity-50 p-4 rounded-lg border-l-4 border-gtd-clarity-400">
+          <div className={`${modernTheme.colors.cardPurple} p-4 ${modernTheme.container.radius} border ${modernTheme.colors.cardBorder}`}>
             <div className="flex items-start gap-3">
-              <Target className="h-6 w-6 text-gtd-clarity-600 mt-0.5 flex-shrink-0" />
+              <Lightbulb className={`h-5 w-5 ${modernTheme.colors.primaryText} mt-0.5 flex-shrink-0`} />
               <div>
-                <p className="text-sm text-gtd-clarity-700 font-medium mb-1">💡 Tips para Contextos Efectivos:</p>
-                <ul className="text-sm text-gtd-clarity-600 space-y-1 list-disc list-inside">
+                <p className={`text-sm ${modernTheme.colors.primaryText} ${modernTheme.typography.heading} mb-1`}>Tips para Contextos Efectivos:</p>
+                <ul className={`text-sm ${modernTheme.colors.mutedForeground} space-y-1 list-disc list-inside`}>
                   <li>
                     Pueden ser lugares (@Oficina), herramientas (@Email), personas (@Jefe) o proyectos específicos.
                   </li>
@@ -136,11 +124,11 @@ export default function ContextForm({ context, onClose }: ContextFormProps) {
             </div>
           </div>
 
-          <div className="flex gap-3 pt-4 border-t border-gtd-neutral-100">
+          <div className={`flex gap-3 pt-4 border-t ${modernTheme.colors.cardBorder}`}>
             <Button
               type="submit"
               disabled={loading || !name.trim()}
-              className="flex-1 bg-gradient-to-r from-gtd-clarity-500 to-gtd-action-500 hover:from-gtd-clarity-600 hover:to-gtd-action-600 text-white"
+              className={`flex-1 ${modernTheme.colors.primary} ${modernTheme.colors.primaryHover} text-white ${modernTheme.container.radius} ${modernTheme.effects.transition}`}
             >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {loading ? "Guardando..." : context ? "Actualizar Contexto" : "Crear Contexto"}
@@ -150,14 +138,12 @@ export default function ContextForm({ context, onClose }: ContextFormProps) {
                 type="button"
                 variant="outline"
                 onClick={onClose}
-                className="border-gtd-neutral-300 text-gtd-neutral-700 hover:bg-gtd-neutral-100 bg-transparent"
+                className={`${modernTheme.container.radius} ${modernTheme.effects.transition}`}
               >
                 Cancelar
               </Button>
             )}
           </div>
         </form>
-      </CardContent>
-    </Card>
   )
 }

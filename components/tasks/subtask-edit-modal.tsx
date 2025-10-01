@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { CalendarIcon, Save, X } from "lucide-react"
 import type { Subtask } from "@/types/task"
+import { modernTheme } from "@/lib/theme"
 
 /**
  * Converts many possible date representations (Date | string | number | { seconds: number }) to a native Date.
@@ -81,33 +82,33 @@ export default function SubtaskEditModal({ subtask, isOpen, onClose, onSave }: S
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className={`sm:max-w-md ${modernTheme.effects.glass} border ${modernTheme.colors.cardBorder} ${modernTheme.container.shadow} ${modernTheme.container.radius}`}>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">Editar Subtarea</DialogTitle>
+          <DialogTitle className={`flex items-center gap-2 ${modernTheme.typography.heading} ${modernTheme.colors.primaryText}`}>Editar Subtarea</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-2 block">Título *</label>
+            <label className={`text-sm font-medium ${modernTheme.colors.primaryText} mb-2 block`}>Título *</label>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Descripción de la subtarea"
-              className="w-full"
+              className={`w-full ${modernTheme.container.radius}`}
             />
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-2 block">Fecha límite (opcional)</label>
+            <label className={`text-sm font-medium ${modernTheme.colors.primaryText} mb-2 block`}>Fecha límite (opcional)</label>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
-                  <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <CalendarIcon className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 ${modernTheme.colors.muted}`} />
                   <Input
                     type="date"
                     value={formatDateForInput(dueDate)}
                     onChange={handleDateChange}
-                    className="pl-10"
+                    className={`pl-10 ${modernTheme.container.radius}`}
                     placeholder="Seleccionar fecha"
                   />
                 </div>
@@ -117,7 +118,7 @@ export default function SubtaskEditModal({ subtask, isOpen, onClose, onSave }: S
                     variant="ghost"
                     size="sm"
                     onClick={() => setDueDate(undefined)}
-                    className="text-xs text-gray-500 hover:text-gray-700"
+                    className={`text-xs ${modernTheme.colors.mutedForeground}`}
                   >
                     Quitar
                   </Button>
@@ -128,14 +129,14 @@ export default function SubtaskEditModal({ subtask, isOpen, onClose, onSave }: S
         </div>
 
         <DialogFooter className="flex gap-2">
-          <Button variant="outline" onClick={handleClose} className="flex items-center gap-2 bg-transparent">
+          <Button variant="outline" onClick={handleClose} className={`flex items-center gap-2 ${modernTheme.container.radius} ${modernTheme.effects.transition}`}>
             <X className="h-4 w-4" />
             Cancelar
           </Button>
           <Button
             onClick={handleSave}
             disabled={!title.trim()}
-            className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700"
+            className={`flex items-center gap-2 ${modernTheme.colors.primary} ${modernTheme.colors.primaryHover} ${modernTheme.container.radius} ${modernTheme.effects.transition}`}
           >
             <Save className="h-4 w-4" />
             Guardar

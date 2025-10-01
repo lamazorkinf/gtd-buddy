@@ -7,6 +7,7 @@ import { ArrowRight, Check, Loader2, AlertCircle, LogOut, Clock } from "lucide-r
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { modernTheme } from "@/lib/theme"
 
 export default function SubscriptionPage() {
   const { user, subscriptionStatus, signOut, loading: authLoading } = useAuth()
@@ -114,12 +115,12 @@ export default function SubscriptionPage() {
   // Show main loading spinner if auth is loading or if user data is present but we are still processing subscription state
   if (authLoading || (user && processingSubscription && !error)) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className={`min-h-screen ${modernTheme.colors.bg} flex items-center justify-center`}>
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-gtd-clarity-500 mx-auto mb-4" />
-          <p className="text-gtd-clarity-700 text-lg">Verificando estado de suscripción...</p>
+          <Loader2 className={`h-12 w-12 animate-spin ${modernTheme.colors.primaryText} mx-auto mb-4`} />
+          <p className={`${modernTheme.colors.primaryText} text-lg`}>Verificando estado de suscripción...</p>
           {user && (
-            <p className="text-xs text-gtd-neutral-500 mt-2">
+            <p className={`text-xs ${modernTheme.colors.mutedForeground} mt-2`}>
               Usuario: {user.email} | Status: {user.subscriptionStatus} | Expirado:{" "}
               {String(subscriptionStatus.isExpired)}
             </p>
@@ -142,23 +143,23 @@ export default function SubscriptionPage() {
     const buttonLoadingText = shouldShowTrialOption ? "Iniciando prueba..." : "Procesando..."
 
     return (
-      <div className="min-h-screen flex flex-col selection:bg-gtd-action-300 selection:text-white">
-        <header className="w-full py-4 px-4 sm:px-6 lg:px-8 bg-white/90 backdrop-blur-sm border-b border-gtd-neutral-100 shadow-sm">
-          <div className="max-w-7xl mx-auto flex justify-between items-center">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-gtd-clarity-600 via-gtd-action-500 to-gtd-focus-500 bg-clip-text text-transparent font-heading">
+      <div className={`min-h-screen w-full ${modernTheme.colors.bg} flex flex-col`}>
+        <header className={`w-full py-4 px-4 sm:px-6 lg:px-8 ${modernTheme.effects.glass} border-b ${modernTheme.colors.cardBorder} ${modernTheme.container.shadow}`}>
+          <div className="w-full px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex justify-between items-center">
+            <h1 className={`text-2xl ${modernTheme.typography.heading} ${modernTheme.colors.primaryText}`}>
               GTD Buddy
             </h1>
             {user && (
               <div className="flex items-center gap-3">
-                <div className="text-sm text-gtd-neutral-700">Hola, {user.displayName || user.email}</div>
-                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-gtd-clarity-400 to-gtd-action-400 flex items-center justify-center text-white text-sm font-medium ring-2 ring-white">
+                <div className={`text-sm ${modernTheme.colors.mutedForeground}`}>Hola, {user.displayName || user.email}</div>
+                <div className={`h-8 w-8 ${modernTheme.container.radius} ${modernTheme.colors.primary} flex items-center justify-center text-white text-sm ${modernTheme.typography.heading} ring-2 ring-white`}>
                   {user.displayName ? user.displayName[0].toUpperCase() : user.email?.[0].toUpperCase()}
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleSignOut}
-                  className="ml-2 text-gtd-neutral-700 hover:text-gtd-neutral-900 border-gtd-neutral-200 hover:bg-gtd-neutral-100"
+                  className={`ml-2 ${modernTheme.container.radius} ${modernTheme.effects.transition}`}
                 >
                   <LogOut className="h-4 w-4 mr-1" />
                   Salir
@@ -170,36 +171,15 @@ export default function SubscriptionPage() {
 
         <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
           <div className="w-full max-w-4xl mx-auto">
-            {/* Alerta de suscripción expirada */}
-            {isExpiredSubscription && (
-              <Alert className="mb-8 border-red-200 bg-red-50">
-                <Clock className="h-4 w-4 text-red-600" />
-                <AlertDescription className="text-red-800">
-                  <strong>Tu suscripción ha expirado.</strong> Para continuar usando GTD Buddy, necesitas renovar tu
-                  suscripción.
-                  {user?.subscriptionEndDate && (
-                    <span className="block text-sm mt-1">
-                      Expiró el:{" "}
-                      {new Date(
-                        (user.subscriptionEndDate as any)?.seconds
-                          ? (user.subscriptionEndDate as any).seconds * 1000
-                          : user.subscriptionEndDate,
-                      ).toLocaleDateString()}
-                    </span>
-                  )}
-                </AlertDescription>
-              </Alert>
-            )}
-
             <div className="text-center mb-10">
-              <h2 className="text-3xl sm:text-4xl font-bold mb-3 font-heading text-gtd-clarity-700">
+              <h2 className={`text-3xl sm:text-4xl ${modernTheme.typography.heading} mb-3 ${modernTheme.colors.primaryText}`}>
                 {isExpiredSubscription
                   ? "Renueva tu Suscripción"
                   : shouldShowTrialOption
                     ? "¡Bienvenido a GTD Buddy!"
                     : "Potencia tu Productividad"}
               </h2>
-              <p className="text-lg text-gtd-neutral-600 max-w-2xl mx-auto">
+              <p className={`text-lg ${modernTheme.colors.mutedForeground} max-w-2xl mx-auto`}>
                 {isExpiredSubscription
                   ? "Tu período de acceso ha terminado. Renueva tu suscripción para continuar organizando tu vida con GTD."
                   : shouldShowTrialOption
@@ -208,23 +188,23 @@ export default function SubscriptionPage() {
               </p>
             </div>
 
-            <Card className="w-full max-w-md mx-auto overflow-hidden border-2 border-gtd-clarity-200 shadow-xl hover:shadow-2xl transition-shadow duration-300 bg-white/80 backdrop-blur-sm">
+            <Card className={`w-full max-w-md mx-auto overflow-hidden border-2 ${modernTheme.colors.cardBorder} ${modernTheme.container.shadow} hover:shadow-2xl ${modernTheme.effects.transition} ${modernTheme.effects.glass}`}>
               <div className="p-8 text-center">
                 {shouldShowTrialOption ? (
                   <>
-                    <span className="text-4xl font-bold text-gtd-confidence-600">Gratis</span>
-                    <span className="text-gtd-neutral-500 ml-1">por 7 días</span>
-                    <div className="text-sm text-gtd-neutral-500 mt-1">Luego $2.500 ARS/mes</div>
+                    <span className={`text-4xl ${modernTheme.typography.heading} ${modernTheme.colors.primaryText}`}>Gratis</span>
+                    <span className={`${modernTheme.colors.mutedForeground} ml-1`}>por 7 días</span>
+                    <div className={`text-sm ${modernTheme.colors.mutedForeground} mt-1`}>Luego $2.500 ARS/mes</div>
                   </>
                 ) : (
                   <>
-                    <span className="text-4xl font-bold text-gtd-clarity-700">$2.500</span>
-                    <span className="text-gtd-neutral-500 ml-1">ARS/mes</span>
+                    <span className={`text-4xl ${modernTheme.typography.heading} ${modernTheme.colors.primaryText}`}>$2.500</span>
+                    <span className={`${modernTheme.colors.mutedForeground} ml-1`}>ARS/mes</span>
                   </>
                 )}
               </div>
               <CardContent className="px-8">
-                <ul className="space-y-3 text-gtd-neutral-700">
+                <ul className={`space-y-3 ${modernTheme.colors.mutedForeground}`}>
                   {[
                     "Captura ilimitada de tareas",
                     "Organización por contextos y proyectos",
@@ -235,7 +215,7 @@ export default function SubscriptionPage() {
                     "Soporte prioritario",
                   ].map((feature, index) => (
                     <li key={index} className="flex items-start">
-                      <Check className="h-5 w-5 text-gtd-confidence-500 mr-2 shrink-0 mt-0.5" />
+                      <Check className={`h-5 w-5 ${modernTheme.colors.textGreen} mr-2 shrink-0 mt-0.5`} />
                       <span>{feature}</span>
                     </li>
                   ))}
@@ -243,7 +223,7 @@ export default function SubscriptionPage() {
               </CardContent>
               <CardFooter className="p-8 mt-4">
                 <Button
-                  className="w-full bg-gradient-to-r from-gtd-clarity-500 via-gtd-action-500 to-gtd-focus-500 hover:from-gtd-clarity-600 hover:via-gtd-action-600 hover:to-gtd-focus-600 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 text-lg"
+                  className={`w-full ${modernTheme.colors.primary} ${modernTheme.colors.primaryHover} text-white ${modernTheme.typography.heading} py-3 px-4 ${modernTheme.container.radius} ${modernTheme.effects.transition} text-lg`}
                   onClick={handleSubscribe}
                   disabled={processingSubscription}
                 >
@@ -261,14 +241,14 @@ export default function SubscriptionPage() {
             </Card>
 
             {error && (
-              <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-md max-w-md mx-auto">
+              <div className={`mt-6 p-4 ${modernTheme.colors.cardRed} border ${modernTheme.colors.cardBorder} ${modernTheme.container.radius} max-w-md mx-auto`}>
                 <div className="flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+                  <AlertCircle className={`h-5 w-5 ${modernTheme.colors.textRed} mt-0.5 flex-shrink-0`} />
                   <div className="flex-1">
-                    <div className="text-red-700 font-medium">Error al procesar suscripción</div>
-                    <div className="text-red-600 text-sm mt-1">{error}</div>
+                    <div className={`${modernTheme.colors.textRed} ${modernTheme.typography.heading}`}>Error al procesar suscripción</div>
+                    <div className={`${modernTheme.colors.textRed} text-sm mt-1`}>{error}</div>
                     {errorDetails && (
-                      <div className="text-red-500 text-xs mt-2 bg-red-100 p-2 rounded">
+                      <div className={`${modernTheme.colors.textRed} text-xs mt-2 bg-red-100 p-2 ${modernTheme.container.radius}`}>
                         <strong>Detalles técnicos:</strong> {errorDetails}
                       </div>
                     )}
@@ -277,15 +257,15 @@ export default function SubscriptionPage() {
               </div>
             )}
 
-            <div className="mt-8 text-center text-sm text-gtd-neutral-500">
+            <div className={`mt-8 text-center text-sm ${modernTheme.colors.mutedForeground}`}>
               {shouldShowTrialOption ? (
                 <>
                   Al iniciar tu prueba, aceptas nuestros{" "}
-                  <a href="#" className="text-gtd-clarity-600 hover:underline">
+                  <a href="#" className={`${modernTheme.colors.primaryText} hover:underline`}>
                     Términos
                   </a>{" "}
                   y{" "}
-                  <a href="#" className="text-gtd-clarity-600 hover:underline">
+                  <a href="#" className={`${modernTheme.colors.primaryText} hover:underline`}>
                     Privacidad
                   </a>
                   . Cancela en cualquier momento.
@@ -293,11 +273,11 @@ export default function SubscriptionPage() {
               ) : (
                 <>
                   Al suscribirte, aceptas nuestros{" "}
-                  <a href="#" className="text-gtd-clarity-600 hover:underline">
+                  <a href="#" className={`${modernTheme.colors.primaryText} hover:underline`}>
                     Términos
                   </a>{" "}
                   y{" "}
-                  <a href="#" className="text-gtd-clarity-600 hover:underline">
+                  <a href="#" className={`${modernTheme.colors.primaryText} hover:underline`}>
                     Privacidad
                   </a>
                   .
@@ -307,8 +287,8 @@ export default function SubscriptionPage() {
           </div>
         </main>
 
-        <footer className="w-full py-6 px-4 sm:px-6 lg:px-8 bg-white/90 backdrop-blur-sm border-t border-gtd-neutral-100">
-          <div className="max-w-7xl mx-auto text-center text-sm text-gtd-neutral-600">
+        <footer className={`w-full py-6 px-4 sm:px-6 lg:px-8 ${modernTheme.effects.glass} border-t ${modernTheme.colors.cardBorder}`}>
+          <div className={`w-full px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center text-sm ${modernTheme.colors.mutedForeground}`}>
             <p>© {new Date().getFullYear()} GTD Buddy. Todos los derechos reservados.</p>
           </div>
         </footer>
@@ -318,8 +298,8 @@ export default function SubscriptionPage() {
 
   // Fallback loading, should ideally be covered by the first loading check
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <Loader2 className="h-12 w-12 animate-spin text-gtd-clarity-500" />
+    <div className={`min-h-screen w-full ${modernTheme.colors.bg} flex items-center justify-center`}>
+      <Loader2 className={`h-12 w-12 animate-spin ${modernTheme.colors.primaryText}`} />
     </div>
   )
 }

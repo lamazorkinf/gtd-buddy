@@ -4,6 +4,7 @@ import { Inter, Plus_Jakarta_Sans } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/contexts/auth-context"
 import PageTransition from "@/components/transitions/page-transition"
+import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -33,6 +34,7 @@ export default function RootLayout({
       <body className={`${inter.variable} ${plusJakarta.variable} font-sans gtd-gradient-bg`}>
         <AuthProvider>
           <PageTransition>{children}</PageTransition>
+          <Toaster />
         </AuthProvider>
       </body>
     </html>

@@ -12,6 +12,7 @@ import type { Task, Subtask } from "@/types/task"
 import { useTasks } from "@/hooks/use-tasks"
 import { useContexts } from "@/hooks/use-contexts"
 import SubtaskEditModal from "./subtask-edit-modal"
+import { modernTheme } from "@/lib/theme"
 
 const safeDate = (value: unknown): Date | undefined => {
   if (!value) return undefined
@@ -64,18 +65,12 @@ interface TaskItemProps {
   onEdit: (task: Task) => void
 }
 
-const PRIORITY_COLORS = {
-  baja: "bg-green-100 text-green-800 border-green-200",
-  media: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  alta: "bg-red-100 text-red-800 border-red-200",
-}
-
 const CATEGORY_COLORS = {
-  Inbox: "bg-gray-100 text-gray-800",
-  "Próximas acciones": "bg-blue-100 text-blue-800",
-  Multitarea: "bg-purple-100 text-purple-800",
-  "A la espera": "bg-orange-100 text-orange-800",
-  "Algún día": "bg-green-100 text-green-800",
+  Inbox: `${modernTheme.colors.badgeBlue}`,
+  "Próximas acciones": `${modernTheme.colors.badgeGreen}`,
+  Multitarea: `${modernTheme.colors.badgePurple}`,
+  "A la espera": `${modernTheme.colors.badgeOrange}`,
+  "Algún día": `${modernTheme.colors.badgeAmber}`,
 }
 
 export default function TaskItem({ task, onEdit }: TaskItemProps) {
@@ -144,9 +139,9 @@ export default function TaskItem({ task, onEdit }: TaskItemProps) {
   return (
     <>
       <Card
-        className={`transition-all duration-200 hover:shadow-lg ${
-          task.completed ? "opacity-60 bg-slate-50" : "bg-white"
-        } ${isOverdue ? "border-red-400 bg-red-50 ring-2 ring-red-200" : "border-slate-200"}`}
+        className={`${modernTheme.effects.transition} ${modernTheme.container.radius} ${modernTheme.container.shadowMd} ${modernTheme.effects.glassHover} border ${
+          task.completed ? "opacity-60 bg-white/30" : `${modernTheme.effects.glass}`
+        } ${isOverdue ? `border-red-400 ${modernTheme.colors.cardRed} ring-2 ring-red-300/50` : modernTheme.colors.cardBorder}`}
       >
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
@@ -162,7 +157,7 @@ export default function TaskItem({ task, onEdit }: TaskItemProps) {
               <div className="flex items-start justify-between gap-2">
                 <label
                   htmlFor={`task-${task.id}`}
-                  className={`font-semibold text-slate-800 cursor-pointer ${task.completed ? "line-through text-slate-500" : ""}`}
+                  className={`${modernTheme.typography.heading} ${modernTheme.colors.primaryText} cursor-pointer ${task.completed ? "line-through opacity-60" : ""}`}
                 >
                   {task.title}
                 </label>
@@ -170,7 +165,7 @@ export default function TaskItem({ task, onEdit }: TaskItemProps) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 p-0 flex-shrink-0 text-slate-500 hover:text-slate-700"
+                  className={`h-8 w-8 p-0 flex-shrink-0 ${modernTheme.colors.muted} hover:${modernTheme.colors.primaryText} ${modernTheme.effects.transition}`}
                   onClick={() => onEdit(task)}
                 >
                   <Edit className="h-4 w-4" />
@@ -179,7 +174,7 @@ export default function TaskItem({ task, onEdit }: TaskItemProps) {
               </div>
 
               {task.description && (
-                <p className={`text-sm text-slate-600 mt-1 ${task.completed ? "line-through" : ""}`}>
+                <p className={`text-sm ${modernTheme.colors.mutedForeground} mt-1 ${task.completed ? "line-through" : ""}`}>
                   {task.description}
                 </p>
               )}
@@ -187,17 +182,13 @@ export default function TaskItem({ task, onEdit }: TaskItemProps) {
               <div className="flex flex-wrap items-center gap-2 mt-3">
                 <Badge
                   variant="secondary"
-                  className={`${CATEGORY_COLORS[task.category]} border ${task.category === "Multitarea" ? "border-purple-300" : "border-slate-300"}`}
+                  className={`${CATEGORY_COLORS[task.category]} ${modernTheme.container.radius}`}
                 >
                   {task.category}
                 </Badge>
 
-                <Badge variant="outline" className={`${PRIORITY_COLORS[task.priority]} border`}>
-                  {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                </Badge>
-
                 {taskContext && (
-                  <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-300">
+                  <Badge variant="outline" className={`${modernTheme.colors.badgePurple} ${modernTheme.container.radius}`}>
                     @{taskContext.name}
                   </Badge>
                 )}
@@ -205,12 +196,12 @@ export default function TaskItem({ task, onEdit }: TaskItemProps) {
                 {task.dueDate && (
                   <Badge
                     variant="outline"
-                    className={`flex items-center gap-1 ${
+                    className={`flex items-center gap-1 ${modernTheme.container.radius} ${
                       isOverdue
-                        ? "bg-red-100 text-red-800 border-red-300"
+                        ? `${modernTheme.colors.badgeRed}`
                         : isDueToday
-                          ? "bg-orange-100 text-orange-800 border-orange-300"
-                          : "bg-slate-100 text-slate-800 border-slate-300"
+                          ? `${modernTheme.colors.badgeOrange}`
+                          : `${modernTheme.colors.badgeBlue}`
                     }`}
                   >
                     {isOverdue ? <AlertCircle className="h-3 w-3" /> : <Calendar className="h-3 w-3" />}
@@ -221,24 +212,24 @@ export default function TaskItem({ task, onEdit }: TaskItemProps) {
 
               {/* Mostrar Subtareas si es Multitarea */}
               {task.category === "Multitarea" && task.subtasks && task.subtasks.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-slate-200 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
-                    <span className="font-medium flex items-center gap-1">
-                      <ListChecks className="h-3.5 w-3.5" /> Subtareas:
+                <div className={`mt-4 pt-4 border-t ${modernTheme.colors.cardBorder} space-y-3`}>
+                  <div className={`flex items-center justify-between text-xs ${modernTheme.colors.mutedForeground}`}>
+                    <span className={`${modernTheme.typography.heading} flex items-center gap-1.5 ${modernTheme.colors.primaryText}`}>
+                      <ListChecks className="h-4 w-4" /> Subtareas
                     </span>
-                    <span>
-                      {completedSubtasks} / {totalSubtasks} completadas
-                    </span>
+                    <Badge className={`${modernTheme.colors.badgePurple} ${modernTheme.container.radius} text-xs`}>
+                      {completedSubtasks} / {totalSubtasks}
+                    </Badge>
                   </div>
                   {totalSubtasks > 0 && (
-                    <div className="w-full bg-slate-200 rounded-full h-1.5 dark:bg-slate-700">
+                    <div className={`w-full bg-white/40 ${modernTheme.container.radius} h-2 overflow-hidden`}>
                       <div
-                        className="bg-purple-500 h-1.5 rounded-full transition-all duration-300 ease-out"
+                        className={`${modernTheme.colors.primary} h-2 ${modernTheme.effects.transition}`}
                         style={{ width: `${(completedSubtasks / totalSubtasks) * 100}%` }}
                       ></div>
                     </div>
                   )}
-                  <ul className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
+                  <ul className="space-y-2 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
                     {task.subtasks.map((st) => {
                       const isSubOverdue = isSubtaskOverdue(st.dueDate) && !st.completed
                       const isSubDueToday = isSubtaskDueToday(st.dueDate)
@@ -246,8 +237,8 @@ export default function TaskItem({ task, onEdit }: TaskItemProps) {
                       return (
                         <li
                           key={st.id}
-                          className={`flex items-center gap-2 text-sm p-2 rounded relative ${
-                            isSubOverdue ? "bg-red-50 border border-red-200" : "bg-slate-50"
+                          className={`flex items-start gap-2.5 text-sm p-3 ${modernTheme.container.radius} relative ${modernTheme.effects.transition} ${modernTheme.effects.glassHover} border ${
+                            isSubOverdue ? `${modernTheme.colors.cardRed} ring-1 ring-red-300/50` : `${modernTheme.colors.secondary} ${modernTheme.colors.cardBorder}`
                           }`}
                         >
                           <Checkbox
@@ -255,37 +246,34 @@ export default function TaskItem({ task, onEdit }: TaskItemProps) {
                             checked={st.completed}
                             onCheckedChange={() => handleToggleSubtask(st.id)}
                             disabled={loading}
-                            className="flex-shrink-0"
+                            className="flex-shrink-0 mt-0.5"
                           />
-                          <div className="flex-grow">
+                          <div className="flex-grow min-w-0">
                             <label
                               htmlFor={`subtask-item-${task.id}-${st.id}`}
-                              className={`block ${st.completed ? "line-through text-slate-500" : "text-slate-700"}`}
+                              className={`block cursor-pointer ${st.completed ? "line-through opacity-60" : ""}`}
                             >
                               {st.title}
                             </label>
                             {st.dueDate && safeDate(st.dueDate) && (
-                              <div
-                                className={`text-xs mt-1 flex items-center gap-1 ${
-                                  isSubOverdue ? "text-red-600" : isSubDueToday ? "text-orange-600" : "text-gray-500"
+                              <Badge
+                                variant="outline"
+                                className={`text-xs mt-1.5 ${modernTheme.container.radius} ${
+                                  isSubOverdue ? `${modernTheme.colors.badgeRed}` : isSubDueToday ? `${modernTheme.colors.badgeOrange}` : `${modernTheme.colors.badgeBlue}`
                                 }`}
                               >
-                                {isSubOverdue ? <AlertCircle className="h-3 w-3" /> : <Calendar className="h-3 w-3" />}
-                                <span>
-                                  {format(safeDate(st.dueDate) as Date, "dd MMM yyyy", { locale: es })}
-                                  {isSubOverdue && " (Vencida)"}
-                                  {isSubDueToday && " (Hoy)"}
-                                </span>
-                              </div>
+                                {isSubOverdue ? <AlertCircle className="h-3 w-3 mr-1" /> : <Calendar className="h-3 w-3 mr-1" />}
+                                {format(safeDate(st.dueDate) as Date, "dd MMM", { locale: es })}
+                              </Badge>
                             )}
                           </div>
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => handleEditSubtask(st)}
-                            className="h-6 w-6 p-0 text-blue-500 hover:bg-blue-100 absolute top-1 right-1"
+                            className={`h-7 w-7 p-0 ${modernTheme.colors.primaryText} hover:bg-purple-100/50 ${modernTheme.effects.transition} flex-shrink-0`}
                           >
-                            <Edit className="h-3 w-3" />
+                            <Edit className="h-3.5 w-3.5" />
                           </Button>
                         </li>
                       )
@@ -295,8 +283,8 @@ export default function TaskItem({ task, onEdit }: TaskItemProps) {
               )}
 
               {/* Botones de movimiento rápido */}
-              <div className="flex flex-wrap gap-1 mt-3 pt-2 border-t border-slate-200">
-                <span className="text-xs text-slate-500 mr-2 self-center">Mover a:</span>
+              <div className={`flex flex-wrap gap-1.5 mt-3 pt-3 border-t ${modernTheme.colors.cardBorder}`}>
+                <span className={`text-xs ${modernTheme.colors.mutedForeground} mr-2 self-center`}>Mover a:</span>
                 {[
                   { category: "Inbox", icon: Inbox, color: "text-slate-600 hover:text-slate-800 hover:bg-slate-100" },
                   {
@@ -327,7 +315,7 @@ export default function TaskItem({ task, onEdit }: TaskItemProps) {
                       key={target.category}
                       size="sm"
                       variant="outline"
-                      className={`h-6 px-2 text-xs ${target.color} border-slate-300`}
+                      className={`h-7 px-2.5 text-xs ${target.color} ${modernTheme.container.radius} ${modernTheme.effects.transition}`}
                       onClick={async () => {
                         setLoading(true)
                         try {

@@ -6,16 +6,30 @@ import { useAuth } from "@/contexts/auth-context"
 import { Clock, ArrowLeft, RefreshCw, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { modernTheme } from "@/lib/theme"
+import { useToast } from "@/hooks/use-toast"
 
 export default function SubscriptionPendingPage() {
   const { user } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { toast } = useToast()
   const [timeLeft, setTimeLeft] = useState(300) // 5 minutos en segundos
   const [isChecking, setIsChecking] = useState(false)
   const [paymentResolved, setPaymentResolved] = useState(false)
+  const [toastShown, setToastShown] = useState(false)
 
   useEffect(() => {
+    // Mostrar toast al cargar la página (solo una vez)
+    if (!toastShown) {
+      toast({
+        title: "⏳ Pago Pendiente",
+        description: "Tu pago está siendo procesado. Te notificaremos cuando se confirme.",
+        duration: 5000,
+      })
+      setToastShown(true)
+    }
+
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -52,9 +66,20 @@ export default function SubscriptionPendingPage() {
           
           if (data.subscriptionStatus === "active") {
             setPaymentResolved(true)
+            toast({
+              title: "✅ ¡Pago Confirmado!",
+              description: "Tu suscripción ha sido activada. Redirigiendo...",
+              duration: 3000,
+            })
             setTimeout(() => router.push("/subscription/success"), 1000)
           } else if (data.subscriptionStatus === "cancelled") {
             setPaymentResolved(true)
+            toast({
+              title: "❌ Pago Cancelado",
+              description: "El pago fue cancelado. Redirigiendo...",
+              variant: "destructive",
+              duration: 3000,
+            })
             setTimeout(() => router.push("/subscription/failure"), 1000)
           }
         }
@@ -77,7 +102,7 @@ export default function SubscriptionPendingPage() {
       clearInterval(timer)
       clearInterval(refreshTimer)
     }
-  }, [user, isChecking, paymentResolved, searchParams, router])
+  }, [user, isChecking, paymentResolved, searchParams, router, toast, toastShown])
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -125,28 +150,28 @@ export default function SubscriptionPendingPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 selection:bg-gtd-action-300 selection:text-white">
-      <Card className="w-full max-w-md mx-auto overflow-hidden shadow-xl rounded-xl bg-white/80 backdrop-blur-sm border border-gtd-neutral-100">
-        <div className="bg-yellow-500 text-white p-8 text-center">
+    <div className={`min-h-screen w-full flex items-center justify-center p-4 ${modernTheme.colors.bg}`}>
+      <Card className={`w-full max-w-md mx-auto overflow-hidden ${modernTheme.effects.glass} border ${modernTheme.colors.cardBorder} ${modernTheme.container.radius} ${modernTheme.container.shadow}`}>
+        <div className="bg-gradient-to-r from-yellow-500 to-amber-500 text-white p-8 text-center">
           <Clock className="h-20 w-20 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold font-heading">Pago Pendiente</h1>
+          <h1 className={`text-3xl ${modernTheme.typography.heading}`}>Pago Pendiente</h1>
         </div>
 
         <CardHeader className="text-center pb-2 pt-6">
-          <CardTitle className="text-2xl font-bold text-gtd-neutral-800 font-heading">Verificando tu Pago</CardTitle>
-          <CardDescription className="text-gtd-neutral-600 mt-2">
+          <CardTitle className={`text-2xl ${modernTheme.typography.heading} ${modernTheme.colors.primaryText}`}>Verificando tu Pago</CardTitle>
+          <CardDescription className={`${modernTheme.colors.mutedForeground} mt-2`}>
             Tu pago está siendo procesado. Esto puede tomar unos minutos. Te notificaremos cuando esté listo.
           </CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-6 px-6 pb-8">
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
-            <p className="text-sm text-yellow-800 mb-2">Tiempo estimado de verificación:</p>
-            <p className="text-3xl font-bold text-yellow-900">{formatTime(timeLeft)}</p>
+          <div className={`${modernTheme.colors.cardAmber} border ${modernTheme.container.radius} p-4 text-center`}>
+            <p className={`text-sm ${modernTheme.colors.textAmber} mb-2`}>Tiempo estimado de verificación:</p>
+            <p className={`text-3xl ${modernTheme.typography.heading} ${modernTheme.colors.textAmber}`}>{formatTime(timeLeft)}</p>
           </div>
 
-          <div className="text-sm text-gtd-neutral-600 space-y-2 bg-gtd-neutral-50 p-4 rounded-lg border border-gtd-neutral-200">
-            <p className="font-medium text-gtd-neutral-700">¿Qué está pasando?</p>
+          <div className={`text-sm ${modernTheme.colors.mutedForeground} space-y-2 ${modernTheme.effects.glass} p-4 ${modernTheme.container.radius} border ${modernTheme.colors.cardBorder}`}>
+            <p className={`font-medium ${modernTheme.colors.primaryText}`}>¿Qué está pasando?</p>
             <ul className="space-y-1 list-disc list-inside">
               <li>Verificando el pago con tu banco</li>
               <li>Activando tu suscripción</li>
@@ -157,13 +182,13 @@ export default function SubscriptionPendingPage() {
           {paymentResolved ? (
             <div className="text-center text-green-600 mb-4">
               <CheckCircle className="h-8 w-8 mx-auto mb-2" />
-              <p className="font-medium">¡Pago procesado! Redirigiendo...</p>
+              <p className={`font-medium ${modernTheme.colors.textGreen}`}>¡Pago procesado! Redirigiendo...</p>
             </div>
           ) : (
             <Button
               onClick={handleRefresh}
               variant="outline"
-              className="w-full border-yellow-400 text-yellow-700 hover:bg-yellow-100 py-3"
+              className={`w-full py-3 ${modernTheme.effects.transition}`}
               disabled={isChecking}
             >
               <RefreshCw className={`mr-2 h-4 w-4 ${isChecking ? 'animate-spin' : ''}`} />
@@ -174,15 +199,15 @@ export default function SubscriptionPendingPage() {
           <Button
             onClick={handleGoHome}
             variant="outline"
-            className="w-full border-gtd-neutral-300 text-gtd-neutral-700 hover:bg-gtd-neutral-100 py-3"
+            className={`w-full py-3 ${modernTheme.effects.transition}`}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Volver al Inicio
           </Button>
 
-          <div className="text-center text-sm text-gtd-neutral-500 mt-4">
+          <div className={`text-center text-sm ${modernTheme.colors.mutedForeground} mt-4`}>
             ¿El pago no se procesa?{" "}
-            <a href="mailto:soporte@gtdbuddy.com" className="text-gtd-clarity-600 hover:underline">
+            <a href="mailto:soporte@gtdbuddy.com" className={`${modernTheme.colors.primaryText} hover:underline ${modernTheme.effects.transition}`}>
               Contacta soporte
             </a>
           </div>

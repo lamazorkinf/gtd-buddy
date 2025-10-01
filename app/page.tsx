@@ -4,16 +4,17 @@ import { useAuth } from "@/contexts/auth-context"
 import Dashboard from "@/components/dashboard/dashboard"
 import LandingPage from "@/components/landing/landing-page"
 import { Loader2 } from "lucide-react"
+import { modernTheme } from "@/lib/theme"
 
 export default function Home() {
   const { user, loading } = useAuth()
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className={`min-h-screen w-full ${modernTheme.colors.bg} flex items-center justify-center`}>
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-gtd-clarity-500 mx-auto mb-4" />
-          <p className="text-gtd-clarity-700 text-lg">Cargando...</p>
+          <Loader2 className={`h-12 w-12 animate-spin ${modernTheme.colors.primaryText} mx-auto mb-4`} />
+          <p className={`${modernTheme.colors.primaryText} text-lg`}>Cargando...</p>
         </div>
       </div>
     )

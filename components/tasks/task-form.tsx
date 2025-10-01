@@ -1,23 +1,22 @@
 "use client"
 
 import type React from "react"
-import type { EnergyLevel } from "@/types/task"
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { CalendarIcon, Plus, Edit, Clock, Trash2, ListChecks, Calendar, AlertCircle } from "lucide-react"
+import { CalendarIcon, Clock, Trash2, ListChecks, Calendar, AlertCircle } from "lucide-react"
 import { format, isBefore, startOfDay, isValid } from "date-fns"
 import { es } from "date-fns/locale"
-import type { Task, GTDCategory, Priority, Subtask } from "@/types/task"
+import type { Task, GTDCategory, Subtask } from "@/types/task"
 import { useTasks } from "@/hooks/use-tasks"
 import { useContexts } from "@/hooks/use-contexts"
 import { v4 as uuidv4 } from "uuid"
 import SubtaskEditModal from "./subtask-edit-modal"
+import { modernTheme } from "@/lib/theme"
 
 const safeDate = (value: unknown): Date | undefined => {
   if (!value) return undefined
@@ -35,20 +34,10 @@ interface TaskFormProps {
 
 const GTD_CATEGORIES: GTDCategory[] = ["Inbox", "Próximas acciones", "Multitarea", "A la espera", "Algún día"]
 
-const PRIORITIES: Priority[] = ["baja", "media", "alta"]
-const ENERGY_LEVELS: EnergyLevel[] = ["baja", "media", "alta"]
-
-const PRIORITY_COLORS = {
-  baja: "text-green-600 bg-green-100",
-  media: "text-yellow-600 bg-yellow-100",
-  alta: "text-red-600 bg-red-100",
-}
-
 export default function TaskForm({ task, onClose, defaultCategory, defaultDueDate, defaultContextId }: TaskFormProps) {
   const [title, setTitle] = useState(task?.title || "")
   const [description, setDescription] = useState(task?.description || "")
   const [category, setCategory] = useState<GTDCategory>(task?.category || defaultCategory || "Inbox")
-  const [priority, setPriority] = useState<Priority>(task?.priority || "media")
   const [dueDate, setDueDate] = useState<Date | undefined>(task?.dueDate || defaultDueDate)
   const [dueTime, setDueTime] = useState<string>(task?.dueDate ? format(task.dueDate, "HH:mm") : "23:59")
   const [estimatedMinutes, setEstimatedMinutes] = useState<number | undefined>(task?.estimatedMinutes)
@@ -71,7 +60,6 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
       setTitle(task.title || "")
       setDescription(task.description || "")
       setCategory(task.category || defaultCategory || "Inbox")
-      setPriority(task.priority || "media")
       setDueDate(task.dueDate)
       setDueTime(task.dueDate ? format(task.dueDate, "HH:mm") : "23:59")
       setEstimatedMinutes(task.estimatedMinutes)
@@ -158,7 +146,6 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
       const taskData: any = {
         title: title.trim(),
         category,
-        priority,
         completed: task?.completed || false,
       }
 
@@ -184,7 +171,6 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
         setTitle("")
         setDescription("")
         setCategory(defaultCategory || "Inbox")
-        setPriority("media")
         setDueDate(defaultDueDate)
         setDueTime("23:59")
         setEstimatedMinutes(undefined)
@@ -208,15 +194,7 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
 
   return (
     <div className="p-6">
-      <Card className="w-full max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-heading">
-            {isEditing ? <Edit className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
-            {isEditing ? "Editar Tarea" : "Nueva Tarea"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block">Título *</label>
               <Input
@@ -238,40 +216,20 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">Categoría GTD</label>
-                <Select value={category} onValueChange={(value: GTDCategory) => setCategory(value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="modal-select-content">
-                    {GTD_CATEGORIES.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">Prioridad</label>
-                <Select value={priority} onValueChange={(value: Priority) => setPriority(value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="modal-select-content">
-                    {PRIORITIES.map((p) => (
-                      <SelectItem key={p} value={p}>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${PRIORITY_COLORS[p]}`}>
-                          {p.charAt(0).toUpperCase() + p.slice(1)}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">Categoría GTD</label>
+              <Select value={category} onValueChange={(value: GTDCategory) => setCategory(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="modal-select-content">
+                  {GTD_CATEGORIES.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Sección de Subtareas */}
@@ -530,8 +488,6 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
               )}
             </div>
           </form>
-        </CardContent>
-      </Card>
 
       {/* Modal para editar subtarea */}
       {editingSubtask && (

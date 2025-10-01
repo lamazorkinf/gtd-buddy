@@ -20,13 +20,13 @@ const CONTEXT_STATUS_CONFIG: Record<
   active: {
     label: "Activo",
     color: "text-gtd-confidence-700",
-    emoji: "🟢",
+    emoji: "",
     badgeClass: "bg-green-100 text-green-800 border-green-300",
   },
   inactive: {
     label: "Inactivo",
     color: "text-gtd-neutral-700",
-    emoji: "⚪",
+    emoji: "",
     badgeClass: "bg-gray-100 text-gray-800 border-gray-300",
   },
 }
@@ -96,39 +96,35 @@ export default function ContextList({ onEditContext, onCreateTask }: ContextList
         })}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="space-y-2">
         {filteredContexts.map((context) => {
           const statusConfig = CONTEXT_STATUS_CONFIG[context.status || "active"]
 
           return (
-            <Card
+            <div
               key={context.id}
-              className="hover:shadow-md transition-shadow duration-300 bg-white/95 border border-gtd-neutral-100"
+              className="flex items-center justify-between p-4 bg-white/95 border border-gtd-neutral-100 rounded-xl hover:shadow-md transition-shadow duration-300"
             >
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg font-heading text-gtd-clarity-700">{context.name}</CardTitle>
-                    <Badge variant="outline" className={`${statusConfig.badgeClass} text-xs mt-1`}>
-                      {statusConfig.emoji} {statusConfig.label}
-                    </Badge>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onEditContext(context)}
-                    className="h-8 w-8 text-gtd-neutral-500 hover:bg-gtd-neutral-100"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
+              <div className="flex-1">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-lg font-heading text-gtd-clarity-700">{context.name}</h3>
+                  <Badge variant="outline" className={`${statusConfig.badgeClass} text-xs`}>
+                    {statusConfig.label}
+                  </Badge>
                 </div>
-              </CardHeader>
-              <CardContent className="pt-0">
                 {context.description && (
-                  <p className="text-sm text-gtd-neutral-600 mt-2 line-clamp-2">{context.description}</p>
+                  <p className="text-sm text-gtd-neutral-600 mt-1">{context.description}</p>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onEditContext(context)}
+                className="h-8 w-8 text-gtd-neutral-500 hover:bg-gtd-neutral-100 ml-4"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            </div>
           )
         })}
       </div>

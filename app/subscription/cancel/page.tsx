@@ -7,6 +7,7 @@ import { AlertTriangle, ArrowLeft, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { modernTheme } from "@/lib/theme"
 
 export default function SubscriptionCancelPage() {
   const { user } = useAuth()
@@ -27,11 +28,12 @@ export default function SubscriptionCancelPage() {
         body: JSON.stringify({ userId: user.uid }),
       })
 
+      const data = await response.json()
+
       if (response.ok) {
-        // Redirigir a una página de confirmación de cancelación
-        router.push("/subscription/cancelled")
+        // Redirigir con mensaje de confirmación
+        router.push(`/subscription/cancelled?message=${encodeURIComponent(data.message || "")}`)
       } else {
-        const data = await response.json()
         setError(data.error || "Error al cancelar la suscripción")
       }
     } catch (err) {
@@ -46,26 +48,26 @@ export default function SubscriptionCancelPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 selection:bg-gtd-action-300 selection:text-white">
-      <Card className="w-full max-w-md mx-auto overflow-hidden shadow-xl rounded-xl bg-white/80 backdrop-blur-sm border border-gtd-neutral-100">
-        <div className="bg-red-500 text-white p-8 text-center">
+    <div className={`min-h-screen w-full flex items-center justify-center p-4 ${modernTheme.colors.bg}`}>
+      <Card className={`w-full max-w-md mx-auto overflow-hidden ${modernTheme.effects.glass} border ${modernTheme.colors.cardBorder} ${modernTheme.container.radius} ${modernTheme.container.shadow}`}>
+        <div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-8 text-center">
           <AlertTriangle className="h-20 w-20 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold font-heading">Cancelar Suscripción</h1>
+          <h1 className={`text-3xl ${modernTheme.typography.heading}`}>Cancelar Suscripción</h1>
         </div>
 
         <CardHeader className="text-center pb-2 pt-6">
-          <CardTitle className="text-2xl font-bold text-gtd-neutral-800 font-heading">
+          <CardTitle className={`text-2xl ${modernTheme.typography.heading} ${modernTheme.colors.primaryText}`}>
             ¿Estás seguro?
           </CardTitle>
-          <CardDescription className="text-gtd-neutral-600 mt-2">
-            Esta acción cancelará tu suscripción activa. Perderás acceso a todas las funcionalidades premium.
+          <CardDescription className={`${modernTheme.colors.mutedForeground} mt-2`}>
+            Tu suscripción continuará activa hasta el final del período pagado. Después de esa fecha, no se te cobrará más.
           </CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-6 px-6 pb-8">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <h3 className="font-medium text-red-800 mb-2">Lo que perderás:</h3>
-            <ul className="text-sm text-red-700 space-y-1 list-disc list-inside">
+          <div className={`${modernTheme.colors.cardRed} border ${modernTheme.container.radius} p-4`}>
+            <h3 className={`font-medium ${modernTheme.colors.textRed} mb-2`}>Lo que perderás:</h3>
+            <ul className={`text-sm ${modernTheme.colors.textRed} space-y-1 list-disc list-inside`}>
               <li>Captura ilimitada de tareas</li>
               <li>Organización por contextos y proyectos</li>
               <li>Revisión semanal guiada</li>
@@ -76,9 +78,9 @@ export default function SubscriptionCancelPage() {
           </div>
 
           {error && (
-            <Alert className="border-red-200 bg-red-50">
-              <AlertTriangle className="h-4 w-4 text-red-600" />
-              <AlertDescription className="text-red-800">{error}</AlertDescription>
+            <Alert className={`${modernTheme.colors.cardRed} border ${modernTheme.container.radius}`}>
+              <AlertTriangle className={`h-4 w-4 ${modernTheme.colors.textRed}`} />
+              <AlertDescription className={modernTheme.colors.textRed}>{error}</AlertDescription>
             </Alert>
           )}
 
@@ -86,7 +88,7 @@ export default function SubscriptionCancelPage() {
             <Button
               onClick={handleCancelSubscription}
               disabled={isCancelling}
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 text-lg"
+              className={`w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 text-lg ${modernTheme.effects.transition}`}
             >
               {isCancelling ? (
                 <>
@@ -101,16 +103,16 @@ export default function SubscriptionCancelPage() {
             <Button
               onClick={handleGoBack}
               variant="outline"
-              className="w-full border-gtd-neutral-300 text-gtd-neutral-700 hover:bg-gtd-neutral-100 py-3"
+              className={`w-full py-3 ${modernTheme.effects.transition}`}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Mantener Suscripción
             </Button>
           </div>
 
-          <div className="text-center text-sm text-gtd-neutral-500">
+          <div className={`text-center text-sm ${modernTheme.colors.mutedForeground}`}>
             ¿Necesitas ayuda?{" "}
-            <a href="mailto:soporte@gtdbuddy.com" className="text-gtd-clarity-600 hover:underline">
+            <a href="mailto:soporte@gtdbuddy.com" className={`${modernTheme.colors.primaryText} hover:underline ${modernTheme.effects.transition}`}>
               Contacta soporte
             </a>
           </div>

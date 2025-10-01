@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckCircle, Zap, Brain, BarChart, ArrowRight, LogIn, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
+import { modernTheme } from "@/lib/theme"
 
 const gtdBenefits = [
   {
@@ -58,10 +59,10 @@ const appAdvantages = [
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen gtd-gradient-bg text-gray-800 overflow-x-hidden">
+    <div className={`min-h-screen w-full ${modernTheme.colors.bg} overflow-x-hidden`}>
       {/* Hero Section */}
-      <section className="relative py-24 md:py-40 text-center text-white overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-gtd-clarity-500 via-gtd-action-400 to-gtd-focus-400 opacity-90"></div>
+      <section className={`relative w-full py-24 md:py-40 text-center text-white overflow-hidden ${modernTheme.effects.glass}`}>
+        <div className={`absolute inset-0 ${modernTheme.colors.primary} opacity-90`}></div>
         <div
           className="absolute inset-0 opacity-20"
           style={{
@@ -77,35 +78,35 @@ export default function LandingPage() {
           }}
         ></div>
 
-        <div className="container mx-auto px-6 relative z-10">
+        <div className="w-full px-6 relative z-10">
           <motion.h1
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.2 }}
-            className="text-5xl md:text-7xl font-bold mb-8 font-heading drop-shadow-lg"
+            transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
+            className={`text-5xl md:text-7xl ${modernTheme.typography.heading} mb-8 drop-shadow-lg`}
           >
             Domina tu Productividad con <span className="block mt-2">GTD Buddy</span>
           </motion.h1>
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.4 }}
+            transition={{ duration: 0.5, delay: 0.25, ease: "easeOut" }}
             className="text-xl md:text-2xl mb-12 max-w-3xl mx-auto drop-shadow-sm"
           >
             Tu mente libre, tu sistema claro. Captura. Decide. Avanza.
           </motion.p>
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.6 }}
+            transition={{ duration: 0.5, delay: 0.4, ease: "easeOut" }}
             className="flex flex-col sm:flex-row justify-center items-center gap-6"
           >
             <Link href="/auth?tab=signup" passHref>
               <Button
                 size="lg"
-                className="gtd-gradient-action hover:from-gtd-action-600 hover:to-gtd-action-800 text-white text-lg px-10 py-7 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 gtd-transition w-full sm:w-auto"
+                className={`text-white text-lg px-10 py-7 ${modernTheme.container.radius} ${modernTheme.typography.heading} ${modernTheme.container.shadow} hover:shadow-xl transform hover:-translate-y-1 ${modernTheme.effects.transition} w-full sm:w-auto bg-white ${modernTheme.colors.primaryText} hover:bg-white/90`}
               >
-                ⚡ Comienza Ahora
+                Comienza Ahora
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
@@ -113,7 +114,7 @@ export default function LandingPage() {
               <Button
                 size="lg"
                 variant="outline"
-                className="border-white text-purple-600 hover:bg-white hover:text-purple-600 text-lg px-10 py-7 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 w-full sm:w-auto"
+                className={`border-white text-white hover:bg-white ${modernTheme.colors.primaryText} text-lg px-10 py-7 ${modernTheme.container.radius} ${modernTheme.typography.heading} ${modernTheme.container.shadow} hover:shadow-xl transform hover:-translate-y-1 ${modernTheme.effects.transition} w-full sm:w-auto`}
               >
                 <LogIn className="mr-2 h-5 w-5" />
                 Iniciar Sesión
@@ -124,23 +125,23 @@ export default function LandingPage() {
       </section>
 
       {/* What is GTD Section */}
-      <section id="what-is-gtd" className="py-20 md:py-28">
-        <div className="container mx-auto px-6">
+      <section id="what-is-gtd" className="w-full py-20 md:py-28">
+        <div className="w-full px-6 max-w-7xl mx-auto">
           <motion.h2
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 15 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
-            transition={{ duration: 0.6 }}
-            className="text-4xl md:text-5xl font-bold text-center mb-16 font-heading"
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className={`text-4xl md:text-5xl ${modernTheme.typography.heading} text-center mb-16`}
           >
-            ¿Qué es el Método <span className="text-purple-600">Getting Things Done?</span>
+            ¿Qué es el Método <span className={modernTheme.colors.primaryText}>Getting Things Done?</span>
           </motion.h2>
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 15 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-lg text-gray-700 mb-16 max-w-3xl mx-auto text-center"
+            transition={{ duration: 0.4, delay: 0.1, ease: "easeOut" }}
+            className={`text-lg ${modernTheme.colors.mutedForeground} mb-16 max-w-3xl mx-auto text-center`}
           >
             GTD es un sistema de gestión de la productividad creado por David Allen. Se basa en mover las tareas de tu
             mente a un sistema externo confiable, permitiéndote enfocarte en la acción en lugar de recordar qué tienes
@@ -150,21 +151,21 @@ export default function LandingPage() {
             {gtdBenefits.map((benefit, index) => (
               <motion.div
                 key={benefit.title}
-                initial={{ opacity: 0, y: 30, scale: 0.95 }}
-                whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.2 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
+                transition={{ duration: 0.3, delay: index * 0.08, ease: "easeOut" }}
                 className="h-full"
               >
-                <Card className="text-center shadow-xl hover:shadow-2xl transition-all duration-300 rounded-xl overflow-hidden h-full flex flex-col">
+                <Card className={`text-center ${modernTheme.container.shadow} hover:shadow-2xl ${modernTheme.effects.transition} ${modernTheme.container.radius} overflow-hidden h-full flex flex-col ${modernTheme.effects.glass} border ${modernTheme.colors.cardBorder}`}>
                   <CardHeader className={`p-8 ${benefit.bgColor} flex-shrink-0`}>
-                    <div className="mx-auto bg-white rounded-full p-4 w-fit mb-5 shadow-md">{benefit.icon}</div>
-                    <CardTitle className="text-2xl font-semibold text-gray-800 min-h-[4rem] flex items-center justify-center leading-tight">
+                    <div className={`mx-auto bg-white ${modernTheme.container.radius} p-4 w-fit mb-5 ${modernTheme.container.shadow}`}>{benefit.icon}</div>
+                    <CardTitle className={`text-2xl ${modernTheme.typography.heading} ${modernTheme.colors.primaryText} min-h-[4rem] flex items-center justify-center leading-tight`}>
                       {benefit.title}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-6 flex-grow flex items-center">
-                    <p className="text-gray-600 text-md">{benefit.description}</p>
+                    <p className={`${modernTheme.colors.mutedForeground} text-md`}>{benefit.description}</p>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -174,30 +175,30 @@ export default function LandingPage() {
       </section>
 
       {/* App Advantages Section */}
-      <section id="advantages" className="py-20 md:py-28 bg-gray-100">
-        <div className="container mx-auto px-6">
+      <section id="advantages" className={`w-full py-20 md:py-28 ${modernTheme.effects.glass}`}>
+        <div className="w-full px-6 max-w-7xl mx-auto">
           <motion.h2
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 15 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
-            transition={{ duration: 0.6 }}
-            className="text-4xl md:text-5xl font-bold text-center mb-16 font-heading"
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className={`text-4xl md:text-5xl ${modernTheme.typography.heading} text-center mb-16`}
           >
-            Ventajas de <span className="text-pink-500">GTD Buddy</span>
+            Ventajas de <span className={modernTheme.colors.primaryText}>GTD Buddy</span>
           </motion.h2>
           <div className="max-w-3xl mx-auto">
             <ul className="space-y-6">
               {appAdvantages.map((advantage, index) => (
                 <motion.li
                   key={index}
-                  initial={{ opacity: 0, x: -30 }}
-                  whileInView={{ opacity: 1, x: 0 }}
+                  initial={{ opacity: 0, y: 15 }}
+                  whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.2 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="flex items-start p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300"
+                  transition={{ duration: 0.3, delay: index * 0.06, ease: "easeOut" }}
+                  className={`flex items-start p-6 ${modernTheme.effects.glass} ${modernTheme.container.radius} ${modernTheme.container.shadow} hover:shadow-xl ${modernTheme.effects.transition} border ${modernTheme.colors.cardBorder}`}
                 >
-                  <div className="flex-shrink-0 p-2 bg-purple-100 rounded-full mr-4">{advantage.icon}</div>
-                  <span className="text-lg text-gray-700">{advantage.text}</span>
+                  <div className={`flex-shrink-0 p-2 bg-purple-100 ${modernTheme.container.radius} mr-4`}>{advantage.icon}</div>
+                  <span className={`text-lg ${modernTheme.colors.mutedForeground}`}>{advantage.text}</span>
                 </motion.li>
               ))}
             </ul>
@@ -206,33 +207,33 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-20 md:py-28">
-        <div className="container mx-auto px-6 text-center">
+      <section id="pricing" className="w-full py-20 md:py-28">
+        <div className="w-full px-6 max-w-7xl mx-auto text-center">
           <motion.h2
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className={`text-4xl md:text-5xl ${modernTheme.typography.heading} mb-16`}
+          >
+            Un Precio Simple para <span className={modernTheme.colors.primaryText}>Transformar tu Productividad</span>
+          </motion.h2>
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
-            transition={{ duration: 0.6 }}
-            className="text-4xl md:text-5xl font-bold mb-16 font-heading"
+            transition={{ duration: 0.4, ease: "easeOut" }}
           >
-            Un Precio Simple para <span className="text-red-500">Transformar tu Productividad</span>
-          </motion.h2>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ duration: 0.7 }}
-          >
-            <Card className="max-w-md mx-auto shadow-2xl rounded-2xl overflow-hidden border-2 border-transparent hover:border-purple-500 transition-all duration-300 group">
-              <div className="bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 p-10 text-white">
-                <CardTitle className="text-4xl font-bold font-heading mb-2">Plan Pro</CardTitle>
-                <p className="text-6xl font-extrabold mb-2">
+            <Card className={`max-w-md mx-auto ${modernTheme.container.shadow} ${modernTheme.container.radius} overflow-hidden border-2 ${modernTheme.colors.cardBorder} hover:${modernTheme.effects.ring} ${modernTheme.effects.transition} group`}>
+              <div className={`${modernTheme.colors.primary} p-10 text-white`}>
+                <CardTitle className={`text-4xl ${modernTheme.typography.heading} mb-2`}>Plan Pro</CardTitle>
+                <p className={`text-6xl ${modernTheme.typography.heading} mb-2`}>
                   $2.500 <span className="text-2xl font-normal">ARS / mes</span>
                 </p>
-                <p className="text-purple-100 text-lg">Todas las funcionalidades incluidas.</p>
+                <p className="text-white/80 text-lg">Todas las funcionalidades incluidas.</p>
               </div>
-              <CardContent className="p-8 bg-white">
-                <ul className="space-y-4 text-left mb-10 text-gray-700">
+              <CardContent className={`p-8 ${modernTheme.effects.glass}`}>
+                <ul className={`space-y-4 text-left mb-10 ${modernTheme.colors.mutedForeground}`}>
                   {[
                     "Todas las categorías GTD",
                     "Tareas ilimitadas",
@@ -251,7 +252,7 @@ export default function LandingPage() {
                 <Link href="/auth?tab=signup" passHref>
                   <Button
                     size="lg"
-                    className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white text-xl py-7 rounded-xl shadow-md hover:shadow-lg transform group-hover:scale-105 transition-all duration-300"
+                    className={`w-full ${modernTheme.colors.primary} ${modernTheme.colors.primaryHover} text-white text-xl py-7 ${modernTheme.container.radius} ${modernTheme.container.shadow} hover:shadow-lg transform group-hover:scale-105 ${modernTheme.effects.transition}`}
                   >
                     Suscríbete Ahora
                   </Button>
@@ -263,17 +264,17 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 bg-purple-600 text-white text-center">
-        <div className="container mx-auto px-6">
+      <footer className={`w-full py-12 ${modernTheme.colors.primary} text-white text-center`}>
+        <div className="w-full px-6 max-w-7xl mx-auto">
           <p className="text-lg">
             &copy; {new Date().getFullYear()}{" "}
-            <a href="https://luoda.ar" target="_blank" rel="noopener noreferrer" className="text-pink-500">
+            <a href="https://luoda.ar" target="_blank" rel="noopener noreferrer" className="text-pink-200 hover:text-pink-100">
               Luoda
             </a>
             . Todos los derechos reservados.
           </p>
           <p className="text-md mt-2">
-            Construido con <span className="text-pink-400 animate-pulse">♥</span> para ayudarte a ser más productivo.
+            Construido con <span className="text-pink-200 animate-pulse">♥</span> para ayudarte a ser más productivo.
           </p>
         </div>
       </footer>

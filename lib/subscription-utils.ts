@@ -51,14 +51,18 @@ export function checkSubscriptionStatus(user: User | null): SubscriptionStatus {
       }
     }
 
-    // Si no ha expirado y tiene estado activo o trial
-    if (user.subscriptionStatus === "active" || user.subscriptionStatus === "trial") {
+    // Si no ha expirado y tiene estado activo, trial, o pendiente de cancelación
+    if (user.subscriptionStatus === "active" || user.subscriptionStatus === "trial" || user.subscriptionStatus === "pending_cancellation") {
       return {
-        isActive: true,
+        isActive: user.subscriptionStatus !== "pending_cancellation",
         isExpired: false,
         isInTrial: user.subscriptionStatus === "trial",
         canAccessDashboard: true,
-        reason: user.subscriptionStatus === "trial" ? "In trial period" : "Active subscription",
+        reason: user.subscriptionStatus === "trial"
+          ? "In trial period"
+          : user.subscriptionStatus === "pending_cancellation"
+          ? "Active until cancellation date"
+          : "Active subscription",
       }
     }
   }

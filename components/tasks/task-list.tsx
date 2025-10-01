@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Inbox, ArrowRight, FolderOpen, Clock, Calendar, Search, Filter } from "lucide-react"
-import type { Task, GTDCategory, Priority } from "@/types/task"
+import type { Task, GTDCategory } from "@/types/task"
 import { useTasks } from "@/hooks/use-tasks"
 import TaskItem from "./task-item"
 import { useContexts } from "@/hooks/use-contexts"
+import { modernTheme } from "@/lib/theme"
 
 interface TaskListProps {
   onEditTask: (task: Task) => void
@@ -24,33 +25,51 @@ const CATEGORY_ICONS = {
   "Algún día": Calendar,
 }
 
-const CATEGORY_COLORS = {
-  Inbox: "from-gray-500 to-gray-600",
-  "Próximas acciones": "from-blue-500 to-blue-600",
-  Multitarea: "from-purple-500 to-purple-600",
-  "A la espera": "from-orange-500 to-orange-600",
-  "Algún día": "from-green-500 to-green-600",
+const CATEGORY_STYLES = {
+  Inbox: {
+    card: `${modernTheme.colors.cardBlue} ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border`,
+    title: modernTheme.colors.textBlue,
+    badge: `${modernTheme.colors.badgeBlue} ${modernTheme.container.radius}`,
+  },
+  "Próximas acciones": {
+    card: `${modernTheme.colors.cardGreen} ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border`,
+    title: modernTheme.colors.textGreen,
+    badge: `${modernTheme.colors.badgeGreen} ${modernTheme.container.radius}`,
+  },
+  Multitarea: {
+    card: `${modernTheme.colors.cardPurple} ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border`,
+    title: modernTheme.colors.textPurple,
+    badge: `${modernTheme.colors.badgePurple} ${modernTheme.container.radius}`,
+  },
+  "A la espera": {
+    card: `${modernTheme.colors.cardOrange} ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border`,
+    title: modernTheme.colors.textOrange,
+    badge: `${modernTheme.colors.badgeOrange} ${modernTheme.container.radius}`,
+  },
+  "Algún día": {
+    card: `${modernTheme.colors.cardAmber} ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border`,
+    title: modernTheme.colors.textAmber,
+    badge: `${modernTheme.colors.badgeAmber} ${modernTheme.container.radius}`,
+  },
 }
 
 export default function TaskList({ onEditTask }: TaskListProps) {
   const { tasks, loading } = useTasks()
   const { contexts } = useContexts()
   const [selectedCategory, setSelectedCategory] = useState<GTDCategory | "all">("all")
-  const [selectedPriority, setSelectedPriority] = useState<Priority | "all">("all")
   const [selectedContext, setSelectedContext] = useState<string | "all">("all")
   const [searchTerm, setSearchTerm] = useState("")
   const [showCompleted, setShowCompleted] = useState(false)
 
   const filteredTasks = tasks.filter((task) => {
     const matchesCategory = selectedCategory === "all" || task.category === selectedCategory
-    const matchesPriority = selectedPriority === "all" || task.priority === selectedPriority
     const matchesContext = selectedContext === "all" || task.contextId === selectedContext
     const matchesSearch =
       task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.description?.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCompleted = showCompleted || !task.completed
 
-    return matchesCategory && matchesPriority && matchesContext && matchesSearch && matchesCompleted
+    return matchesCategory && matchesContext && matchesSearch && matchesCompleted
   })
 
   // Ordenar tareas por fecha: más reciente a más futura, sin fecha al final
@@ -68,13 +87,7 @@ export default function TaskList({ onEditTask }: TaskListProps) {
       if (!a.dueDate && b.dueDate) {
         return 1
       }
-      // Si ninguna tiene fecha, ordenar por prioridad y luego por fecha de creación
-      const priorityOrder = { alta: 0, media: 1, baja: 2 }
-      const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority]
-      if (priorityDiff !== 0) {
-        return priorityDiff
-      }
-      // Si tienen la misma prioridad, ordenar por fecha de creación (más reciente primero)
+      // Si ninguna tiene fecha, ordenar por fecha de creación (más reciente primero)
       return b.createdAt.getTime() - a.createdAt.getTime()
     })
   }, [filteredTasks])
@@ -95,7 +108,7 @@ export default function TaskList({ onEditTask }: TaskListProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+        <div className={`animate-spin rounded-full h-8 w-8 border-b-2 ${modernTheme.colors.primaryText}`}></div>
       </div>
     )
   }
@@ -103,9 +116,9 @@ export default function TaskList({ onEditTask }: TaskListProps) {
   return (
     <div className="space-y-6">
       {/* Filtros */}
-      <Card>
+      <Card className={`${modernTheme.effects.glass} ${modernTheme.container.shadow} border ${modernTheme.colors.cardBorder} ${modernTheme.container.radius} ${modernTheme.effects.transition}`}>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-heading">
+          <CardTitle className={`flex items-center gap-2 ${modernTheme.typography.heading} ${modernTheme.colors.primaryText}`}>
             <Filter className="h-5 w-5" />
             Filtros
           </CardTitle>
@@ -113,20 +126,20 @@ export default function TaskList({ onEditTask }: TaskListProps) {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Search className={`absolute left-3 top-3 h-4 w-4 ${modernTheme.colors.muted}`} />
               <Input
                 placeholder="Buscar tareas..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className={`pl-10 ${modernTheme.container.radius}`}
               />
             </div>
 
             <Select value={selectedCategory} onValueChange={(value: GTDCategory | "all") => setSelectedCategory(value)}>
-              <SelectTrigger>
+              <SelectTrigger className={modernTheme.container.radius}>
                 <SelectValue placeholder="Todas las categorías" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className={`${modernTheme.effects.glass} border ${modernTheme.colors.cardBorder} ${modernTheme.container.shadow}`}>
                 <SelectItem value="all">Todas las categorías</SelectItem>
                 {categories.map((category) => (
                   <SelectItem key={category} value={category}>
@@ -136,23 +149,11 @@ export default function TaskList({ onEditTask }: TaskListProps) {
               </SelectContent>
             </Select>
 
-            <Select value={selectedPriority} onValueChange={(value: Priority | "all") => setSelectedPriority(value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Todas las prioridades" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas las prioridades</SelectItem>
-                <SelectItem value="alta">Alta</SelectItem>
-                <SelectItem value="media">Media</SelectItem>
-                <SelectItem value="baja">Baja</SelectItem>
-              </SelectContent>
-            </Select>
-
             <Select value={selectedContext} onValueChange={(value: string) => setSelectedContext(value)}>
-              <SelectTrigger>
+              <SelectTrigger className={modernTheme.container.radius}>
                 <SelectValue placeholder="Todos los contextos" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className={`${modernTheme.effects.glass} border ${modernTheme.colors.cardBorder} ${modernTheme.container.shadow}`}>
                 <SelectItem value="all">Todos los contextos</SelectItem>
                 {contexts.map((context) => (
                   <SelectItem key={context.id} value={context.id}>
@@ -165,7 +166,7 @@ export default function TaskList({ onEditTask }: TaskListProps) {
             <Button
               variant={showCompleted ? "default" : "outline"}
               onClick={() => setShowCompleted(!showCompleted)}
-              className="w-full"
+              className={`w-full ${modernTheme.container.radius}`}
             >
               {showCompleted ? "Ocultar completadas" : "Mostrar completadas"}
             </Button>
@@ -178,18 +179,19 @@ export default function TaskList({ onEditTask }: TaskListProps) {
         categories.map((category) => {
           const categoryTasks = groupedTasks[category] || []
           const Icon = CATEGORY_ICONS[category]
+          const styles = CATEGORY_STYLES[category]
 
           if (categoryTasks.length === 0) return null
 
           return (
-            <Card key={category} className="overflow-hidden">
-              <CardHeader className={`bg-gradient-to-r ${CATEGORY_COLORS[category]} text-white`}>
-                <CardTitle className="flex items-center justify-between font-heading">
+            <Card key={category} className={`${styles.card} ${modernTheme.effects.glassHover} ${modernTheme.effects.transition} overflow-hidden`}>
+              <CardHeader>
+                <CardTitle className={`flex items-center justify-between ${modernTheme.typography.heading} ${styles.title}`}>
                   <div className="flex items-center gap-2">
                     <Icon className="h-5 w-5" />
                     {category}
                   </div>
-                  <Badge variant="secondary" className="bg-white/20 text-white">
+                  <Badge variant="secondary" className={styles.badge}>
                     {categoryTasks.length}
                   </Badge>
                 </CardTitle>
@@ -208,9 +210,9 @@ export default function TaskList({ onEditTask }: TaskListProps) {
             <TaskItem key={task.id} task={task} onEdit={onEditTask} />
           ))}
           {sortedTasks.length === 0 && (
-            <Card>
+            <Card className={`${modernTheme.effects.glass} ${modernTheme.container.shadow} border ${modernTheme.colors.cardBorder} ${modernTheme.container.radius}`}>
               <CardContent className="p-8 text-center">
-                <p className="text-gray-500">No se encontraron tareas con los filtros aplicados.</p>
+                <p className={modernTheme.colors.mutedForeground}>No se encontraron tareas con los filtros aplicados.</p>
               </CardContent>
             </Card>
           )}

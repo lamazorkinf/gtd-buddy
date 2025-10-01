@@ -12,25 +12,19 @@ interface PageTransitionProps {
 const pageVariants = {
   initial: {
     opacity: 0,
-    scale: 0.95,
-    y: 20,
   },
   in: {
     opacity: 1,
-    scale: 1,
-    y: 0,
   },
   out: {
     opacity: 0,
-    scale: 1.05,
-    y: -20,
   },
 }
 
 const pageTransition = {
   type: "tween" as const,
-  ease: "anticipate" as const,
-  duration: 0.4,
+  ease: "easeInOut" as const,
+  duration: 0.15,
 }
 
 export default function PageTransition({ children }: PageTransitionProps) {

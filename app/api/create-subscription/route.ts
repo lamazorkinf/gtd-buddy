@@ -71,33 +71,64 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 3) Construir la URL de Checkout de suscripción
-    //    Ya tienes tu plan en MP, así que basta con redirigir a:
-    //      https://www.mercadopago.com.ar/subscriptions/checkout
-    //      pasándole preapproval_plan_id=<planId>, external_reference=<userId>,
-    //      payer_email=<email> y back_url=<...>/subscription/success
-    const baseUrlCheckout =
-      "https://www.mercadopago.com.ar/subscriptions/checkout";
+    // 3) Crear suscripción usando la API oficial de MercadoPago
+    //    Según la documentación oficial:
+    //    https://www.mercadopago.com.ar/developers/es/reference/subscriptions/_preapproval/post
+    console.log("📡 Creando preapproval en MercadoPago...");
 
-    const params = new URLSearchParams({
+    const preapprovalPayload = {
+      reason: "Suscripción GTD Buddy - Plan Pro",
       preapproval_plan_id: planId,
       external_reference: userId,
       payer_email: email,
       back_url: `${baseUrlApp}/subscription/success`,
-      failure_url: `${baseUrlApp}/subscription/failure`,
-      pending_url: `${baseUrlApp}/subscription/pending`,
-    }).toString();
+      status: "pending", // Estado inicial
+    };
 
-    const checkoutUrl = `${baseUrlCheckout}?${params}`;
-    console.log("🔗 URL de checkout generada:", checkoutUrl);
+    console.log("📦 Payload de preapproval:", JSON.stringify(preapprovalPayload, null, 2));
 
-    // 4) Devolver JSON con init_point
+    const createPreapprovalResponse = await fetch("https://api.mercadopago.com/preapproval", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(preapprovalPayload),
+    });
+
+    if (!createPreapprovalResponse.ok) {
+      const errorText = await createPreapprovalResponse.text();
+      console.error("❌ Error al crear preapproval:", createPreapprovalResponse.status, errorText);
+
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { message: errorText };
+      }
+
+      return NextResponse.json(
+        {
+          error: "Error al crear suscripción en MercadoPago",
+          details: errorData.message || errorData.error || "Error desconocido",
+          status: createPreapprovalResponse.status
+        },
+        { status: createPreapprovalResponse.status }
+      );
+    }
+
+    const preapprovalData = await createPreapprovalResponse.json();
+    console.log("✅ Preapproval creado exitosamente:", preapprovalData.id);
+    console.log("🔗 Init point:", preapprovalData.init_point);
+
+    // 4) Devolver JSON con init_point oficial de MercadoPago
     return NextResponse.json(
       {
-        id: `plan_${planId}_${Date.now()}`,
-        status: "pending",
-        init_point: checkoutUrl,
+        id: preapprovalData.id,
+        status: preapprovalData.status,
+        init_point: preapprovalData.init_point,
         success: true,
+        preapproval_id: preapprovalData.id,
       },
       { status: 200 }
     );

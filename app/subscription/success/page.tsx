@@ -7,6 +7,8 @@ import { CheckCircle, ArrowRight, Loader2, AlertCircle, Clock } from "lucide-rea
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { modernTheme } from "@/lib/theme"
+import { useToast } from "@/hooks/use-toast"
 
 type PaymentStatus = "loading" | "success" | "pending" | "error"
 
@@ -14,6 +16,7 @@ export default function SubscriptionSuccessPage() {
   const { user } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { toast } = useToast()
   const [status, setStatus] = useState<PaymentStatus>("loading")
   const [message, setMessage] = useState("")
   const [retryCount, setRetryCount] = useState(0)
@@ -60,6 +63,12 @@ export default function SubscriptionSuccessPage() {
             case "active":
               setStatus("success")
               setMessage("¡Tu suscripción ha sido activada exitosamente!")
+              // Mostrar toast de éxito
+              toast({
+                title: "🎉 ¡Suscripción Activada!",
+                description: "Bienvenido a GTD Buddy Pro. Tu suscripción está activa.",
+                duration: 5000,
+              })
               // Redirigir al dashboard después de 3 segundos
               setTimeout(() => router.push("/"), 3000)
               break
@@ -67,6 +76,11 @@ export default function SubscriptionSuccessPage() {
             case "pending_payment":
               setStatus("pending")
               setMessage("Tu pago está siendo procesado. Te notificaremos cuando se confirme.")
+              toast({
+                title: "⏳ Pago Pendiente",
+                description: "Tu pago está siendo procesado. Te notificaremos cuando se confirme.",
+                duration: 5000,
+              })
               break
 
             default:
@@ -87,6 +101,12 @@ export default function SubscriptionSuccessPage() {
 
           setStatus("error")
           setMessage("Error al verificar el pago. Por favor, contacta soporte.")
+          toast({
+            title: "❌ Error en el Pago",
+            description: "No pudimos verificar tu pago. Por favor, contacta soporte.",
+            variant: "destructive",
+            duration: 5000,
+          })
         }
       } catch (error) {
         console.error("❌ Error en verifyPayment:", error)
@@ -101,6 +121,12 @@ export default function SubscriptionSuccessPage() {
 
         setStatus("error")
         setMessage("Error de conexión. Por favor, verifica tu internet e intenta nuevamente.")
+        toast({
+          title: "❌ Error de Conexión",
+          description: "No pudimos conectar con el servidor. Verifica tu internet.",
+          variant: "destructive",
+          duration: 5000,
+        })
       }
     }
 
@@ -137,12 +163,12 @@ export default function SubscriptionSuccessPage() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="w-full max-w-md mx-auto">
+      <div className={`min-h-screen w-full flex items-center justify-center p-4 ${modernTheme.colors.bg}`}>
+        <Card className={`w-full max-w-md mx-auto ${modernTheme.effects.glass} border ${modernTheme.colors.cardBorder} ${modernTheme.container.radius} ${modernTheme.container.shadow}`}>
           <CardContent className="text-center py-8">
-            <Loader2 className="h-12 w-12 animate-spin text-gtd-clarity-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Verificando tu pago...</h2>
-            <p className="text-gtd-neutral-600">
+            <Loader2 className={`h-12 w-12 animate-spin mx-auto mb-4 ${modernTheme.colors.primaryText}`} />
+            <h2 className={`text-xl font-semibold mb-2 ${modernTheme.typography.heading} ${modernTheme.colors.primaryText}`}>Verificando tu pago...</h2>
+            <p className={modernTheme.colors.mutedForeground}>
               {retryCount > 0 ? `Reintentando (${retryCount}/3)...` : "Por favor espera un momento"}
             </p>
           </CardContent>
@@ -153,21 +179,21 @@ export default function SubscriptionSuccessPage() {
 
   if (status === "error") {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="w-full max-w-md mx-auto">
+      <div className={`min-h-screen w-full flex items-center justify-center p-4 ${modernTheme.colors.bg}`}>
+        <Card className={`w-full max-w-md mx-auto ${modernTheme.effects.glass} border ${modernTheme.colors.cardBorder} ${modernTheme.container.radius} ${modernTheme.container.shadow}`}>
           <CardHeader className="text-center">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <CardTitle className="text-red-600">Error en el Pago</CardTitle>
+            <CardTitle className={`${modernTheme.typography.heading} text-red-600`}>Error en el Pago</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Alert>
-              <AlertDescription>{message}</AlertDescription>
+            <Alert className={`${modernTheme.colors.cardRed} border ${modernTheme.container.radius}`}>
+              <AlertDescription className={modernTheme.colors.textRed}>{message}</AlertDescription>
             </Alert>
             <div className="flex gap-2">
-              <Button onClick={handleRetry} variant="outline" className="flex-1">
+              <Button onClick={handleRetry} variant="outline" className={`flex-1 ${modernTheme.effects.transition}`}>
                 Reintentar
               </Button>
-              <Button onClick={handleContactSupport} className="flex-1">
+              <Button onClick={handleContactSupport} className={`flex-1 ${modernTheme.colors.primary} ${modernTheme.colors.primaryHover} ${modernTheme.effects.transition}`}>
                 Contactar Soporte
               </Button>
             </div>
@@ -179,17 +205,17 @@ export default function SubscriptionSuccessPage() {
 
   if (status === "pending") {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="w-full max-w-md mx-auto">
+      <div className={`min-h-screen w-full flex items-center justify-center p-4 ${modernTheme.colors.bg}`}>
+        <Card className={`w-full max-w-md mx-auto ${modernTheme.effects.glass} border ${modernTheme.colors.cardBorder} ${modernTheme.container.radius} ${modernTheme.container.shadow}`}>
           <CardHeader className="text-center">
             <Clock className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
-            <CardTitle className="text-yellow-600">Pago Pendiente</CardTitle>
+            <CardTitle className={`${modernTheme.typography.heading} text-yellow-600`}>Pago Pendiente</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Alert>
-              <AlertDescription>{message}</AlertDescription>
+            <Alert className={`${modernTheme.colors.cardAmber} border ${modernTheme.container.radius}`}>
+              <AlertDescription className={modernTheme.colors.textAmber}>{message}</AlertDescription>
             </Alert>
-            <Button onClick={handleGoToDashboard} className="w-full">
+            <Button onClick={handleGoToDashboard} className={`w-full ${modernTheme.colors.primary} ${modernTheme.colors.primaryHover} ${modernTheme.effects.transition}`}>
               Ir al Dashboard
             </Button>
           </CardContent>
@@ -200,29 +226,29 @@ export default function SubscriptionSuccessPage() {
 
   // Status === "success"
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 selection:bg-gtd-action-300 selection:text-white">
-      <Card className="w-full max-w-md mx-auto overflow-hidden shadow-xl rounded-xl bg-white/80 backdrop-blur-sm border border-gtd-neutral-100">
-        <div className="bg-gtd-confidence-500 text-white p-8 text-center">
+    <div className={`min-h-screen w-full flex items-center justify-center p-4 ${modernTheme.colors.bg}`}>
+      <Card className={`w-full max-w-md mx-auto overflow-hidden ${modernTheme.effects.glass} border ${modernTheme.colors.cardBorder} ${modernTheme.container.radius} ${modernTheme.container.shadow}`}>
+        <div className={`${modernTheme.colors.success} text-white p-8 text-center ${modernTheme.container.radius}`}>
           <CheckCircle className="h-20 w-20 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold font-heading">¡Pago Exitoso!</h1>
+          <h1 className={`text-3xl ${modernTheme.typography.heading}`}>¡Pago Exitoso!</h1>
         </div>
 
         <CardHeader className="text-center pb-2 pt-6">
-          <CardTitle className="text-2xl font-bold text-gtd-neutral-800 font-heading">
+          <CardTitle className={`text-2xl ${modernTheme.typography.heading} ${modernTheme.colors.primaryText}`}>
             ¡Bienvenido a GTD Buddy Pro!
           </CardTitle>
-          <CardDescription className="text-gtd-neutral-600 mt-2">{message}</CardDescription>
+          <CardDescription className={`${modernTheme.colors.mutedForeground} mt-2`}>{message}</CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-6 px-6 pb-8">
-          <Alert>
-            <CheckCircle className="h-4 w-4" />
-            <AlertDescription>Serás redirigido automáticamente al dashboard en unos segundos...</AlertDescription>
+          <Alert className={`${modernTheme.colors.cardGreen} border ${modernTheme.container.radius}`}>
+            <CheckCircle className={`h-4 w-4 ${modernTheme.colors.textGreen}`} />
+            <AlertDescription className={modernTheme.colors.textGreen}>Serás redirigido automáticamente al dashboard en unos segundos...</AlertDescription>
           </Alert>
 
           <Button
             onClick={handleGoToDashboard}
-            className="w-full bg-gradient-to-r from-gtd-clarity-500 via-gtd-action-500 to-gtd-focus-500 hover:from-gtd-clarity-600 hover:via-gtd-action-600 hover:to-gtd-focus-600 text-white font-medium py-3 text-lg"
+            className={`w-full ${modernTheme.colors.primary} ${modernTheme.colors.primaryHover} font-medium py-3 text-lg ${modernTheme.effects.transition}`}
           >
             Ir al Dashboard Ahora
             <ArrowRight className="ml-2 h-5 w-5" />

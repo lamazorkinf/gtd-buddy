@@ -4,11 +4,14 @@ import type React from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useEffect, useState, useRef } from "react"
 import { createPortal } from "react-dom"
+import { X } from "lucide-react"
+import { modernTheme } from "@/lib/theme"
 
 interface ModalTransitionProps {
   isOpen: boolean
   onClose: () => void
   children: React.ReactNode
+  title?: string
 }
 
 const backdropVariants = {
@@ -19,31 +22,29 @@ const backdropVariants = {
 const modalVariants = {
   hidden: {
     opacity: 0,
-    scale: 0.9,
     y: 20,
   },
   visible: {
     opacity: 1,
-    scale: 1,
     y: 0,
     transition: {
-      type: "spring" as const,
-      damping: 20,
-      stiffness: 200,
+      type: "tween" as const,
+      ease: "easeOut" as const,
       duration: 0.2,
     },
   },
   exit: {
     opacity: 0,
-    scale: 0.9,
-    y: 20,
+    y: 10,
     transition: {
+      type: "tween" as const,
+      ease: "easeIn" as const,
       duration: 0.15,
     },
   },
 }
 
-export default function ModalTransition({ isOpen, onClose, children }: ModalTransitionProps) {
+export default function ModalTransition({ isOpen, onClose, children, title }: ModalTransitionProps) {
   const [mounted, setMounted] = useState(false)
   const portalRootRef = useRef<HTMLElement | null>(null)
 
@@ -107,7 +108,7 @@ export default function ModalTransition({ isOpen, onClose, children }: ModalTran
         >
           {/* Backdrop */}
           <motion.div
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm" // Más oscuro para mejor contraste
+            className="absolute inset-0 bg-black/20 backdrop-blur-sm"
             onClick={onClose}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -116,13 +117,31 @@ export default function ModalTransition({ isOpen, onClose, children }: ModalTran
 
           {/* Modal Content Wrapper */}
           <motion.div
-            className="relative w-full max-w-2xl z-10 bg-white rounded-xl shadow-2xl modal-content"
+            className="relative w-full max-w-2xl z-10 backdrop-blur-xl bg-white/40 border border-white/50 rounded-2xl shadow-2xl shadow-purple-200/50 modal-content"
             variants={modalVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Close button */}
+            <button
+              onClick={onClose}
+              className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 z-10"
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </button>
+
+            {/* Title */}
+            {title && (
+              <div className="px-6 pt-6 pb-2">
+                <h2 className={`text-lg font-semibold leading-none tracking-tight ${modernTheme.colors.primaryText}`}>
+                  {title}
+                </h2>
+              </div>
+            )}
+
             {/* Contenido scrolleable del modal - removido overflow hidden para permitir que los popovers se muestren */}
             <div className="max-h-[85vh] overflow-y-auto overflow-x-visible">{children}</div>
           </motion.div>

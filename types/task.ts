@@ -1,6 +1,4 @@
 export type GTDCategory = "Inbox" | "Próximas acciones" | "Multitarea" | "A la espera" | "Algún día"
-export type Priority = "baja" | "media" | "alta"
-export type EnergyLevel = "baja" | "media" | "alta"
 
 export interface Context {
   id: string
@@ -27,29 +25,15 @@ export interface Task {
   category: GTDCategory
   dueDate?: Date
   completed: boolean
-  priority: Priority
   userId: string
   createdAt: Date
   updatedAt: Date
   // Nuevos campos GTD
   contextId?: string
-  energyLevel?: EnergyLevel
   estimatedMinutes?: number
   isQuickAction?: boolean // Para la regla de 2 minutos
   lastReviewed?: Date
   subtasks?: Subtask[] // Array de subtareas
-}
-
-export interface WeeklyReview {
-  id: string
-  userId: string
-  reviewDate: Date
-  inboxProcessed: boolean
-  projectsReviewed: boolean
-  waitingForUpdated: boolean
-  somedayReviewed: boolean
-  notes?: string
-  createdAt: Date
 }
 
 export interface User {
@@ -62,7 +46,6 @@ export interface User {
   subscriptionEndDate?: Date
   firstName?: string
   lastName?: string
-  lastWeeklyReview?: Date
   isInTrialPeriod?: boolean // Campo para manejar el período de prueba
   trialStartDate?: Date // Opcional: para rastrear cuándo comenzó la prueba
   showMessage?: boolean // Campo para controlar si mostrar el mensaje de bienvenida a usuarios test

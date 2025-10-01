@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Plus, LogOut, Calendar, ArrowRight, Clock, Layers, Hourglass, CalendarClock, User } from "lucide-react"
+import { Plus, Calendar, ArrowRight, Clock, Layers, Hourglass, CalendarClock, ChevronDown, ChevronUp } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
 import { useTasks } from "@/hooks/use-tasks"
@@ -22,6 +22,9 @@ import ModalTransition from "@/components/transitions/modal-transition"
 import { isValid, isBefore, startOfDay, addDays, isSameDay, isAfter } from "date-fns"
 import { AnimatePresence } from "framer-motion"
 import { DashboardPanel } from "./dashboard-panel"
+import { UserMenu } from "./user-menu"
+import { InboxBadge } from "./inbox-badge"
+import { modernTheme } from "@/lib/theme"
 
 const safeDate = (value: unknown): Date | undefined => {
   if (!value) return undefined
@@ -175,34 +178,32 @@ export default function Dashboard() {
       }
     }
 
-    // Generar key única combinando tipo, id y índice para evitar duplicados
     const uniqueKey = `${item.itemType}-${item.id || "no-id"}-${index}`
 
     return (
       <div
         key={uniqueKey}
-        className="p-2 bg-white/50 rounded border-l-4 border-gray-400 flex items-start gap-3 hover:bg-white/80 transition-colors"
+        className={`p-2 ${modernTheme.colors.secondary} ${modernTheme.container.radius} flex items-start gap-3 ${modernTheme.effects.glassHover} ${modernTheme.effects.transition} cursor-pointer`}
         onClick={handleItemToggle}
       >
         <Checkbox checked={item.completed} className="mt-1" />
         <div className="flex-1">
-          <span className={`font-medium text-sm break-words ${item.completed ? "line-through text-gray-500" : ""}`}>
+          <span className={`font-medium text-sm break-words ${item.completed ? "line-through opacity-60" : ""}`}>
             {item.title}
           </span>
-          {item.itemType === "subtask" && <div className="text-xs text-gray-500">en: {item.parentTask.title}</div>}
+          {item.itemType === "subtask" && <div className={`text-xs ${modernTheme.colors.muted}`}>en: {item.parentTask.title}</div>}
         </div>
       </div>
     )
   }
 
   const renderTaskItem = (task: Task, index: number) => {
-    // Generar key única con índice para evitar duplicados
     const uniqueKey = `task-${task.id || "no-id"}-${index}`
 
     return (
       <div
         key={uniqueKey}
-        className="p-2 bg-white/50 rounded border-l-4 border-gray-300 flex items-start gap-3"
+        className={`p-2 ${modernTheme.colors.secondary} ${modernTheme.container.radius} flex items-start gap-3 ${modernTheme.effects.glassHover} ${modernTheme.effects.transition}`}
         onClick={(e) => e.stopPropagation()}
       >
         <Checkbox
@@ -223,68 +224,57 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="gtd-gradient-bg w-full max-w-7xl mx-auto flex flex-col h-screen">
-      <header className="bg-white/90 backdrop-blur-sm shadow-sm border-b border-gtd-neutral-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className={`${modernTheme.colors.bg} w-full flex flex-col h-screen`}>
+      <header className={`${modernTheme.effects.glass} ${modernTheme.container.shadowSm} border-b ${modernTheme.colors.cardBorder}`}>
+        <div className="w-full px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <div className="flex justify-between items-center h-16">
             <Link href="/">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-gtd-clarity-400 to-gtd-action-400 bg-clip-text text-transparent font-heading">
+              <h1 className={`text-2xl ${modernTheme.typography.heading} ${modernTheme.colors.primaryText}`}>
                 GTD Buddy
               </h1>
             </Link>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <Link href="/calendar">
-                <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
+                <Button variant="ghost" size="sm" className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" /> <span className="hidden sm:inline">Calendario</span>
                 </Button>
               </Link>
-              <Link href="/profile">
-                <Button variant="outline" size="sm" className="flex items-center gap-2 bg-transparent">
-                  <User className="h-4 w-4" /> <span className="hidden sm:inline">Perfil</span>
-                </Button>
-              </Link>
-              {/* Botón de Nueva Tarea en el header */}
               <Button
                 onClick={() => setShowTaskForm(true)}
                 size="sm"
-                className="gtd-gradient-action text-white flex items-center gap-2"
+                className={`${modernTheme.colors.primary} ${modernTheme.colors.primaryHover} flex items-center gap-2 ${modernTheme.container.shadowSm} ${modernTheme.container.radius} ${modernTheme.effects.transition}`}
               >
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Nueva Tarea</span>
               </Button>
-              <Button variant="outline" size="sm" onClick={signOut}>
-                <LogOut className="h-4 w-4" />
-              </Button>
+              <UserMenu />
             </div>
           </div>
         </div>
       </header>
 
       <main className="flex-grow overflow-y-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto">
           <div className="mb-8">
             <QuickCapture />
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="overview">⚡ Hacer</TabsTrigger>
-              <TabsTrigger value="inbox">
-                📥 Bandeja de Entrada {inboxTasks.length > 0 && <Badge className="ml-2">{inboxTasks.length}</Badge>}
-              </TabsTrigger>
-              <TabsTrigger value="organize">📂 Organizar</TabsTrigger>
+            <TabsList className={`grid w-full grid-cols-2 ${modernTheme.effects.glass} ${modernTheme.container.radius}`}>
+              <TabsTrigger value="overview" className={modernTheme.container.radius}>Hacer</TabsTrigger>
+              <TabsTrigger value="organize" className={modernTheme.container.radius}>Organizar</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
               {/* Filtros por contexto */}
               {contexts.length > 0 && (
-                <div className="bg-white/50 rounded-lg p-3 border border-gray-200">
+                <div className={`${modernTheme.effects.glass} ${modernTheme.container.radius} p-3 border ${modernTheme.colors.cardBorder}`}>
                   <div className="flex flex-wrap items-center gap-2">
                     <Button
                       variant={selectedContexts.length === 0 ? "default" : "outline"}
                       size="sm"
                       onClick={handleSelectAllContexts}
-                      className="h-7 px-3 text-xs"
+                      className={`h-7 px-3 text-xs ${modernTheme.container.radius}`}
                     >
                       Todos
                     </Button>
@@ -294,14 +284,14 @@ export default function Dashboard() {
                         variant={selectedContexts.includes(context.id) ? "default" : "outline"}
                         size="sm"
                         onClick={() => handleContextToggle(context.id)}
-                        className="h-7 px-3 text-xs"
+                        className={`h-7 px-3 text-xs ${modernTheme.container.radius}`}
                       >
                         {context.name}
                       </Button>
                     ))}
                   </div>
                   {selectedContexts.length > 0 && (
-                    <div className="mt-2 text-xs text-gray-500">
+                    <div className={`mt-2 text-xs ${modernTheme.colors.mutedForeground}`}>
                       Mostrando tareas de:{" "}
                       {selectedContexts.map((id) => contexts.find((c) => c.id === id)?.name).join(", ")}
                     </div>
@@ -312,13 +302,13 @@ export default function Dashboard() {
               <div className="flex flex-col gap-6">
                 {/* Top Row - Always Visible Content */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <Card className="bg-blue-50 border-blue-200 flex flex-col">
+                  <Card className={`${modernTheme.colors.cardBlue} flex flex-col ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border ${modernTheme.effects.glassHover} ${modernTheme.effects.transition}`}>
                     <CardHeader>
-                      <CardTitle className="flex items-center justify-between text-base font-semibold text-blue-800">
+                      <CardTitle className={`flex items-center justify-between text-base ${modernTheme.typography.heading} ${modernTheme.colors.textBlue}`}>
                         <div className="flex items-center gap-2">
                           <Calendar className="h-5 w-5" /> Para Hoy
                         </div>
-                        <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                        <Badge variant="secondary" className={`${modernTheme.colors.badgeBlue} ${modernTheme.container.radius}`}>
                           {todayItems.length}
                         </Badge>
                       </CardTitle>
@@ -328,18 +318,28 @@ export default function Dashboard() {
                         {todayItems.length > 0 ? (
                           todayItems.map((item, index) => renderUnifiedItem(item, index))
                         ) : (
-                          <p className="text-sm text-gray-500 p-2">Nada para hoy. ¡Disfruta!</p>
+                          <div className="text-center py-8">
+                            <p className={`text-sm ${modernTheme.colors.mutedForeground} mb-3`}>Nada para hoy. ¡Disfruta!</p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setActiveTab("organize")}
+                              className={`text-xs ${modernTheme.container.radius}`}
+                            >
+                              Planifica tu día
+                            </Button>
+                          </div>
                         )}
                       </div>
                     </CardContent>
                   </Card>
-                  <Card className="bg-red-50 border-red-200 flex flex-col">
+                  <Card className={`${modernTheme.colors.cardRed} flex flex-col ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border ${modernTheme.effects.glassHover} ${modernTheme.effects.transition}`}>
                     <CardHeader>
-                      <CardTitle className="flex items-center justify-between text-base font-semibold text-red-800">
+                      <CardTitle className={`flex items-center justify-between text-base ${modernTheme.typography.heading} ${modernTheme.colors.textRed}`}>
                         <div className="flex items-center gap-2">
                           <Clock className="h-5 w-5" /> Urgente
                         </div>
-                        <Badge variant="secondary" className="bg-red-100 text-red-800">
+                        <Badge variant="secondary" className={`${modernTheme.colors.badgeRed} ${modernTheme.container.radius}`}>
                           {overdueItems.length}
                         </Badge>
                       </CardTitle>
@@ -349,18 +349,28 @@ export default function Dashboard() {
                         {overdueItems.length > 0 ? (
                           overdueItems.map((item, index) => renderUnifiedItem(item, index))
                         ) : (
-                          <p className="text-sm text-gray-500 p-2">¡Sin tareas vencidas!</p>
+                          <div className="text-center py-8">
+                            <p className={`text-sm ${modernTheme.colors.mutedForeground} mb-3`}>¡Sin tareas vencidas!</p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setActiveTab("inbox")}
+                              className={`text-xs ${modernTheme.container.radius}`}
+                            >
+                              Revisar Inbox
+                            </Button>
+                          </div>
                         )}
                       </div>
                     </CardContent>
                   </Card>
-                  <Card className="bg-yellow-50 border-yellow-200 flex flex-col">
+                  <Card className={`${modernTheme.colors.cardAmber} flex flex-col ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border ${modernTheme.effects.glassHover} ${modernTheme.effects.transition}`}>
                     <CardHeader>
-                      <CardTitle className="flex items-center justify-between text-base font-semibold text-yellow-800">
+                      <CardTitle className={`flex items-center justify-between text-base ${modernTheme.typography.heading} ${modernTheme.colors.textAmber}`}>
                         <div className="flex items-center gap-2">
                           <CalendarClock className="h-5 w-5" /> Esta Semana
                         </div>
-                        <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                        <Badge variant="secondary" className={`${modernTheme.colors.badgeAmber} ${modernTheme.container.radius}`}>
                           {thisWeekItems.length}
                         </Badge>
                       </CardTitle>
@@ -370,7 +380,17 @@ export default function Dashboard() {
                         {thisWeekItems.length > 0 ? (
                           thisWeekItems.map((item, index) => renderUnifiedItem(item, index))
                         ) : (
-                          <p className="text-sm text-gray-500 p-2">Planifica tu semana.</p>
+                          <div className="text-center py-8">
+                            <p className={`text-sm ${modernTheme.colors.mutedForeground} mb-3`}>Planifica tu semana.</p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setShowTaskForm(true)}
+                              className={`text-xs ${modernTheme.container.radius}`}
+                            >
+                              Crear tarea
+                            </Button>
+                          </div>
                         )}
                       </div>
                     </CardContent>
@@ -389,15 +409,25 @@ export default function Dashboard() {
                         count={nextActionTasks.length}
                         expandedPanel={expandedPanel}
                         onPanelClick={handlePanelClick}
-                        cardClassName="bg-green-50 border-green-200"
-                        titleClassName="text-green-800"
-                        badgeClassName="bg-green-100 text-green-800"
+                        cardClassName={`${modernTheme.colors.cardGreen} ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border`}
+                        titleClassName={modernTheme.colors.textGreen}
+                        badgeClassName={`${modernTheme.colors.badgeGreen} ${modernTheme.container.radius}`}
                       >
                         <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                           {nextActionTasks.length > 0 ? (
                             nextActionTasks.map((task, index) => renderTaskItem(task, index))
                           ) : (
-                            <p className="text-sm text-gray-500 p-2">Define tus próximas acciones.</p>
+                            <div className="text-center py-8">
+                              <p className="text-sm text-gray-600 mb-3">Define tus próximas acciones.</p>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setActiveTab("inbox")}
+                                className="text-xs"
+                              >
+                                Procesar Inbox
+                              </Button>
+                            </div>
                           )}
                         </div>
                       </DashboardPanel>
@@ -412,15 +442,25 @@ export default function Dashboard() {
                         count={multitaskTasks.length}
                         expandedPanel={expandedPanel}
                         onPanelClick={handlePanelClick}
-                        cardClassName="bg-purple-50 border-purple-200"
-                        titleClassName="text-purple-800"
-                        badgeClassName="bg-purple-100 text-purple-800"
+                        cardClassName={`${modernTheme.colors.cardPurple} ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border`}
+                        titleClassName={modernTheme.colors.textPurple}
+                        badgeClassName={`${modernTheme.colors.badgePurple} ${modernTheme.container.radius}`}
                       >
                         <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                           {multitaskTasks.length > 0 ? (
                             multitaskTasks.map((task, index) => renderTaskItem(task, index))
                           ) : (
-                            <p className="text-sm text-gray-500 p-2">No hay proyectos activos.</p>
+                            <div className="text-center py-8">
+                              <p className="text-sm text-gray-600 mb-3">No hay proyectos activos.</p>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setShowTaskForm(true)}
+                                className="text-xs"
+                              >
+                                Crear proyecto
+                              </Button>
+                            </div>
                           )}
                         </div>
                       </DashboardPanel>
@@ -435,15 +475,25 @@ export default function Dashboard() {
                         count={waitingTasks.length}
                         expandedPanel={expandedPanel}
                         onPanelClick={handlePanelClick}
-                        cardClassName="bg-orange-50 border-orange-200"
-                        titleClassName="text-orange-800"
-                        badgeClassName="bg-orange-100 text-orange-800"
+                        cardClassName={`${modernTheme.colors.cardOrange} ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border`}
+                        titleClassName={modernTheme.colors.textOrange}
+                        badgeClassName={`${modernTheme.colors.badgeOrange} ${modernTheme.container.radius}`}
                       >
                         <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                           {waitingTasks.length > 0 ? (
                             waitingTasks.map((task, index) => renderTaskItem(task, index))
                           ) : (
-                            <p className="text-sm text-gray-500 p-2">Nada en espera de momento.</p>
+                            <div className="text-center py-8">
+                              <p className="text-sm text-gray-600 mb-3">Nada en espera de momento.</p>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setActiveTab("organize")}
+                                className="text-xs"
+                              >
+                                Ver todas las tareas
+                              </Button>
+                            </div>
                           )}
                         </div>
                       </DashboardPanel>
@@ -453,10 +503,6 @@ export default function Dashboard() {
               </div>
             </TabsContent>
 
-            {/* Other Tabs */}
-            <TabsContent value="inbox">
-              <InboxProcessor inboxTasks={inboxTasks} />
-            </TabsContent>
             <TabsContent value="organize">
               <TaskList
                 onEditTask={(task) => {
@@ -473,6 +519,7 @@ export default function Dashboard() {
               setShowTaskForm(false)
               setEditingTask(undefined)
             }}
+            title={editingTask ? "Editar Tarea" : "Nueva Tarea"}
           >
             <TaskForm
               task={editingTask}
@@ -481,6 +528,14 @@ export default function Dashboard() {
                 setEditingTask(undefined)
               }}
             />
+          </ModalTransition>
+
+          {/* Floating Inbox Badge */}
+          <InboxBadge count={inboxTasks.length} onClick={() => setActiveTab("organize")} />
+
+          {/* Inbox Processor Modal */}
+          <ModalTransition isOpen={activeTab === "inbox"} onClose={() => setActiveTab("overview")}>
+            <InboxProcessor inboxTasks={inboxTasks} />
           </ModalTransition>
         </div>
       </main>

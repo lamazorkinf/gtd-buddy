@@ -14,7 +14,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore"
 import { db } from "@/lib/firebase"
-import type { Task, GTDCategory, Priority } from "@/types/task"
+import type { Task, GTDCategory } from "@/types/task"
 import { useAuth } from "@/contexts/auth-context"
 
 export function useTasks() {
@@ -65,7 +65,6 @@ export function useTasks() {
     // Campos obligatorios
     if (taskData.title !== undefined) cleanData.title = taskData.title
     if (taskData.category !== undefined) cleanData.category = taskData.category
-    if (taskData.priority !== undefined) cleanData.priority = taskData.priority
     if (taskData.completed !== undefined) cleanData.completed = taskData.completed
     if (taskData.userId !== undefined) cleanData.userId = taskData.userId
 
@@ -73,7 +72,6 @@ export function useTasks() {
     if (taskData.description) cleanData.description = taskData.description
     if (taskData.dueDate) cleanData.dueDate = taskData.dueDate
     if (taskData.contextId) cleanData.contextId = taskData.contextId
-    if (taskData.energyLevel) cleanData.energyLevel = taskData.energyLevel
     if (taskData.estimatedMinutes) cleanData.estimatedMinutes = taskData.estimatedMinutes
     if (taskData.isQuickAction !== undefined) cleanData.isQuickAction = taskData.isQuickAction
     if (taskData.lastReviewed) cleanData.lastReviewed = taskData.lastReviewed
@@ -96,7 +94,6 @@ export function useTasks() {
       userId: user.uid,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-      energyLevel: taskData.energyLevel || "media",
       isQuickAction: taskData.isQuickAction || false,
     })
 
@@ -120,10 +117,6 @@ export function useTasks() {
     return tasks.filter((task) => task.category === category)
   }
 
-  const getTasksByPriority = (priority: Priority) => {
-    return tasks.filter((task) => task.priority === priority)
-  }
-
   const getTasksByContextId = (contextId: string) => {
     return tasks.filter((task) => task.contextId === contextId)
   }
@@ -135,7 +128,6 @@ export function useTasks() {
     updateTask,
     deleteTask,
     getTasksByCategory,
-    getTasksByPriority,
     getTasksByContextId,
   }
 }
