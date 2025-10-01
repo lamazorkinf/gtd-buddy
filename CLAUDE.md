@@ -27,11 +27,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **GTD (Getting Things Done) System Implementation:**
 - Tasks categorized as: "Inbox", "Próximas acciones", "Multitarea", "A la espera", "Algún día"
-- Priority levels: "baja", "media", "alta"
-- Energy levels for task filtering
 - Context-based organization (replaced legacy "projects")
-- Weekly review system
 - 2-minute rule support (isQuickAction)
+- Subtasks support for "Multitarea" projects
+- Due dates with time support
+- Estimated time in minutes
 
 **Authentication & Subscription Flow:**
 - Firebase Auth with email/password and Google OAuth
@@ -41,9 +41,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Trial expires after 7 days (`subscriptionEndDate`)
   - Users can only have one trial period per account
   - Use `/api/start-trial` to manually activate trial
+- MercadoPago subscription management
+  - Subscription cancellation maintains access until period end
+  - `pending_cancellation` status tracks scheduled cancellations
+  - Uses MercadoPago `end_date` to prevent auto-renewal
 - Subscription status verification throughout app
 - Test users (role: "test") bypass all restrictions
 - Auth context provides user, loading, and subscription status
+- Toast notifications for subscription events (success, failure, pending)
 
 **Data Architecture:**
 - User document in Firestore contains subscription info
@@ -74,9 +79,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Important Implementation Details
 
-**Custom Theming:**
-- GTD-specific color palette in tailwind.config.ts
-- Colors named by purpose: clarity, action, focus, lightness, confidence, neutral
+**Design System - Modern Glassmorphism:**
+- Centralized theme configuration in `lib/theme.ts`
+- Glassmorphism effects with `backdrop-blur-xl bg-white/40`
+- Consistent color palette for GTD categories (blue, green, purple, orange, amber)
+- Modal overlays use `bg-black/20 backdrop-blur-sm` for visibility
+- All modals (Dialog, AlertDialog, ModalTransition) follow same styling pattern
+- Page transitions: fade-only with 0.15s duration for smoothness
 - Spanish language UI
 
 **Data Migration:**
@@ -84,9 +93,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Firestore timestamps converted to Date objects in hooks
 
 **Subscription Logic:**
-- `checkSubscriptionStatus()` utility handles trial/active/expired logic
+- `checkSubscriptionStatus()` utility handles trial/active/expired/pending_cancellation logic
 - Dashboard access controlled by subscription status
+- Users with `pending_cancellation` maintain access until `subscriptionEndDate`
 - Test users and admins bypass restrictions
+- Toaster component in layout.tsx for global notifications
 
 **Firebase Configuration:**
 - Client-side config uses NEXT_PUBLIC_ env variables
