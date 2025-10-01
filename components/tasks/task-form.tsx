@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { CalendarIcon, Clock, Trash2, ListChecks, Calendar, AlertCircle } from "lucide-react"
+import { CalendarIcon, Clock, Trash2, ListChecks, Calendar, AlertCircle, Edit, Plus } from "lucide-react"
 import { format, isBefore, startOfDay, isValid } from "date-fns"
 import { es } from "date-fns/locale"
 import type { Task, GTDCategory, Subtask } from "@/types/task"
@@ -50,7 +50,7 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
   const [newContextDescription, setNewContextDescription] = useState("")
   const [editingSubtask, setEditingSubtask] = useState<Subtask | null>(null)
 
-  const { addTask, updateTask } = useTasks()
+  const { addTask, updateTask, deleteTask } = useTasks()
   const { contexts, addContext } = useContexts()
 
   const isEditing = task && task.id && task.id.trim() !== ""
@@ -137,6 +137,22 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
     return format(d, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd")
   }
 
+  const handleDelete = async () => {
+    if (!isEditing || !task?.id) return
+
+    if (confirm("¿Estás seguro de que deseas eliminar esta tarea?")) {
+      setLoading(true)
+      try {
+        await deleteTask(task.id)
+        onClose?.()
+      } catch (error) {
+        console.error("Error al eliminar tarea:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim()) return
@@ -194,6 +210,21 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
 
   return (
     <div className="p-6">
+      {isEditing && (
+        <div className="flex justify-end mb-4">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={handleDelete}
+            disabled={loading}
+            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+          >
+            <Trash2 className="h-5 w-5" />
+            <span className="sr-only">Eliminar tarea</span>
+          </Button>
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block">Título *</label>
