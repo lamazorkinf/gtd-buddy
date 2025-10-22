@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,8 +11,11 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Plus, Calendar, ArrowRight, Clock, Layers, Hourglass, CalendarClock, ChevronDown, ChevronUp } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
+import { useTeamContext } from "@/contexts/team-context"
 import { useTasks } from "@/hooks/use-tasks"
 import { useContexts } from "@/hooks/use-contexts"
+import TeamSwitcher from "@/components/teams/team-switcher"
+import UserInvitationsBadge from "@/components/teams/user-invitations-badge"
 import type { Task, Subtask } from "@/types/task"
 import TaskForm from "@/components/tasks/task-form"
 import TaskList from "@/components/tasks/task-list"
@@ -56,8 +59,9 @@ export default function Dashboard() {
   const [expandedPanel, setExpandedPanel] = useState<string | null>(null)
   const [selectedContexts, setSelectedContexts] = useState<string[]>([])
   const { user, subscriptionStatus, signOut } = useAuth()
-  const { tasks, updateTask } = useTasks()
-  const { contexts } = useContexts()
+  const { selectedTeamId, isPersonalMode } = useTeamContext()
+  const { tasks, updateTask } = useTasks({ teamId: selectedTeamId })
+  const { contexts } = useContexts({ teamId: selectedTeamId })
   const router = useRouter()
 
   const [todayItems, setTodayItems] = useState<DisplayableItem[]>([])
@@ -90,9 +94,11 @@ export default function Dashboard() {
     const newThisWeekItems: DisplayableItem[] = []
 
     // Filtrar tareas por contexto antes de procesarlas
-    const filteredTasks = filterTasksByContext(tasks)
+    const filtered = selectedContexts.length === 0
+      ? tasks
+      : tasks.filter((task) => !task.contextId || selectedContexts.includes(task.contextId))
 
-    filteredTasks.forEach((task) => {
+    filtered.forEach((task) => {
       const processItem = (item: Task | Subtask, itemType: "task" | "subtask") => {
         if (item.completed) return
         const dueDate = item.dueDate ? startOfDay(safeDate(item.dueDate)!) : null
@@ -162,11 +168,26 @@ export default function Dashboard() {
     setSelectedContexts([])
   }
 
-  const inboxTasks = tasks.filter((task) => task.category === "Inbox")
-  const filteredTasks = filterTasksByContext(tasks)
-  const nextActionTasks = filteredTasks.filter((task) => task.category === "Próximas acciones" && !task.completed)
-  const multitaskTasks = filteredTasks.filter((task) => task.category === "Multitarea" && !task.completed)
-  const waitingTasks = filteredTasks.filter((task) => task.category === "A la espera" && !task.completed)
+  // Memoizar filtros para evitar re-renders innecesarios
+  const inboxTasks = useMemo(() => tasks.filter((task) => task.category === "Inbox"), [tasks])
+
+  const filteredTasks = useMemo(() => {
+    if (selectedContexts.length === 0) return tasks
+    return tasks.filter((task) => !task.contextId || selectedContexts.includes(task.contextId))
+  }, [tasks, selectedContexts])
+
+  const nextActionTasks = useMemo(
+    () => filteredTasks.filter((task) => task.category === "Próximas acciones" && !task.completed),
+    [filteredTasks]
+  )
+  const multitaskTasks = useMemo(
+    () => filteredTasks.filter((task) => task.category === "Multitarea" && !task.completed),
+    [filteredTasks]
+  )
+  const waitingTasks = useMemo(
+    () => filteredTasks.filter((task) => task.category === "A la espera" && !task.completed),
+    [filteredTasks]
+  )
 
   const renderUnifiedItem = (item: DisplayableItem, index: number) => {
     const handleItemToggle = (e: React.MouseEvent) => {
@@ -234,6 +255,8 @@ export default function Dashboard() {
               </h1>
             </Link>
             <div className="flex items-center gap-3">
+              <TeamSwitcher />
+              <UserInvitationsBadge />
               <Link href="/calendar">
                 <Button variant="ghost" size="sm" className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" /> <span className="hidden sm:inline">Calendario</span>
@@ -302,13 +325,13 @@ export default function Dashboard() {
               <div className="flex flex-col gap-6">
                 {/* Top Row - Always Visible Content */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <Card className={`${modernTheme.colors.cardBlue} flex flex-col ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border ${modernTheme.effects.glassHover} ${modernTheme.effects.transition}`}>
+                  <Card className={`${modernTheme.colors.cardNext} flex flex-col ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border ${modernTheme.effects.glassHover} ${modernTheme.effects.transition}`}>
                     <CardHeader>
-                      <CardTitle className={`flex items-center justify-between text-base ${modernTheme.typography.heading} ${modernTheme.colors.textBlue}`}>
+                      <CardTitle className={`flex items-center justify-between text-base ${modernTheme.typography.heading} ${modernTheme.colors.textNext}`}>
                         <div className="flex items-center gap-2">
                           <Calendar className="h-5 w-5" /> Para Hoy
                         </div>
-                        <Badge variant="secondary" className={`${modernTheme.colors.badgeBlue} ${modernTheme.container.radius}`}>
+                        <Badge variant="secondary" className={`${modernTheme.colors.badgeNext} ${modernTheme.container.radius}`}>
                           {todayItems.length}
                         </Badge>
                       </CardTitle>
@@ -364,13 +387,13 @@ export default function Dashboard() {
                       </div>
                     </CardContent>
                   </Card>
-                  <Card className={`${modernTheme.colors.cardAmber} flex flex-col ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border ${modernTheme.effects.glassHover} ${modernTheme.effects.transition}`}>
+                  <Card className={`${modernTheme.colors.cardSomeday} flex flex-col ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border ${modernTheme.effects.glassHover} ${modernTheme.effects.transition}`}>
                     <CardHeader>
-                      <CardTitle className={`flex items-center justify-between text-base ${modernTheme.typography.heading} ${modernTheme.colors.textAmber}`}>
+                      <CardTitle className={`flex items-center justify-between text-base ${modernTheme.typography.heading} ${modernTheme.colors.textSomeday}`}>
                         <div className="flex items-center gap-2">
                           <CalendarClock className="h-5 w-5" /> Esta Semana
                         </div>
-                        <Badge variant="secondary" className={`${modernTheme.colors.badgeAmber} ${modernTheme.container.radius}`}>
+                        <Badge variant="secondary" className={`${modernTheme.colors.badgeSomeday} ${modernTheme.container.radius}`}>
                           {thisWeekItems.length}
                         </Badge>
                       </CardTitle>
@@ -409,9 +432,9 @@ export default function Dashboard() {
                         count={nextActionTasks.length}
                         expandedPanel={expandedPanel}
                         onPanelClick={handlePanelClick}
-                        cardClassName={`${modernTheme.colors.cardGreen} ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border`}
-                        titleClassName={modernTheme.colors.textGreen}
-                        badgeClassName={`${modernTheme.colors.badgeGreen} ${modernTheme.container.radius}`}
+                        cardClassName={`${modernTheme.colors.cardNext} ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border`}
+                        titleClassName={modernTheme.colors.textNext}
+                        badgeClassName={`${modernTheme.colors.badgeNext} ${modernTheme.container.radius}`}
                       >
                         <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                           {nextActionTasks.length > 0 ? (
@@ -442,9 +465,9 @@ export default function Dashboard() {
                         count={multitaskTasks.length}
                         expandedPanel={expandedPanel}
                         onPanelClick={handlePanelClick}
-                        cardClassName={`${modernTheme.colors.cardPurple} ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border`}
-                        titleClassName={modernTheme.colors.textPurple}
-                        badgeClassName={`${modernTheme.colors.badgePurple} ${modernTheme.container.radius}`}
+                        cardClassName={`${modernTheme.colors.cardProject} ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border`}
+                        titleClassName={modernTheme.colors.textProject}
+                        badgeClassName={`${modernTheme.colors.badgeProject} ${modernTheme.container.radius}`}
                       >
                         <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                           {multitaskTasks.length > 0 ? (
@@ -475,9 +498,9 @@ export default function Dashboard() {
                         count={waitingTasks.length}
                         expandedPanel={expandedPanel}
                         onPanelClick={handlePanelClick}
-                        cardClassName={`${modernTheme.colors.cardOrange} ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border`}
-                        titleClassName={modernTheme.colors.textOrange}
-                        badgeClassName={`${modernTheme.colors.badgeOrange} ${modernTheme.container.radius}`}
+                        cardClassName={`${modernTheme.colors.cardWaiting} ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border`}
+                        titleClassName={modernTheme.colors.textWaiting}
+                        badgeClassName={`${modernTheme.colors.badgeWaiting} ${modernTheme.container.radius}`}
                       >
                         <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                           {waitingTasks.length > 0 ? (

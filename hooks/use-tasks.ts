@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import {
   collection,
   query,
@@ -17,22 +17,45 @@ import { db } from "@/lib/firebase"
 import type { Task, GTDCategory } from "@/types/task"
 import { useAuth } from "@/contexts/auth-context"
 
-export function useTasks() {
+interface UseTasksOptions {
+  teamId?: string | null // undefined = all, null = personal only, string = specific team
+}
+
+export function useTasks(options: UseTasksOptions = {}) {
+  const { teamId } = options
+
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
 
+  // Construir query condicional según teamId
+  const q = useMemo(() => {
+    if (!user) return null
+
+    const baseCollection = collection(db, "tasks")
+
+    if (teamId === undefined) {
+      // Modo "Todo": todas las tareas del usuario (personal + equipos)
+      return query(baseCollection, where("userId", "==", user.uid), orderBy("createdAt", "desc"))
+    } else if (teamId === null) {
+      // Modo "Personal": traer todas las tareas del usuario y filtrar en cliente
+      // (Firestore no puede filtrar por campo inexistente o null eficientemente)
+      return query(baseCollection, where("userId", "==", user.uid), orderBy("createdAt", "desc"))
+    } else {
+      // Modo "Equipo": solo tareas del teamId específico
+      return query(baseCollection, where("teamId", "==", teamId), orderBy("createdAt", "desc"))
+    }
+  }, [user, teamId])
+
   useEffect(() => {
-    if (!user) {
+    if (!user || !q) {
       setTasks([])
       setLoading(false)
       return
     }
 
-    const q = query(collection(db, "tasks"), where("userId", "==", user.uid), orderBy("createdAt", "desc"))
-
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const tasksData = snapshot.docs.map((doc) => ({
+      let tasksData = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate() || new Date(),
@@ -40,6 +63,11 @@ export function useTasks() {
         dueDate: doc.data().dueDate?.toDate() || undefined,
         lastReviewed: doc.data().lastReviewed?.toDate() || undefined,
       })) as Task[]
+
+      // Si estamos en modo Personal (teamId === null), filtrar en cliente
+      if (teamId === null) {
+        tasksData = tasksData.filter((task) => !task.teamId || task.teamId === null)
+      }
 
       // Migrar projectId a contextId si existe
       const migratedTasks = tasksData.map((task) => {
@@ -55,8 +83,10 @@ export function useTasks() {
       setLoading(false)
     })
 
-    return unsubscribe
-  }, [user])
+    return () => {
+      unsubscribe()
+    }
+  }, [user, q, teamId])
 
   // Función helper para limpiar datos antes de enviar a Firestore
   const cleanTaskData = (taskData: any) => {
@@ -75,6 +105,10 @@ export function useTasks() {
     if (taskData.estimatedMinutes) cleanData.estimatedMinutes = taskData.estimatedMinutes
     if (taskData.isQuickAction !== undefined) cleanData.isQuickAction = taskData.isQuickAction
     if (taskData.lastReviewed) cleanData.lastReviewed = taskData.lastReviewed
+
+    // Campos de equipo - explícitamente incluir null si no están presentes
+    cleanData.teamId = taskData.teamId !== undefined ? taskData.teamId : null
+    cleanData.assignedTo = taskData.assignedTo !== undefined ? taskData.assignedTo : null
 
     // Subtareas - siempre incluir, incluso si está vacío
     if (taskData.subtasks !== undefined) cleanData.subtasks = taskData.subtasks
@@ -121,6 +155,21 @@ export function useTasks() {
     return tasks.filter((task) => task.contextId === contextId)
   }
 
+  // Obtener tareas asignadas a un usuario específico (para equipos)
+  const getTasksByAssignee = (userId: string) => {
+    return tasks.filter((task) => task.assignedTo === userId)
+  }
+
+  // Obtener tareas sin asignar de un equipo
+  const getUnassignedTasks = () => {
+    return tasks.filter((task) => task.teamId && !task.assignedTo)
+  }
+
+  // Obtener tareas de un equipo específico
+  const getTasksByTeam = (teamIdToFilter: string) => {
+    return tasks.filter((task) => task.teamId === teamIdToFilter)
+  }
+
   return {
     tasks,
     loading,
@@ -129,5 +178,8 @@ export function useTasks() {
     deleteTask,
     getTasksByCategory,
     getTasksByContextId,
+    getTasksByAssignee,
+    getUnassignedTasks,
+    getTasksByTeam,
   }
 }

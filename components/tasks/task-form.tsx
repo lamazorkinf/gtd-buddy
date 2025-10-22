@@ -14,6 +14,10 @@ import { es } from "date-fns/locale"
 import type { Task, GTDCategory, Subtask } from "@/types/task"
 import { useTasks } from "@/hooks/use-tasks"
 import { useContexts } from "@/hooks/use-contexts"
+import { useTeamContext } from "@/contexts/team-context"
+import { useTeamMembers } from "@/hooks/use-team-members"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Users } from "lucide-react"
 import { v4 as uuidv4 } from "uuid"
 import SubtaskEditModal from "./subtask-edit-modal"
 import { modernTheme } from "@/lib/theme"
@@ -49,9 +53,12 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
   const [newContextName, setNewContextName] = useState("")
   const [newContextDescription, setNewContextDescription] = useState("")
   const [editingSubtask, setEditingSubtask] = useState<Subtask | null>(null)
+  const [assignedTo, setAssignedTo] = useState<string | undefined>(task?.assignedTo)
 
-  const { addTask, updateTask, deleteTask } = useTasks()
-  const { contexts, addContext } = useContexts()
+  const { selectedTeamId, isPersonalMode } = useTeamContext()
+  const { addTask, updateTask, deleteTask } = useTasks({ teamId: selectedTeamId })
+  const { contexts, addContext } = useContexts({ teamId: selectedTeamId })
+  const { members } = useTeamMembers(!isPersonalMode && selectedTeamId ? selectedTeamId : "")
 
   const isEditing = task && task.id && task.id.trim() !== ""
 
@@ -65,6 +72,7 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
       setEstimatedMinutes(task.estimatedMinutes)
       setContextId(task.contextId || undefined)
       setSubtasks(task.subtasks || [])
+      setAssignedTo(task.assignedTo)
     }
   }, [task, defaultCategory])
 
@@ -174,6 +182,10 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
       }
       if (estimatedMinutes && estimatedMinutes > 0) taskData.estimatedMinutes = estimatedMinutes
       if (contextId) taskData.contextId = contextId
+      if (!isPersonalMode && selectedTeamId) {
+        taskData.teamId = selectedTeamId
+        if (assignedTo) taskData.assignedTo = assignedTo
+      }
 
       taskData.subtasks = subtasks
 
@@ -432,6 +444,42 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
                 )}
               </div>
             </div>
+
+            {/* Campo de asignación de miembro (solo en modo equipo) */}
+            {!isPersonalMode && selectedTeamId && members.length > 0 && (
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Asignar a
+                </label>
+                <Select
+                  value={assignedTo || "unassigned"}
+                  onValueChange={(value) => setAssignedTo(value === "unassigned" ? undefined : value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sin asignar" />
+                  </SelectTrigger>
+                  <SelectContent className="modal-select-content">
+                    <SelectItem value="unassigned">
+                      <span className="text-muted-foreground">Sin asignar</span>
+                    </SelectItem>
+                    {members.map((member) => (
+                      <SelectItem key={member.userId} value={member.userId}>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-5 w-5">
+                            <AvatarImage src={member.photoURL || undefined} />
+                            <AvatarFallback className="text-xs">
+                              {member.displayName?.slice(0, 2).toUpperCase() || member.email.slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span>{member.displayName || member.email}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block">Fecha límite (opcional)</label>

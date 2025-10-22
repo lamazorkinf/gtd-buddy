@@ -53,85 +53,74 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Nueva paleta de colores GTD Buddy
+        // GTD Buddy Design Tokens
         gtd: {
-          // Violeta Suave - Claridad (cabeceras, secciones principales, botones primarios)
+          // Semantic Colors
           clarity: {
-            50: "#F5F1FE",
-            100: "#EBE1FD",
-            200: "#D7C3FB",
-            300: "#C3A5F9",
-            400: "#B388EB", // Color principal
-            500: "#9B6FE8",
-            600: "#8356E5",
-            700: "#6B3DE2",
-            800: "#5324DF",
-            900: "#3B0BDC",
+            DEFAULT: "hsl(var(--gtd-clarity))",
+            light: "hsl(var(--gtd-clarity-light))",
+            dark: "hsl(var(--gtd-clarity-dark))",
+            hover: "hsl(var(--gtd-clarity-hover))",
+            active: "hsl(var(--gtd-clarity-active))",
           },
-          // Magenta Intenso - Acción (CTAs, "Hacer Ahora", "Agregar tarea")
           action: {
-            50: "#FDF2FB",
-            100: "#FCE5F7",
-            200: "#F9CBEF",
-            300: "#F6B1E7",
-            400: "#D46AC0", // Color principal
-            500: "#E157D3",
-            600: "#DE44E6",
-            700: "#DB31F9",
-            800: "#C828E0",
-            900: "#B51FC7",
+            DEFAULT: "hsl(var(--gtd-action))",
+            light: "hsl(var(--gtd-action-light))",
+            dark: "hsl(var(--gtd-action-dark))",
+            hover: "hsl(var(--gtd-action-hover))",
+            active: "hsl(var(--gtd-action-active))",
           },
-          // Turquesa Claro - Enfoque (Próximas acciones, filtros activos)
           focus: {
-            50: "#F0FDFB",
-            100: "#E1FBF7",
-            200: "#C3F7EF",
-            300: "#A5F3E7",
-            400: "#7DE2D1", // Color principal
-            500: "#5FDBC9",
-            600: "#41D4C1",
-            700: "#23CDB9",
-            800: "#1FB5A5",
-            900: "#1B9D91",
+            DEFAULT: "hsl(var(--gtd-focus))",
+            light: "hsl(var(--gtd-focus-light))",
+            dark: "hsl(var(--gtd-focus-dark))",
+            hover: "hsl(var(--gtd-focus-hover))",
+            active: "hsl(var(--gtd-focus-active))",
           },
-          // Celeste Niebla - Ligereza (fondo general)
-          lightness: {
-            50: "#E1F1FF", // Color principal
-            100: "#CCE7FF",
-            200: "#99CFFF",
-            300: "#66B7FF",
-            400: "#339FFF",
-            500: "#0087FF",
-            600: "#006FCC",
-            700: "#005799",
-            800: "#003F66",
-            900: "#002733",
-          },
-          // Verde Menta - Confianza (completadas, logros, revisión)
           confidence: {
-            50: "#F2FBF5",
-            100: "#E5F7EB",
-            200: "#CBEED7",
-            300: "#B1E5C3",
-            400: "#A2E4B8", // Color principal
-            500: "#88DBA4",
-            600: "#6ED290",
-            700: "#54C97C",
-            800: "#4AB070",
-            900: "#409764",
+            DEFAULT: "hsl(var(--gtd-confidence))",
+            light: "hsl(var(--gtd-confidence-light))",
+            dark: "hsl(var(--gtd-confidence-dark))",
+            hover: "hsl(var(--gtd-confidence-hover))",
+            active: "hsl(var(--gtd-confidence-active))",
           },
-          // Gris Lavanda - Neutro Inteligente (tarjetas, listas, elementos secundarios)
           neutral: {
-            50: "#DCD6F7", // Color principal
-            100: "#D1C9F5",
-            200: "#C6BCF3",
-            300: "#BBAFF1",
-            400: "#B0A2EF",
-            500: "#A595ED",
-            600: "#9A88EB",
-            700: "#8F7BE9",
-            800: "#846EE7",
-            900: "#7961E5",
+            DEFAULT: "hsl(var(--gtd-neutral))",
+            dark: "hsl(var(--gtd-neutral-dark))",
+          },
+          // GTD Category Colors
+          inbox: {
+            DEFAULT: "hsl(var(--gtd-inbox))",
+            light: "hsl(var(--gtd-inbox-light))",
+            bg: "hsl(var(--gtd-inbox-bg))",
+          },
+          next: {
+            DEFAULT: "hsl(var(--gtd-next))",
+            light: "hsl(var(--gtd-next-light))",
+            bg: "hsl(var(--gtd-next-bg))",
+          },
+          project: {
+            DEFAULT: "hsl(var(--gtd-project))",
+            light: "hsl(var(--gtd-project-light))",
+            bg: "hsl(var(--gtd-project-bg))",
+          },
+          waiting: {
+            DEFAULT: "hsl(var(--gtd-waiting))",
+            light: "hsl(var(--gtd-waiting-light))",
+            bg: "hsl(var(--gtd-waiting-bg))",
+          },
+          someday: {
+            DEFAULT: "hsl(var(--gtd-someday))",
+            light: "hsl(var(--gtd-someday-light))",
+            bg: "hsl(var(--gtd-someday-bg))",
+          },
+          completed: "hsl(var(--gtd-completed))",
+          overdue: "hsl(var(--gtd-overdue))",
+          // Interactive States
+          disabled: {
+            DEFAULT: "hsl(var(--gtd-disabled))",
+            text: "hsl(var(--gtd-disabled-text))",
+            bg: "hsl(var(--gtd-disabled-bg))",
           },
         },
       },

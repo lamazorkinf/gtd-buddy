@@ -24,14 +24,14 @@ export function InboxBadge({ count, onClick }: InboxBadgeProps) {
       >
         <button
           onClick={onClick}
-          className={`flex items-center gap-3 ${modernTheme.colors.primary} px-5 py-3 rounded-full ${modernTheme.container.shadow} hover:shadow-2xl ${modernTheme.effects.transition} hover:scale-105 active:scale-95 ${modernTheme.effects.glass}`}
+          className={`flex items-center gap-3 bg-gradient-to-r from-gtd-clarity to-gtd-action text-white px-5 py-3 rounded-full ${modernTheme.container.shadow} hover:shadow-2xl ${modernTheme.effects.transition} hover:scale-105 active:scale-95 hover:from-gtd-clarity-hover hover:to-gtd-action-hover`}
         >
-          <Inbox className="h-5 w-5" />
+          <Inbox className="h-5 w-5 text-white" />
           <div className="flex flex-col items-start">
-            <span className="text-xs font-medium opacity-90">Inbox</span>
-            <span className={`text-sm ${modernTheme.typography.heading}`}>{count} pendientes</span>
+            <span className="text-xs font-medium text-white opacity-90">Inbox</span>
+            <span className={`text-sm ${modernTheme.typography.heading} text-white`}>{count} pendientes</span>
           </div>
-          <Badge className={`bg-white ${modernTheme.colors.primaryText} hover:bg-white ${modernTheme.typography.heading}`}>{count}</Badge>
+          <Badge className="bg-white text-gtd-clarity-dark hover:bg-white font-bold">{count}</Badge>
         </button>
       </motion.div>
     </AnimatePresence>

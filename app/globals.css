@@ -47,6 +47,81 @@ body {
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* GTD Buddy - Design Tokens */
+
+    /* Semantic Colors */
+    --gtd-clarity: 262 84% 71%;        /* purple-500 - Claridad mental */
+    --gtd-clarity-light: 262 100% 95%; /* purple-50 */
+    --gtd-clarity-dark: 262 84% 45%;   /* purple-800 */
+
+    --gtd-action: 330 81% 60%;         /* pink-500 - Acción inmediata */
+    --gtd-action-light: 330 100% 97%;  /* pink-50 */
+    --gtd-action-dark: 330 81% 36%;    /* pink-800 */
+
+    --gtd-focus: 201 96% 63%;          /* blue-500 - Enfoque */
+    --gtd-focus-light: 201 100% 95%;   /* blue-50 */
+    --gtd-focus-dark: 201 96% 36%;     /* blue-800 */
+
+    --gtd-confidence: 142 69% 64%;     /* green-500 - Confianza/Logro */
+    --gtd-confidence-light: 142 76% 95%; /* green-50 */
+    --gtd-confidence-dark: 142 69% 36%; /* green-800 */
+
+    --gtd-neutral: 253 41% 91%;        /* purple-100 - Neutral inteligente */
+    --gtd-neutral-dark: 253 41% 20%;   /* purple-900 */
+
+    /* GTD Category Colors */
+    --gtd-inbox: 220 14% 46%;          /* slate-600 - Inbox */
+    --gtd-inbox-light: 220 14% 96%;    /* slate-50 */
+    --gtd-inbox-bg: 220 14% 10%;       /* Para backgrounds */
+
+    --gtd-next: 201 96% 50%;           /* blue-500 - Próximas acciones */
+    --gtd-next-light: 201 96% 95%;
+    --gtd-next-bg: 201 96% 10%;
+
+    --gtd-project: 262 84% 58%;        /* purple-500 - Multitarea/Proyectos */
+    --gtd-project-light: 262 84% 95%;
+    --gtd-project-bg: 262 84% 10%;
+
+    --gtd-waiting: 25 95% 53%;         /* orange-500 - A la espera */
+    --gtd-waiting-light: 25 95% 95%;
+    --gtd-waiting-bg: 25 95% 10%;
+
+    --gtd-someday: 45 93% 47%;         /* amber-500 - Algún día */
+    --gtd-someday-light: 45 93% 95%;
+    --gtd-someday-bg: 45 93% 10%;
+
+    --gtd-completed: 142 71% 45%;      /* green-600 - Completado */
+    --gtd-overdue: 0 84% 60%;          /* red-500 - Vencido */
+
+    /* Glass Effect Tokens */
+    --glass-bg: 0 0% 100%;
+    --glass-bg-opacity: 0.4;
+    --glass-border: 0 0% 100%;
+    --glass-border-opacity: 0.5;
+    --glass-blur: 24px;
+
+    /* Interactive States */
+    --gtd-clarity-hover: 262 84% 65%;
+    --gtd-action-hover: 330 81% 54%;
+    --gtd-focus-hover: 201 96% 57%;
+    --gtd-confidence-hover: 142 69% 58%;
+
+    --gtd-clarity-active: 262 84% 55%;
+    --gtd-action-active: 330 81% 48%;
+    --gtd-focus-active: 201 96% 50%;
+    --gtd-confidence-active: 142 69% 50%;
+
+    /* Disabled State */
+    --gtd-disabled: 0 0% 70%;
+    --gtd-disabled-text: 0 0% 40%;
+    --gtd-disabled-bg: 0 0% 95%;
+
+    /* Glass Hover Enhancement */
+    --glass-bg-hover: 0 0% 100%;
+    --glass-bg-hover-opacity: 0.5;
+    --glass-border-hover: 0 0% 100%;
+    --glass-border-hover-opacity: 0.6;
   }
   .dark {
     --background: 0 0% 3.9%;
@@ -128,4 +203,30 @@ body.modal-open {
 .modal-content [data-radix-popover-content] {
   z-index: 10000 !important;
   position: fixed !important;
+}
+
+/* GTD Buddy Design System - Utility Classes */
+@layer components {
+  /* Glassmorphism Effect */
+  .glassmorphism {
+    @apply backdrop-blur-[var(--glass-blur)] bg-white/[var(--glass-bg-opacity)] border border-white/[var(--glass-border-opacity)];
+  }
+
+  .glassmorphism:hover {
+    @apply bg-white/[var(--glass-bg-hover-opacity)] border-white/[var(--glass-border-hover-opacity)];
+  }
+
+  /* GTD Gradient Background */
+  .gtd-gradient-bg {
+    background: linear-gradient(to bottom right,
+      theme('colors.purple.100'),
+      theme('colors.pink.50'),
+      theme('colors.blue.100')
+    );
+  }
+
+  /* Disabled State */
+  .disabled-gtd {
+    @apply bg-gtd-disabled-bg text-gtd-disabled-text cursor-not-allowed opacity-60;
+  }
 }

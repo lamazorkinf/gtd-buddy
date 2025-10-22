@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Inter, Plus_Jakarta_Sans } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/contexts/auth-context"
+import { TeamProvider } from "@/contexts/team-context"
 import PageTransition from "@/components/transitions/page-transition"
 import { Toaster } from "@/components/ui/toaster"
 
@@ -33,8 +34,10 @@ export default function RootLayout({
     <html lang="es">
       <body className={`${inter.variable} ${plusJakarta.variable} font-sans gtd-gradient-bg`}>
         <AuthProvider>
-          <PageTransition>{children}</PageTransition>
-          <Toaster />
+          <TeamProvider>
+            <PageTransition>{children}</PageTransition>
+            <Toaster />
+          </TeamProvider>
         </AuthProvider>
       </body>
     </html>

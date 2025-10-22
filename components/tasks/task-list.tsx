@@ -27,29 +27,29 @@ const CATEGORY_ICONS = {
 
 const CATEGORY_STYLES = {
   Inbox: {
-    card: `${modernTheme.colors.cardBlue} ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border`,
-    title: modernTheme.colors.textBlue,
-    badge: `${modernTheme.colors.badgeBlue} ${modernTheme.container.radius}`,
+    card: `${modernTheme.colors.cardInbox} ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border`,
+    title: modernTheme.colors.textInbox,
+    badge: `${modernTheme.colors.badgeInbox} ${modernTheme.container.radius}`,
   },
   "Próximas acciones": {
-    card: `${modernTheme.colors.cardGreen} ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border`,
-    title: modernTheme.colors.textGreen,
-    badge: `${modernTheme.colors.badgeGreen} ${modernTheme.container.radius}`,
+    card: `${modernTheme.colors.cardNext} ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border`,
+    title: modernTheme.colors.textNext,
+    badge: `${modernTheme.colors.badgeNext} ${modernTheme.container.radius}`,
   },
   Multitarea: {
-    card: `${modernTheme.colors.cardPurple} ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border`,
-    title: modernTheme.colors.textPurple,
-    badge: `${modernTheme.colors.badgePurple} ${modernTheme.container.radius}`,
+    card: `${modernTheme.colors.cardProject} ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border`,
+    title: modernTheme.colors.textProject,
+    badge: `${modernTheme.colors.badgeProject} ${modernTheme.container.radius}`,
   },
   "A la espera": {
-    card: `${modernTheme.colors.cardOrange} ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border`,
-    title: modernTheme.colors.textOrange,
-    badge: `${modernTheme.colors.badgeOrange} ${modernTheme.container.radius}`,
+    card: `${modernTheme.colors.cardWaiting} ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border`,
+    title: modernTheme.colors.textWaiting,
+    badge: `${modernTheme.colors.badgeWaiting} ${modernTheme.container.radius}`,
   },
   "Algún día": {
-    card: `${modernTheme.colors.cardAmber} ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border`,
-    title: modernTheme.colors.textAmber,
-    badge: `${modernTheme.colors.badgeAmber} ${modernTheme.container.radius}`,
+    card: `${modernTheme.colors.cardSomeday} ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border`,
+    title: modernTheme.colors.textSomeday,
+    badge: `${modernTheme.colors.badgeSomeday} ${modernTheme.container.radius}`,
   },
 }
 

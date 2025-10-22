@@ -12,23 +12,151 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
+    // Helper function to check if user is a member of a team
+    function isTeamMember(teamId) {
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/teams/$(teamId)/members/$(request.auth.uid));
+    }
+
+    // Helper function to check if user is admin or owner of a team
+    function isTeamAdmin(teamId) {
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/teams/$(teamId)/members/$(request.auth.uid)) &&
+             (get(/databases/$(database)/documents/teams/$(teamId)/members/$(request.auth.uid)).data.role == 'admin' ||
+              get(/databases/$(database)/documents/teams/$(teamId)/members/$(request.auth.uid)).data.role == 'owner');
+    }
+
+    // Helper function to check if user is owner of a team
+    function isTeamOwner(teamId) {
+      return isAuthenticated() &&
+             get(/databases/$(database)/documents/teams/$(teamId)).data.ownerId == request.auth.uid;
+    }
+
     // Users collection - users can only read/write their own document
     match /users/{userId} {
       allow read, write: if isOwner(userId);
     }
 
-    // Tasks collection - users can only access their own tasks
-    match /tasks/{taskId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    // Teams collection
+    match /teams/{teamId} {
+      // Anyone authenticated can create a team
+      allow create: if isAuthenticated() &&
+                      request.resource.data.ownerId == request.auth.uid;
+
+      // Team members can read team data
+      allow read: if isTeamMember(teamId);
+
+      // Only owner can update critical fields like ownerId, subscriptionStatus
+      allow update: if isTeamOwner(teamId) ||
+                      (isTeamAdmin(teamId) &&
+                       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['ownerId', 'subscriptionStatus', 'mercadoPagoSubscriptionId']));
+
+      // Only owner can delete team
+      allow delete: if isTeamOwner(teamId);
+
+      // Team members subcollection
+      match /members/{memberId} {
+        // Owner and admins can add members
+        allow create: if isTeamAdmin(teamId) &&
+                        request.resource.data.teamId == teamId;
+
+        // Owner and admins can update member roles (except changing the owner)
+        allow update: if isTeamAdmin(teamId) &&
+                        (resource.data.role != 'owner' || isTeamOwner(teamId));
+
+        // Owner and admins can remove members, members can remove themselves
+        allow delete: if isTeamAdmin(teamId) ||
+                        (isAuthenticated() && memberId == request.auth.uid);
+      }
     }
 
-    // Contexts collection - users can only access their own contexts
+    // CollectionGroup rule for members - MUST be at root level for collectionGroup queries
+    match /{path=**}/members/{memberId} {
+      // Allow users to read their own member documents across all teams
+      allow read: if isAuthenticated() &&
+                    resource.data.userId == request.auth.uid;
+    }
+
+    // Team invitations collection
+    match /teamInvitations/{invitationId} {
+      // Team admins can create invitations
+      allow create: if isAuthenticated() &&
+                      isTeamAdmin(request.resource.data.teamId) &&
+                      request.resource.data.invitedBy == request.auth.uid;
+
+      // Invitations can be read by team members and the invited user (by email)
+      allow read: if isAuthenticated() &&
+                    (isTeamMember(resource.data.teamId) ||
+                     resource.data.email == request.auth.token.email);
+
+      // Only the invited user can update (accept/reject)
+      allow update: if isAuthenticated() &&
+                      resource.data.email == request.auth.token.email &&
+                      resource.data.status == 'pending';
+
+      // Team admins can delete pending invitations
+      allow delete: if isAuthenticated() &&
+                      isTeamAdmin(resource.data.teamId) &&
+                      resource.data.status == 'pending';
+    }
+
+    // Tasks collection - users can access their own tasks OR team tasks
+    match /tasks/{taskId} {
+      // Read: own tasks OR tasks from teams where user is member
+      allow read: if isAuthenticated() &&
+                    (resource.data.userId == request.auth.uid ||
+                     (resource.data.keys().hasAny(['teamId']) &&
+                      resource.data.teamId != null &&
+                      isTeamMember(resource.data.teamId)));
+
+      // Create: personal tasks OR team tasks (if member)
+      allow create: if isAuthenticated() &&
+                      request.resource.data.userId == request.auth.uid &&
+                      (!request.resource.data.keys().hasAny(['teamId']) ||
+                       request.resource.data.teamId == null ||
+                       isTeamMember(request.resource.data.teamId));
+
+      // Update: own personal tasks OR team tasks (if member)
+      allow update: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid &&
+                      (!resource.data.keys().hasAny(['teamId']) ||
+                       resource.data.teamId == null ||
+                       isTeamMember(resource.data.teamId));
+
+      // Delete: own personal tasks OR team tasks (if member)
+      allow delete: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid &&
+                      (!resource.data.keys().hasAny(['teamId']) ||
+                       resource.data.teamId == null ||
+                       isTeamMember(resource.data.teamId));
+    }
+
+    // Contexts collection - users can access their own contexts OR team contexts
     match /contexts/{contextId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // Read: own contexts OR contexts from teams where user is member
+      // For queries: must be authenticated and either query by userId OR by teamId (where user is member)
+      allow read: if isAuthenticated() &&
+                    (resource.data.userId == request.auth.uid ||
+                     (resource.data.teamId != null &&
+                      isTeamMember(resource.data.teamId)));
+
+      // Create: personal contexts OR team contexts (if admin)
+      allow create: if isAuthenticated() &&
+                      request.resource.data.userId == request.auth.uid &&
+                      (request.resource.data.teamId == null ||
+                       isTeamAdmin(request.resource.data.teamId));
+
+      // Update: own personal contexts OR team contexts (if admin)
+      allow update: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid &&
+                      (resource.data.teamId == null ||
+                       isTeamAdmin(resource.data.teamId));
+
+      // Delete: own personal contexts OR team contexts (if admin)
+      allow delete: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid &&
+                      (resource.data.teamId == null ||
+                       isTeamAdmin(resource.data.teamId));
     }
   }
 }

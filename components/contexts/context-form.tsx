@@ -108,7 +108,7 @@ export default function ContextForm({ context, onClose }: ContextFormProps) {
             </Select>
           </div>
 
-          <div className={`${modernTheme.colors.cardPurple} p-4 ${modernTheme.container.radius} border ${modernTheme.colors.cardBorder}`}>
+          <div className={`${modernTheme.colors.cardProject} p-4 ${modernTheme.container.radius} border ${modernTheme.colors.cardBorder}`}>
             <div className="flex items-start gap-3">
               <Lightbulb className={`h-5 w-5 ${modernTheme.colors.primaryText} mt-0.5 flex-shrink-0`} />
               <div>

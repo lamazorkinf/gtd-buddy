@@ -11,6 +11,9 @@ import { es } from "date-fns/locale"
 import type { Task, Subtask } from "@/types/task"
 import { useTasks } from "@/hooks/use-tasks"
 import { useContexts } from "@/hooks/use-contexts"
+import { useTeamContext } from "@/contexts/team-context"
+import { useTeamMembers } from "@/hooks/use-team-members"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import SubtaskEditModal from "./subtask-edit-modal"
 import { modernTheme } from "@/lib/theme"
 
@@ -66,20 +69,23 @@ interface TaskItemProps {
 }
 
 const CATEGORY_COLORS = {
-  Inbox: `${modernTheme.colors.badgeBlue}`,
-  "Próximas acciones": `${modernTheme.colors.badgeGreen}`,
-  Multitarea: `${modernTheme.colors.badgePurple}`,
-  "A la espera": `${modernTheme.colors.badgeOrange}`,
-  "Algún día": `${modernTheme.colors.badgeAmber}`,
+  Inbox: `${modernTheme.colors.badgeInbox}`,
+  "Próximas acciones": `${modernTheme.colors.badgeNext}`,
+  Multitarea: `${modernTheme.colors.badgeProject}`,
+  "A la espera": `${modernTheme.colors.badgeWaiting}`,
+  "Algún día": `${modernTheme.colors.badgeSomeday}`,
 }
 
 export default function TaskItem({ task, onEdit }: TaskItemProps) {
   const [loading, setLoading] = useState(false)
   const [editingSubtask, setEditingSubtask] = useState<Subtask | null>(null)
-  const { updateTask, deleteTask } = useTasks()
-  const { contexts } = useContexts()
+  const { selectedTeamId, isPersonalMode } = useTeamContext()
+  const { updateTask, deleteTask } = useTasks({ teamId: selectedTeamId })
+  const { contexts } = useContexts({ teamId: selectedTeamId })
+  const { members } = useTeamMembers(!isPersonalMode && selectedTeamId ? selectedTeamId : "")
 
   const taskContext = task.contextId ? contexts.find((c) => c.id === task.contextId) : null
+  const assignedMember = task.assignedTo ? members.find((m) => m.userId === task.assignedTo) : null
 
   const handleToggleComplete = async () => {
     setLoading(true)
@@ -190,6 +196,18 @@ export default function TaskItem({ task, onEdit }: TaskItemProps) {
                 {taskContext && (
                   <Badge variant="outline" className={`${modernTheme.colors.badgePurple} ${modernTheme.container.radius}`}>
                     @{taskContext.name}
+                  </Badge>
+                )}
+
+                {assignedMember && (
+                  <Badge variant="outline" className={`flex items-center gap-1.5 ${modernTheme.container.radius}`}>
+                    <Avatar className="h-4 w-4">
+                      <AvatarImage src={assignedMember.photoURL || undefined} />
+                      <AvatarFallback className="text-xs glassmorphism">
+                        {assignedMember.displayName?.slice(0, 2).toUpperCase() || assignedMember.email.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-xs">{assignedMember.displayName || assignedMember.email.split('@')[0]}</span>
                   </Badge>
                 )}
 
