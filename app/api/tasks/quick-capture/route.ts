@@ -1,22 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getAuth } from "firebase-admin/auth"
-import { getFirestore } from "firebase-admin/firestore"
-import { initializeApp, getApps, cert } from "firebase-admin/app"
-
-// Inicializar Firebase Admin si no está inicializado
-if (!getApps().length) {
-  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || "{}")
-  initializeApp({
-    credential: cert(serviceAccount),
-  })
-}
-
-const db = getFirestore()
-const auth = getAuth()
+import { getFirebaseAdmin } from "@/lib/firebase-admin"
 
 // POST - Captura rápida de tarea
 export async function POST(request: NextRequest) {
   try {
+    const { auth, db } = getFirebaseAdmin()
+
     const authHeader = request.headers.get("authorization")
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json({ error: "Token de autorización requerido" }, { status: 401 })

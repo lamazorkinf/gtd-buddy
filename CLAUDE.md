@@ -122,6 +122,73 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Application:**
 - `NEXT_PUBLIC_APP_URL` - Application base URL for redirects
 
+**WhatsApp Integration (optional - for WhatsApp bot features):**
+- `EVOLUTION_API_URL` - Evolution API base URL
+- `EVOLUTION_API_KEY` - Evolution API authentication key
+- `EVOLUTION_INSTANCE_NAME` - Your Evolution API instance name
+- `OPENAI_API_KEY` - OpenAI API key for Whisper (audio transcription) and GPT-4 (task analysis)
+
+### WhatsApp Integration
+
+**Overview:**
+The application integrates with WhatsApp via Evolution API to allow users to create tasks by sending text messages or voice notes. The system uses OpenAI's Whisper for audio transcription and GPT-4 for intelligent task processing.
+
+**Architecture:**
+```
+WhatsApp → Evolution API → Webhook (/api/whatsapp/webhook) →
+  → OpenAI Processing (transcription + analysis) →
+  → Firestore (task creation)
+```
+
+**Key Features:**
+1. **Account Linking System:**
+   - Users generate a 6-digit code in the dashboard (Profile > WhatsApp tab)
+   - Send the code to WhatsApp bot to link their account
+   - Stored in `whatsappLinks` collection with userId mapping
+   - Codes expire after 15 minutes
+
+2. **Message Processing (Fase 1 - Captura Básica):**
+   - Text messages: Direct processing to create tasks
+   - Audio messages: Transcribed using Whisper API then processed
+   - All messages create tasks in user's personal workspace (teamId: null)
+
+3. **AI-Powered Task Analysis (Fase 2 - Procesamiento Inteligente):**
+   - GPT-4 extracts: title, description, context, due date, estimated time, category, quick action flag
+   - Natural language date parsing ("mañana", "próximo lunes", "en 3 días")
+   - Context detection from keywords (e.g., "@compras" → compras context)
+   - GTD category suggestion (default: "Inbox" for quick captures)
+   - 2-minute rule detection (isQuickAction)
+   - Confidence scoring (0-1) for AI suggestions
+
+4. **Response System:**
+   - Automatic confirmation messages sent back to WhatsApp
+   - Shows extracted task details (title, category, context, date, time estimate)
+   - Error messages for invalid codes, expired subscriptions, etc.
+
+**Firestore Collections:**
+- `whatsappLinks`: Stores WhatsApp number ↔ Firebase UID mappings
+  - Fields: userId, whatsappNumber, linkCode, linkCodeExpiry, isActive, createdAt, updatedAt
+- `tasks`: Tasks created from WhatsApp have standard Task schema
+  - Source identified by description: "Creado desde WhatsApp por [name]"
+
+**Implementation Files:**
+- `/types/whatsapp.ts` - TypeScript types for WhatsApp integration
+- `/lib/whatsapp-utils.ts` - Utility functions for account linking
+- `/lib/openai-utils.ts` - OpenAI Whisper & GPT-4 integration
+- `/app/api/whatsapp/webhook/route.ts` - Webhook endpoint for Evolution API
+- `/components/profile/whatsapp-linking.tsx` - UI for account linking
+
+**Subscription Requirements:**
+- WhatsApp features only available to users with active/trial/test subscriptions
+- Subscription check happens before processing each message
+- Users with expired subscriptions receive notification to renew
+
+**Security:**
+- Webhook authenticated via Evolution API key header
+- Phone numbers normalized to international format
+- Link codes expire after 15 minutes
+- Only active links can create tasks
+
 ### Build Configuration Notes
 
 - TypeScript and ESLint errors ignored during builds (next.config.mjs)

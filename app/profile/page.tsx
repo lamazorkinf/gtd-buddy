@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { CreditCard, Target, Plus, Calendar, CheckCircle, ArrowLeft } from "lucide-react"
+import { CreditCard, Target, Plus, Calendar, CheckCircle, ArrowLeft, MessageCircle } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { checkSubscriptionStatus } from "@/lib/subscription-utils"
 import ContextForm from "@/components/contexts/context-form"
 import ContextList from "@/components/contexts/context-list"
+import WhatsAppLinking from "@/components/profile/whatsapp-linking"
 import type { Context } from "@/types/task"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -104,10 +105,14 @@ export default function ProfilePage() {
           </div>
 
           <Tabs defaultValue="contexts" className="space-y-6">
-            <TabsList className={`grid w-full grid-cols-2 ${modernTheme.effects.glass} ${modernTheme.container.radius}`}>
+            <TabsList className={`grid w-full grid-cols-3 ${modernTheme.effects.glass} ${modernTheme.container.radius}`}>
               <TabsTrigger value="contexts" className={`flex items-center gap-2 ${modernTheme.container.radius}`}>
                 <Target className="h-4 w-4" />
                 Contextos
+              </TabsTrigger>
+              <TabsTrigger value="whatsapp" className={`flex items-center gap-2 ${modernTheme.container.radius}`}>
+                <MessageCircle className="h-4 w-4" />
+                WhatsApp
               </TabsTrigger>
               <TabsTrigger value="subscription" className={`flex items-center gap-2 ${modernTheme.container.radius}`}>
                 <CreditCard className="h-4 w-4" />
@@ -150,6 +155,11 @@ export default function ProfilePage() {
                   <ContextList onEditContext={handleEditContext} onCreateTask={handleCreateTask} />
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Pestaña de WhatsApp */}
+            <TabsContent value="whatsapp" className="space-y-6">
+              <WhatsAppLinking />
             </TabsContent>
 
             {/* Pestaña de Suscripción */}

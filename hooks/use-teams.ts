@@ -98,13 +98,13 @@ export function useTeams() {
 
   // Crear equipo
   const createTeam = useCallback(
-    async (name: string, description?: string) => {
+    async (data: { name: string; description?: string }) => {
       try {
-        const response = await apiClient.createTeam({ name, description })
+        const response = await apiClient.createTeam(data)
 
         toast({
           title: "Equipo creado",
-          description: `${name} ha sido creado exitosamente`,
+          description: `${data.name} ha sido creado exitosamente`,
         })
 
         return response.team
