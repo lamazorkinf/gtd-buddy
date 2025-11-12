@@ -292,10 +292,6 @@ export async function POST(request: NextRequest) {
       confirmationMessage += `\n⏱️ ${processedData.estimatedMinutes} min`
     }
 
-    if (processedData.isQuickAction) {
-      confirmationMessage += `\n⚡ Acción rápida (< 2 min)`
-    }
-
     await sendWhatsAppMessage(phoneNumber, confirmationMessage)
 
     return NextResponse.json({

@@ -153,8 +153,6 @@ Categorías GTD disponibles:
 
 Contextos comunes: @casa, @oficina, @llamadas, @compras, @computadora, @recados, @reuniones, @email
 
-Regla de 2 minutos: Si la tarea toma menos de 2 minutos, marca isQuickAction como true.
-
 Analiza el siguiente texto y extrae:
 1. Título conciso de la tarea (máximo 80 caracteres)
 2. Descripción detallada (si hay información adicional)
@@ -162,13 +160,13 @@ Analiza el siguiente texto y extrae:
 4. Fecha de vencimiento (si se menciona "mañana", "próximo lunes", "en 3 días", etc.)
 5. Tiempo estimado en minutos (si se menciona)
 6. Categoría GTD más apropiada
-7. Si aplica la regla de 2 minutos
 
 IMPORTANTE:
 - Para capturas rápidas sin procesar, usa siempre "Inbox"
 - Solo usa otras categorías si el usuario especifica claramente el tipo de tarea
 - Las fechas relativas deben calcularse desde hoy
 - Sé conservador con la clasificación: ante la duda, usa "Inbox"
+- NO intentes adivinar si una tarea es rápida o no, deja isQuickAction siempre en false
 
 Responde SOLO con un JSON válido, sin markdown ni explicaciones adicionales.`
 
