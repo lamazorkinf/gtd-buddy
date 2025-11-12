@@ -39,6 +39,24 @@ async function getUserIdByWhatsAppNumber(whatsappNumber: string): Promise<string
   return snapshot.docs[0].data().userId || null
 }
 
+// Obtener usuario por número de teléfono
+async function getUserByPhoneNumber(whatsappNumber: string): Promise<any | null> {
+  const { db } = getFirebaseAdmin()
+  const normalized = normalizeWhatsAppNumber(whatsappNumber)
+
+  const snapshot = await db
+    .collection("users")
+    .where("phoneNumber", "==", normalized)
+    .limit(1)
+    .get()
+
+  if (snapshot.empty) {
+    return null
+  }
+
+  return snapshot.docs[0].data()
+}
+
 // Activar link de WhatsApp
 async function activateWhatsAppLink(linkCode: string, whatsappNumber: string): Promise<boolean> {
   const { db } = getFirebaseAdmin()
@@ -110,6 +128,8 @@ export async function POST(request: NextRequest) {
 
     console.log("✅ API key verificada correctamente")
 
+    const { db } = getFirebaseAdmin()
+
     console.log("📱 Mensaje de WhatsApp recibido:", {
       event: webhook.event,
       sender: webhook.sender,
@@ -120,6 +140,32 @@ export async function POST(request: NextRequest) {
     if (webhook.data.key.fromMe) {
       console.log("⏭️ Mensaje enviado por nosotros, ignorando")
       return NextResponse.json({ success: true, message: "Mensaje propio ignorado" })
+    }
+
+    // Verificar si el mensaje ya fue procesado (evitar duplicados)
+    const messageId = webhook.data.key.id
+    const processedMessageRef = db.collection("processedMessages").doc(messageId)
+    const processedMessageDoc = await processedMessageRef.get()
+
+    if (processedMessageDoc.exists) {
+      console.log("⏭️ Mensaje ya procesado, ignorando")
+      return NextResponse.json({ success: true, message: "Mensaje ya procesado" })
+    }
+
+    // Verificar timestamp del mensaje (ignorar mensajes antiguos > 5 minutos)
+    const messageTimestamp = webhook.data.messageTimestamp * 1000 // Convertir a ms
+    const currentTime = Date.now()
+    const fiveMinutesInMs = 5 * 60 * 1000
+
+    if (currentTime - messageTimestamp > fiveMinutesInMs) {
+      console.log("⏭️ Mensaje antiguo (más de 5 minutos), ignorando")
+      // Marcar como procesado para no volverlo a procesar
+      await processedMessageRef.set({
+        messageId,
+        processedAt: new Date(),
+        reason: "old_message"
+      })
+      return NextResponse.json({ success: true, message: "Mensaje antiguo ignorado" })
     }
 
     // Solo procesar mensajes de texto, audio, botones y listas
@@ -240,22 +286,53 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Buscar userId asociado al número de WhatsApp
-    const userId = await getUserIdByWhatsAppNumber(phoneNumber)
+    // Buscar userId asociado al número de WhatsApp (cuenta vinculada)
+    let userId = await getUserIdByWhatsAppNumber(phoneNumber)
 
     if (!userId) {
-      console.log("⚠️ Usuario no vinculado")
-      await sendWhatsAppMessage(
-        phoneNumber,
-        `¡Hola! 👋\n\nPara usar GTD Buddy por WhatsApp, primero debes vincular tu cuenta.\n\n1. Ingresa a tu dashboard en ${process.env.NEXT_PUBLIC_APP_URL}\n2. Ve a Configuración > WhatsApp\n3. Genera tu código de vinculación\n4. Envíame ese código de 6 dígitos\n\n¡Nos vemos pronto!`
-      )
-      return NextResponse.json({ error: "Usuario no vinculado" }, { status: 403 })
+      // No está vinculado, buscar si el número está registrado en algún usuario
+      console.log("⚠️ Usuario no vinculado, buscando por phoneNumber...")
+      const userByPhone = await getUserByPhoneNumber(phoneNumber)
+
+      if (userByPhone) {
+        // Usuario existe pero no ha vinculado
+        const subscriptionStatus = userByPhone.subscriptionStatus
+
+        if (
+          subscriptionStatus === "active" ||
+          subscriptionStatus === "trial" ||
+          subscriptionStatus === "test" ||
+          userByPhone.role === "test"
+        ) {
+          // Tiene suscripción activa, pedirle que vincule
+          console.log("✅ Usuario registrado con suscripción activa, no vinculado")
+          await sendWhatsAppMessage(
+            phoneNumber,
+            `¡Hola ${userByPhone.firstName || ""}! 👋\n\nDetectamos que tienes una cuenta en GTD Buddy.\n\nPara usar WhatsApp, vincula tu cuenta:\n\n1. Ingresa a ${process.env.NEXT_PUBLIC_APP_URL}profile\n2. Ve a la pestaña "WhatsApp"\n3. Genera tu código de vinculación\n4. Envíame ese código de 6 dígitos`
+          )
+        } else {
+          // Usuario registrado pero sin suscripción
+          console.log("⚠️ Usuario registrado sin suscripción activa")
+          await sendWhatsAppMessage(
+            phoneNumber,
+            `¡Hola ${userByPhone.firstName || ""}! 👋\n\nPara usar GTD Buddy por WhatsApp necesitas una suscripción activa.\n\nSuscríbete aquí:\n${process.env.NEXT_PUBLIC_APP_URL}subscription`
+          )
+        }
+        return NextResponse.json({ error: "Usuario no vinculado" }, { status: 403 })
+      } else {
+        // No está registrado en absoluto
+        console.log("⚠️ Número no encontrado en el sistema")
+        await sendWhatsAppMessage(
+          phoneNumber,
+          `¡Hola! 👋\n\nPara usar GTD Buddy por WhatsApp:\n\n1. Regístrate en ${process.env.NEXT_PUBLIC_APP_URL}\n2. Activa tu período de prueba gratuito\n3. Vincula tu WhatsApp desde el perfil\n\n¡Te esperamos!`
+        )
+        return NextResponse.json({ error: "Usuario no registrado" }, { status: 403 })
+      }
     }
 
     console.log("👤 Usuario encontrado:", userId)
 
     // Verificar suscripción del usuario
-    const { db } = getFirebaseAdmin()
     const userDoc = await db.collection("users").doc(userId).get()
 
     if (!userDoc.exists) {
@@ -308,6 +385,7 @@ export async function POST(request: NextRequest) {
         await handleNextActionsCommand(phoneNumber, userId)
         return NextResponse.json({ success: true, message: "Próximas acciones enviadas" })
       }
+
     }
 
     // Procesar el mensaje con IA
@@ -320,6 +398,23 @@ export async function POST(request: NextRequest) {
     )
 
     console.log("📊 Datos procesados:", processedData)
+
+    // Verificar si NO es una tarea (conversación casual)
+    if (!processedData.isTask) {
+      console.log("👋 Mensaje no es una tarea (conversación casual), respondiendo amigablemente")
+      await sendWhatsAppMessage(
+        phoneNumber,
+        `¡Hola! 👋\n\nEstoy aquí para ayudarte con tus tareas.\n\nPuedes:\n• Enviarme una tarea (ej: "Llamar al dentista mañana")\n• Ver tus tareas con /inbox, /hoy, /proximas\n• Ver el menú con /menu`
+      )
+      // Marcar como procesado para no crear tarea
+      await processedMessageRef.set({
+        messageId,
+        processedAt: new Date(),
+        userId,
+        reason: "not_a_task"
+      })
+      return NextResponse.json({ success: true, message: "Conversación casual procesada" })
+    }
 
     // Buscar contextId si se sugirió un contexto
     let contextId: string | undefined
@@ -380,6 +475,15 @@ export async function POST(request: NextRequest) {
     }
 
     await sendWhatsAppMessage(phoneNumber, confirmationMessage)
+
+    // Marcar mensaje como procesado
+    await processedMessageRef.set({
+      messageId,
+      processedAt: new Date(),
+      userId,
+      taskId: taskRef.id,
+      reason: "task_created"
+    })
 
     return NextResponse.json({
       success: true,

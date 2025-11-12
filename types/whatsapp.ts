@@ -33,6 +33,7 @@ export interface WhatsAppMessage {
 }
 
 export interface ProcessedTaskData {
+  isTask: boolean // true si es una tarea, false si es conversación casual
   title: string
   description?: string
   contextId?: string

@@ -142,7 +142,21 @@ export async function transcribeAudio(audioUrl: string, messageId?: string, remo
 export async function analyzeTaskText(text: string): Promise<ProcessedTaskData> {
   try {
     const systemPrompt = `Eres un asistente experto en el método GTD (Getting Things Done).
-Tu trabajo es analizar mensajes de texto y extraer información estructurada para crear tareas.
+Tu trabajo es analizar mensajes de WhatsApp y determinar si son tareas o conversación casual.
+
+PRIMERO: Determina si el mensaje es una TAREA o NO:
+- Saludos: "hola", "hi", "buenos días", "qué tal", etc.
+- Despedidas: "chau", "adiós", "bye", "hasta luego", etc.
+- Agradecimientos: "gracias", "thanks", etc.
+- Respuestas cortas sin acción: "ok", "dale", "sí", "no", "👍", etc.
+- Conversación casual: preguntas generales, comentarios, etc.
+- Si es alguno de estos, marca isTask como false
+
+TAREAS VÁLIDAS son mensajes que indican una acción a realizar:
+- "Llamar al dentista mañana"
+- "Comprar leche y pan"
+- "Revisar el informe antes del viernes"
+- "Recordar enviar email a Juan"
 
 Categorías GTD disponibles:
 - "Inbox": Tareas que aún no se han procesado (por defecto para capturas rápidas)
@@ -153,7 +167,7 @@ Categorías GTD disponibles:
 
 Contextos comunes: @casa, @oficina, @llamadas, @compras, @computadora, @recados, @reuniones, @email
 
-Analiza el siguiente texto y extrae:
+Si ES una tarea, extrae:
 1. Título conciso de la tarea (máximo 80 caracteres)
 2. Descripción detallada (si hay información adicional)
 3. Contexto sugerido (si se menciona o se puede inferir)
@@ -177,7 +191,8 @@ Texto a analizar:
 
 Responde con JSON en este formato:
 {
-  "title": "string (máximo 80 caracteres)",
+  "isTask": boolean (true si es una tarea, false si es saludo/conversación casual),
+  "title": "string (máximo 80 caracteres, solo si isTask es true)",
   "description": "string (opcional, más detalles)",
   "contextName": "string (opcional, sin @)",
   "dueDate": "YYYY-MM-DD (opcional)",
@@ -206,7 +221,8 @@ Responde con JSON en este formato:
 
     // Validar y construir objeto ProcessedTaskData
     const processedData: ProcessedTaskData = {
-      title: parsed.title.substring(0, 80), // Asegurar límite de caracteres
+      isTask: parsed.isTask ?? true, // Por defecto asumimos que es tarea si no viene el campo
+      title: parsed.title?.substring(0, 80) || text.substring(0, 80), // Asegurar límite de caracteres
       description: parsed.description || undefined,
       contextName: parsed.contextName || undefined,
       dueDate: parsed.dueDate ? new Date(parsed.dueDate) : undefined,
@@ -222,6 +238,7 @@ Responde con JSON en este formato:
 
     // Fallback: crear tarea básica en Inbox
     return {
+      isTask: true, // En caso de error, asumimos que es tarea para no perder información
       title: text.substring(0, 80),
       description: text.length > 80 ? text : undefined,
       category: "Inbox",

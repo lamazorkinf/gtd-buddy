@@ -105,15 +105,17 @@ export default function ProfilePage() {
           </div>
 
           <Tabs defaultValue="contexts" className="space-y-6">
-            <TabsList className={`grid w-full grid-cols-3 ${modernTheme.effects.glass} ${modernTheme.container.radius}`}>
+            <TabsList className={`grid w-full ${subscriptionStatus.canAccessDashboard ? 'grid-cols-3' : 'grid-cols-2'} ${modernTheme.effects.glass} ${modernTheme.container.radius}`}>
               <TabsTrigger value="contexts" className={`flex items-center gap-2 ${modernTheme.container.radius}`}>
                 <Target className="h-4 w-4" />
                 Contextos
               </TabsTrigger>
-              <TabsTrigger value="whatsapp" className={`flex items-center gap-2 ${modernTheme.container.radius}`}>
-                <MessageCircle className="h-4 w-4" />
-                WhatsApp
-              </TabsTrigger>
+              {subscriptionStatus.canAccessDashboard && (
+                <TabsTrigger value="whatsapp" className={`flex items-center gap-2 ${modernTheme.container.radius}`}>
+                  <MessageCircle className="h-4 w-4" />
+                  WhatsApp
+                </TabsTrigger>
+              )}
               <TabsTrigger value="subscription" className={`flex items-center gap-2 ${modernTheme.container.radius}`}>
                 <CreditCard className="h-4 w-4" />
                 Suscripción
@@ -158,9 +160,11 @@ export default function ProfilePage() {
             </TabsContent>
 
             {/* Pestaña de WhatsApp */}
-            <TabsContent value="whatsapp" className="space-y-6">
-              <WhatsAppLinking />
-            </TabsContent>
+            {subscriptionStatus.canAccessDashboard && (
+              <TabsContent value="whatsapp" className="space-y-6">
+                <WhatsAppLinking />
+              </TabsContent>
+            )}
 
             {/* Pestaña de Suscripción */}
             <TabsContent value="subscription" className="space-y-6">
