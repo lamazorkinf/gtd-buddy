@@ -21,38 +21,60 @@ async function downloadAudioFromEvolution(messageId: string, remoteJid: string):
     throw new Error("Configuración de Evolution API incompleta")
   }
 
-  const url = `${evolutionUrl}/message/download/${instanceName}`
+  // Probar diferentes endpoints de Evolution API
+  const possibleEndpoints = [
+    `${evolutionUrl}/chat/getBase64FromMediaMessage/${instanceName}`,
+    `${evolutionUrl}/message/downloadMedia/${instanceName}`,
+    `${evolutionUrl}/chat/downloadMedia/${instanceName}`,
+  ]
 
   console.log("📥 Descargando audio desde Evolution API...")
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "apikey": apiKey,
-    },
-    body: JSON.stringify({
-      key: {
-        id: messageId,
-        remoteJid: remoteJid,
+  let lastError: Error | null = null
+
+  for (const url of possibleEndpoints) {
+    try {
+      console.log("🔍 Probando endpoint:", url)
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": apiKey,
+        },
+        body: JSON.stringify({
+          message: {
+            key: {
+              id: messageId,
+              remoteJid: remoteJid,
+            }
+          }
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+
+        // Evolution API puede devolver el audio en base64 con diferentes campos
+        const base64Data = data.base64 || data.mediaBase64 || data.base64Media || data.media?.base64
+
+        if (base64Data) {
+          const buffer = Buffer.from(base64Data, 'base64')
+          console.log("✅ Audio descargado desde Evolution API, tamaño:", buffer.length, "bytes")
+          return buffer
+        }
+
+        console.log("⚠️ Respuesta recibida pero sin base64:", Object.keys(data))
+      } else {
+        console.log(`❌ Endpoint falló con ${response.status}: ${response.statusText}`)
       }
-    })
-  })
-
-  if (!response.ok) {
-    throw new Error(`Error descargando desde Evolution API: ${response.statusText}`)
+    } catch (error: any) {
+      console.log(`❌ Error en endpoint: ${error.message}`)
+      lastError = error
+    }
   }
 
-  const data = await response.json()
-
-  // Evolution API devuelve el audio en base64
-  if (data.base64) {
-    const buffer = Buffer.from(data.base64, 'base64')
-    console.log("✅ Audio descargado desde Evolution API, tamaño:", buffer.length, "bytes")
-    return buffer
-  }
-
-  throw new Error("Evolution API no devolvió el audio en formato esperado")
+  throw new Error(`No se pudo descargar audio desde Evolution API. Último error: ${lastError?.message || "Ningún endpoint funcionó"}`)
 }
 
 /**
