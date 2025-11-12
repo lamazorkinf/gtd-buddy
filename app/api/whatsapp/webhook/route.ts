@@ -2,9 +2,10 @@ export const runtime = "nodejs"
 
 import { type NextRequest, NextResponse } from "next/server"
 import { getFirebaseAdmin } from "@/lib/firebase-admin"
-import type { EvolutionAPIWebhook, ProcessedTaskData } from "@/types/whatsapp"
+import type { EvolutionAPIWebhook, ProcessedTaskData, ProcessedIntent } from "@/types/whatsapp"
 import type { Context } from "@/types/task"
-import { processWhatsAppMessage } from "@/lib/openai-utils"
+import { detectUserIntent } from "@/lib/openai-utils"
+import { getOrCreateConversationContext, updateConversationContext, addToConversationHistory } from "@/lib/conversation-utils"
 
 // Extraer número de teléfono del remoteJid de WhatsApp
 function extractPhoneNumber(remoteJid: string): string {
@@ -358,137 +359,193 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Suscripción inactiva" }, { status: 403 })
     }
 
-    // Detectar comandos que requieren autenticación
-    if (textMessage) {
-      const command = textMessage.trim().toLowerCase()
+    // Obtener o crear contexto de conversación
+    console.log("💬 Obteniendo contexto de conversación...")
+    const conversationContext = await getOrCreateConversationContext(userId, phoneNumber)
+    console.log("✅ Contexto de conversación:", {
+      id: conversationContext.id,
+      lastTaskId: conversationContext.lastTaskId,
+      historyLength: conversationContext.conversationHistory.length,
+    })
 
-      // Comando: /menu
-      if (command === "/menu") {
+    // Agregar mensaje del usuario al historial
+    await addToConversationHistory(conversationContext.id, "user", textMessage || "[audio]")
+
+    // Detectar intención del usuario usando IA con contexto conversacional
+    console.log("🤖 Detectando intención del usuario...")
+    const intent: ProcessedIntent = await detectUserIntent(textMessage || "", conversationContext)
+    console.log("📊 Intención detectada:", {
+      intent: intent.intent,
+      confidence: intent.confidence,
+      needsContext: intent.needsContext,
+      parameters: intent.parameters,
+    })
+
+    // Manejar la intención detectada
+    let responseMessage = ""
+    let taskId: string | undefined
+
+    switch (intent.intent) {
+      case "create_task":
+        if (!intent.taskData) {
+          responseMessage = "No pude entender la tarea. Por favor, intenta nuevamente."
+          break
+        }
+
+        // Buscar contextId si se sugirió un contexto
+        let contextId: string | undefined
+        if (intent.taskData.contextName) {
+          const contextDoc = await findContextByName(userId, intent.taskData.contextName)
+          if (contextDoc) {
+            contextId = contextDoc.id
+            console.log("✅ Contexto encontrado:", contextDoc.name)
+          }
+        }
+
+        // Crear la tarea
+        const taskData: any = {
+          title: intent.taskData.title,
+          description: intent.taskData.description || `Creado desde WhatsApp por ${senderName}`,
+          category: intent.taskData.category,
+          completed: false,
+          userId: userId,
+          isQuickAction: intent.taskData.isQuickAction || false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          teamId: null,
+          assignedTo: null,
+        }
+
+        if (contextId) taskData.contextId = contextId
+        if (intent.taskData.estimatedMinutes) taskData.estimatedMinutes = intent.taskData.estimatedMinutes
+        if (intent.taskData.dueDate) taskData.dueDate = intent.taskData.dueDate
+
+        const taskRef = await db.collection("tasks").add(taskData)
+        taskId = taskRef.id
+        console.log("✅ Tarea creada:", taskId)
+
+        // Actualizar contexto con la tarea creada
+        await updateConversationContext(conversationContext.id, {
+          lastTaskId: taskId,
+          lastIntent: "create_task",
+        })
+
+        // Construir mensaje de confirmación
+        responseMessage = `✅ Tarea creada:\n\n📝 ${intent.taskData.title}`
+        if (intent.taskData.category !== "Inbox") {
+          responseMessage += `\n📂 ${intent.taskData.category}`
+        }
+        if (contextId && intent.taskData.contextName) {
+          responseMessage += `\n🏷️ ${intent.taskData.contextName}`
+        }
+        if (intent.taskData.dueDate) {
+          const dateStr = intent.taskData.dueDate.toLocaleDateString("es-AR", {
+            weekday: "short",
+            day: "numeric",
+            month: "short",
+          })
+          responseMessage += `\n📅 ${dateStr}`
+        }
+        if (intent.taskData.estimatedMinutes) {
+          responseMessage += `\n⏱️ ${intent.taskData.estimatedMinutes} min`
+        }
+        break
+
+      case "view_tasks":
+        const filter = intent.parameters?.taskFilter || "all"
+        if (filter === "inbox") {
+          await handleInboxCommand(phoneNumber, userId)
+        } else if (filter === "today") {
+          await handleTodayCommand(phoneNumber, userId)
+        } else if (filter === "next_actions") {
+          await handleNextActionsCommand(phoneNumber, userId)
+        } else {
+          await handleInboxCommand(phoneNumber, userId) // Default
+        }
+        await updateConversationContext(conversationContext.id, { lastIntent: "view_tasks" })
+        return NextResponse.json({ success: true, message: "Tareas mostradas" })
+
+      case "help":
         await sendWhatsAppButtons(phoneNumber)
-        return NextResponse.json({ success: true, message: "Menú enviado" })
-      }
+        await updateConversationContext(conversationContext.id, { lastIntent: "help" })
+        return NextResponse.json({ success: true, message: "Ayuda enviada" })
 
-      // Comando: /inbox
-      if (command === "/inbox") {
-        await handleInboxCommand(phoneNumber, userId)
-        return NextResponse.json({ success: true, message: "Inbox enviado" })
-      }
+      case "complete_task":
+        if (!conversationContext.lastTaskId) {
+          responseMessage = "No tengo registro de ninguna tarea reciente. Crea una tarea primero o especifica cuál deseas completar."
+        } else {
+          try {
+            await db.collection("tasks").doc(conversationContext.lastTaskId).update({
+              completed: true,
+              updatedAt: new Date(),
+            })
+            responseMessage = "✅ Tarea marcada como completada!"
+            await updateConversationContext(conversationContext.id, { lastIntent: "complete_task" })
+          } catch (error) {
+            responseMessage = "❌ No pude marcar la tarea como completada. Es posible que ya no exista."
+          }
+        }
+        break
 
-      // Comando: /hoy
-      if (command === "/hoy") {
-        await handleTodayCommand(phoneNumber, userId)
-        return NextResponse.json({ success: true, message: "Tareas de hoy enviadas" })
-      }
+      case "add_context":
+        if (!conversationContext.lastTaskId) {
+          responseMessage = "No tengo registro de ninguna tarea reciente. Crea una tarea primero."
+        } else if (!intent.parameters?.contextName) {
+          responseMessage = "No especificaste el contexto. Ejemplo: 'agregar a @Vilma'"
+        } else {
+          const contextDoc = await findContextByName(userId, intent.parameters.contextName)
+          if (contextDoc) {
+            try {
+              await db.collection("tasks").doc(conversationContext.lastTaskId).update({
+                contextId: contextDoc.id,
+                updatedAt: new Date(),
+              })
+              responseMessage = `✅ Contexto "@${intent.parameters.contextName}" agregado a la tarea!`
+              await updateConversationContext(conversationContext.id, { lastIntent: "add_context" })
+            } catch (error) {
+              responseMessage = "❌ No pude actualizar la tarea."
+            }
+          } else {
+            responseMessage = `❌ No encontré el contexto "@${intent.parameters.contextName}". Créalo primero desde el dashboard.`
+          }
+        }
+        break
 
-      // Comando: /proximas
-      if (command === "/proximas" || command === "/próximas") {
-        await handleNextActionsCommand(phoneNumber, userId)
-        return NextResponse.json({ success: true, message: "Próximas acciones enviadas" })
-      }
+      case "edit_task":
+        responseMessage = "La función de editar tareas aún no está disponible. Por ahora, puedes completar la tarea y crear una nueva."
+        await updateConversationContext(conversationContext.id, { lastIntent: "edit_task" })
+        break
 
+      case "greeting":
+        responseMessage = `¡Hola! 👋\n\nEstoy aquí para ayudarte con tus tareas.\n\nPuedes:\n• Enviarme una tarea (ej: "Llamar al dentista mañana")\n• Ver tus tareas: "muéstrame mis tareas de hoy"\n• Completar tareas: "marcar como hecha"\n• Agregar contexto: "agregar eso a @Vilma"`
+        await updateConversationContext(conversationContext.id, { lastIntent: "greeting" })
+        break
+
+      default:
+        responseMessage = "No entendí lo que quieres hacer. Escribe 'ayuda' para ver las opciones."
     }
 
-    // Procesar el mensaje con IA
-    console.log("🤖 Procesando mensaje con IA...")
-    const processedData: ProcessedTaskData = await processWhatsAppMessage(
-      textMessage,
-      audioUrl,
-      webhook.data.key.id,
-      webhook.data.key.remoteJid
-    )
-
-    console.log("📊 Datos procesados:", processedData)
-
-    // Verificar si NO es una tarea (conversación casual)
-    if (!processedData.isTask) {
-      console.log("👋 Mensaje no es una tarea (conversación casual), respondiendo amigablemente")
-      await sendWhatsAppMessage(
-        phoneNumber,
-        `¡Hola! 👋\n\nEstoy aquí para ayudarte con tus tareas.\n\nPuedes:\n• Enviarme una tarea (ej: "Llamar al dentista mañana")\n• Ver tus tareas con /inbox, /hoy, /proximas\n• Ver el menú con /menu`
-      )
-      // Marcar como procesado para no crear tarea
-      await processedMessageRef.set({
-        messageId,
-        processedAt: new Date(),
-        userId,
-        reason: "not_a_task"
-      })
-      return NextResponse.json({ success: true, message: "Conversación casual procesada" })
+    // Enviar mensaje de respuesta al usuario si hay uno
+    if (responseMessage) {
+      await sendWhatsAppMessage(phoneNumber, responseMessage)
+      await addToConversationHistory(conversationContext.id, "assistant", responseMessage)
     }
-
-    // Buscar contextId si se sugirió un contexto
-    let contextId: string | undefined
-    if (processedData.contextName) {
-      const contextDoc = await findContextByName(userId, processedData.contextName)
-      if (contextDoc) {
-        contextId = contextDoc.id
-        console.log("✅ Contexto encontrado:", contextDoc.name)
-      } else {
-        console.log("⚠️ Contexto no encontrado, se creará la tarea sin contexto")
-      }
-    }
-
-    // Crear la tarea en Firestore usando Admin SDK
-    const taskData: any = {
-      title: processedData.title,
-      description: processedData.description || `Creado desde WhatsApp por ${senderName}`,
-      category: processedData.category,
-      completed: false,
-      userId: userId,
-      isQuickAction: processedData.isQuickAction || false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      teamId: null, // Tareas desde WhatsApp siempre son personales
-      assignedTo: null,
-    }
-
-    // Agregar campos opcionales solo si tienen valor
-    if (contextId) taskData.contextId = contextId
-    if (processedData.estimatedMinutes) taskData.estimatedMinutes = processedData.estimatedMinutes
-    if (processedData.dueDate) taskData.dueDate = processedData.dueDate
-
-    const taskRef = await db.collection("tasks").add(taskData)
-    console.log("✅ Tarea creada:", taskRef.id)
-
-    // Enviar confirmación al usuario
-    let confirmationMessage = `✅ Tarea creada:\n\n📝 ${processedData.title}`
-
-    if (processedData.category !== "Inbox") {
-      confirmationMessage += `\n📂 ${processedData.category}`
-    }
-
-    if (contextId && processedData.contextName) {
-      confirmationMessage += `\n🏷️ ${processedData.contextName}`
-    }
-
-    if (processedData.dueDate) {
-      const dateStr = processedData.dueDate.toLocaleDateString("es-AR", {
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-      })
-      confirmationMessage += `\n📅 ${dateStr}`
-    }
-
-    if (processedData.estimatedMinutes) {
-      confirmationMessage += `\n⏱️ ${processedData.estimatedMinutes} min`
-    }
-
-    await sendWhatsAppMessage(phoneNumber, confirmationMessage)
 
     // Marcar mensaje como procesado
     await processedMessageRef.set({
       messageId,
       processedAt: new Date(),
       userId,
-      taskId: taskRef.id,
-      reason: "task_created"
+      taskId: taskId || null,
+      intent: intent.intent,
+      reason: "intent_processed"
     })
 
     return NextResponse.json({
       success: true,
-      taskId: taskRef.id,
-      processedData,
+      intent: intent.intent,
+      taskId,
+      confidence: intent.confidence,
     })
   } catch (error: any) {
     console.error("❌ Error procesando webhook:", error)
