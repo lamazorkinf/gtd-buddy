@@ -428,7 +428,36 @@ Responde SOLO con JSON válido, sin markdown.`
       ? `Última tarea creada/mencionada: ID ${conversationContext.lastTaskId}`
       : 'Sin tareas previas en esta conversación'
 
-    const userPrompt = `Contexto de conversación:
+    // Obtener fecha actual en Argentina
+    const now = new Date()
+    const todayInArgentina = now.toLocaleDateString('es-AR', {
+      timeZone: 'America/Argentina/Buenos_Aires',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).split('/').reverse().join('-')
+
+    const tomorrowInArgentina = new Date(Date.now() + 86400000).toLocaleDateString('es-AR', {
+      timeZone: 'America/Argentina/Buenos_Aires',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).split('/').reverse().join('-')
+
+    const dayAfterTomorrowInArgentina = new Date(Date.now() + 172800000).toLocaleDateString('es-AR', {
+      timeZone: 'America/Argentina/Buenos_Aires',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).split('/').reverse().join('-')
+
+    const userPrompt = `HOY ES: ${todayInArgentina} (YYYY-MM-DD)
+
+IMPORTANTE: Para fechas relativas, usa:
+- "mañana" = ${tomorrowInArgentina}
+- "pasado mañana" = ${dayAfterTomorrowInArgentina}
+
+Contexto de conversación:
 ${historyContext}
 
 ${lastTaskInfo}
@@ -454,7 +483,7 @@ Responde con JSON en este formato:
     "title": "string",
     "description": "string opcional",
     "contextName": "string opcional sin @",
-    "dueDate": "YYYY-MM-DD opcional",
+    "dueDate": "YYYY-MM-DD opcional (DEBE SER 2025 o posterior)",
     "estimatedMinutes": number opcional,
     "category": "Inbox | Próximas acciones | Multitarea | A la espera | Algún día",
     "isQuickAction": boolean,
@@ -477,15 +506,21 @@ Responde con JSON en este formato:
       throw new Error("No se recibió respuesta de OpenAI")
     }
 
+    console.log("🤖 Respuesta raw de OpenAI (detectUserIntent):", responseText)
     const parsed = JSON.parse(responseText)
+    console.log("📊 Intent parseado:", JSON.stringify(parsed, null, 2))
 
     // Parsear taskData si existe
     let taskData: ProcessedTaskData | undefined
     if (parsed.taskData && parsed.intent === "create_task") {
       let dueDateObj: Date | undefined = undefined
       if (parsed.taskData.dueDate) {
+        console.log("📅 Procesando fecha en detectUserIntent:", parsed.taskData.dueDate)
         const [year, month, day] = parsed.taskData.dueDate.split('-').map(Number)
+        console.log("📅 Componentes parseados:", { year, month, day })
         dueDateObj = new Date(Date.UTC(year, month - 1, day, 23 + 3, 59, 0))
+        console.log("📅 Date object creado:", dueDateObj.toISOString())
+        console.log("📅 Fecha legible AR:", dueDateObj.toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }))
       }
 
       taskData = {
