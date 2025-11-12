@@ -94,10 +94,21 @@ export async function POST(request: NextRequest) {
 
     const expectedApiKey = process.env.EVOLUTION_API_KEY
 
+    console.log("🔑 Verificando API key:", {
+      hasHeader: !!authHeader,
+      hasPayload: !!apikeyInPayload,
+      headerMatch: authHeader === expectedApiKey,
+      payloadMatch: apikeyInPayload === expectedApiKey,
+      expectedLength: expectedApiKey?.length,
+      receivedPayloadLength: apikeyInPayload?.length
+    })
+
     if (authHeader !== expectedApiKey && apikeyInPayload !== expectedApiKey) {
-      console.error("❌ API key inválida", { authHeader, apikeyInPayload, expected: expectedApiKey?.substring(0, 10) + "..." })
+      console.error("❌ API key inválida")
       return NextResponse.json({ error: "No autorizado" }, { status: 401 })
     }
+
+    console.log("✅ API key verificada correctamente")
 
     console.log("📱 Mensaje de WhatsApp recibido:", {
       event: webhook.event,
