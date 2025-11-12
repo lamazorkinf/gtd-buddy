@@ -184,7 +184,24 @@ IMPORTANTE:
 
 Responde SOLO con un JSON válido, sin markdown ni explicaciones adicionales.`
 
-    const userPrompt = `Fecha de hoy: ${new Date().toISOString().split("T")[0]}
+    // Obtener fecha y hora actual en zona horaria de Argentina
+    const now = new Date()
+    const todayInArgentina = now.toLocaleDateString('es-AR', {
+      timeZone: 'America/Argentina/Buenos_Aires',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).split('/').reverse().join('-') // Convertir DD/MM/YYYY a YYYY-MM-DD
+
+    const timeInArgentina = now.toLocaleTimeString('es-AR', {
+      timeZone: 'America/Argentina/Buenos_Aires',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    })
+
+    const userPrompt = `Fecha de hoy: ${todayInArgentina}
+Hora actual en Argentina: ${timeInArgentina}
 
 Texto a analizar:
 "${text}"
@@ -219,13 +236,23 @@ Responde con JSON en este formato:
 
     const parsed = JSON.parse(responseText)
 
+    // Parsear fecha en zona horaria local de Argentina si existe
+    let dueDateObj: Date | undefined = undefined
+    if (parsed.dueDate) {
+      // Parsear la fecha como medianoche en Argentina, no UTC
+      // El formato es "YYYY-MM-DD"
+      const [year, month, day] = parsed.dueDate.split('-').map(Number)
+      // Crear fecha con zona horaria de Argentina
+      dueDateObj = new Date(year, month - 1, day, 23, 59, 0) // 23:59 del día seleccionado
+    }
+
     // Validar y construir objeto ProcessedTaskData
     const processedData: ProcessedTaskData = {
       isTask: parsed.isTask ?? true, // Por defecto asumimos que es tarea si no viene el campo
       title: parsed.title?.substring(0, 80) || text.substring(0, 80), // Asegurar límite de caracteres
       description: parsed.description || undefined,
       contextName: parsed.contextName || undefined,
-      dueDate: parsed.dueDate ? new Date(parsed.dueDate) : undefined,
+      dueDate: dueDateObj,
       estimatedMinutes: parsed.estimatedMinutes || undefined,
       category: (parsed.category as GTDCategory) || "Inbox",
       isQuickAction: parsed.isQuickAction || false,
