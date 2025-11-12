@@ -239,11 +239,12 @@ Responde con JSON en este formato:
     // Parsear fecha en zona horaria local de Argentina si existe
     let dueDateObj: Date | undefined = undefined
     if (parsed.dueDate) {
-      // Parsear la fecha como medianoche en Argentina, no UTC
+      // Parsear la fecha como 23:59 en Argentina (UTC-3)
       // El formato es "YYYY-MM-DD"
       const [year, month, day] = parsed.dueDate.split('-').map(Number)
-      // Crear fecha con zona horaria de Argentina
-      dueDateObj = new Date(year, month - 1, day, 23, 59, 0) // 23:59 del día seleccionado
+      // Crear fecha a las 23:59 UTC-3 (que equivale a 02:59 del día siguiente en UTC)
+      // Sumamos 3 horas para compensar la diferencia con UTC
+      dueDateObj = new Date(Date.UTC(year, month - 1, day, 23 + 3, 59, 0))
     }
 
     // Validar y construir objeto ProcessedTaskData
