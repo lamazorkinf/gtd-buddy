@@ -122,13 +122,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, message: "Mensaje propio ignorado" })
     }
 
-    // Solo procesar mensajes de texto, audio y botones
+    // Solo procesar mensajes de texto, audio, botones y listas
     const messageType = webhook.data.messageType
     if (
       messageType !== "conversation" &&
       messageType !== "extendedTextMessage" &&
       messageType !== "audioMessage" &&
-      messageType !== "buttonsResponseMessage"
+      messageType !== "buttonsResponseMessage" &&
+      messageType !== "listResponseMessage"
     ) {
       console.log("⏭️ Tipo de mensaje no soportado:", messageType)
       return NextResponse.json({ success: true, message: "Tipo de mensaje no soportado" })
@@ -162,6 +163,20 @@ export async function POST(request: NextRequest) {
       } else if (buttonId === "hoy") {
         textMessage = "/hoy"
       } else if (buttonId === "proximas") {
+        textMessage = "/proximas"
+      }
+    } else if (messageType === "listResponseMessage") {
+      // Manejar respuesta de lista
+      const listResponse = webhook.data.message?.listResponseMessage
+      const rowId = listResponse?.singleSelectReply?.selectedRowId
+      console.log("📋 Opción de lista seleccionada:", rowId)
+
+      // Convertir el rowId en un comando
+      if (rowId === "inbox") {
+        textMessage = "/inbox"
+      } else if (rowId === "hoy") {
+        textMessage = "/hoy"
+      } else if (rowId === "proximas") {
         textMessage = "/proximas"
       }
     }
@@ -473,7 +488,7 @@ async function sendWhatsAppMessage(phoneNumber: string, message: string): Promis
 }
 
 /**
- * Envía botones interactivos de WhatsApp para el menú
+ * Envía lista interactiva de WhatsApp para el menú
  */
 async function sendWhatsAppButtons(phoneNumber: string): Promise<void> {
   try {
@@ -485,7 +500,7 @@ async function sendWhatsAppButtons(phoneNumber: string): Promise<void> {
       return
     }
 
-    const response = await fetch(`${evolutionApiUrl}/message/sendButtons/${instanceName}`, {
+    const response = await fetch(`${evolutionApiUrl}/message/sendList/${instanceName}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -493,24 +508,30 @@ async function sendWhatsAppButtons(phoneNumber: string): Promise<void> {
       },
       body: JSON.stringify({
         number: phoneNumber,
-        title: "GTD Buddy",
-        description: "¿Qué quieres hacer?",
-        footer: "Selecciona una opción",
-        buttons: [
+        title: "GTD Buddy - Menú",
+        description: "Selecciona una opción para consultar tus tareas",
+        buttonText: "Ver opciones",
+        footerText: "GTD Buddy",
+        sections: [
           {
-            type: "reply",
-            displayText: "📥 Ver Inbox",
-            id: "inbox"
-          },
-          {
-            type: "reply",
-            displayText: "📅 Tareas de hoy",
-            id: "hoy"
-          },
-          {
-            type: "reply",
-            displayText: "⚡ Próximas acciones",
-            id: "proximas"
+            title: "📋 Consultas",
+            rows: [
+              {
+                title: "📥 Ver Inbox",
+                description: "Tareas sin procesar",
+                rowId: "inbox"
+              },
+              {
+                title: "📅 Tareas de hoy",
+                description: "Tareas programadas para hoy",
+                rowId: "hoy"
+              },
+              {
+                title: "⚡ Próximas acciones",
+                description: "Acciones listas para ejecutar",
+                rowId: "proximas"
+              }
+            ]
           }
         ]
       }),
@@ -518,7 +539,7 @@ async function sendWhatsAppButtons(phoneNumber: string): Promise<void> {
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error("❌ Error enviando botones de WhatsApp:", {
+      console.error("❌ Error enviando lista de WhatsApp:", {
         status: response.status,
         statusText: response.statusText,
         body: errorText
@@ -535,10 +556,10 @@ async function sendWhatsAppButtons(phoneNumber: string): Promise<void> {
       )
     } else {
       const responseData = await response.json()
-      console.log("✅ Botones enviados a WhatsApp:", responseData)
+      console.log("✅ Lista interactiva enviada a WhatsApp:", responseData)
     }
   } catch (error) {
-    console.error("❌ Error enviando botones:", error)
+    console.error("❌ Error enviando lista:", error)
     // Fallback: enviar mensaje de texto
     await sendWhatsAppMessage(
       phoneNumber,
