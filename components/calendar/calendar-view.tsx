@@ -26,6 +26,7 @@ import {
 } from "date-fns"
 import { es } from "date-fns/locale"
 import { useTasks } from "@/hooks/use-tasks"
+import { useMediaQuery } from "@/hooks/use-media-query"
 import type { Task } from "@/types/task"
 
 interface CalendarViewProps {
@@ -40,6 +41,7 @@ export default function CalendarView({ onCreateOrEditTask }: CalendarViewProps) 
   const [viewMode, setViewMode] = useState<ViewMode>("week")
   const [showWeekends, setShowWeekends] = useState<boolean>(true)
   const { tasks, updateTask } = useTasks()
+  const isMobile = useMediaQuery("(max-width: 640px)")
 
   // Filtrar tareas por fecha seleccionada
   const tasksForSelectedDate = tasks.filter((task) => {
@@ -121,159 +123,347 @@ export default function CalendarView({ onCreateOrEditTask }: CalendarViewProps) 
     }
   }
 
-  const renderMonthView = () => (
-    <div className="grid grid-cols-7 gap-2">
-      {monthDays.map((date) => {
-        const dayTasks = getDayTasks(date)
-        const completedTasks = dayTasks.filter((task) => task.completed)
-        const pendingTasks = dayTasks.filter((task) => !task.completed)
-        const isSelected = isSameDay(date, selectedDate)
-        const isTodayDate = isToday(date)
+  const renderMonthView = () => {
+    // Mobile: Lista de días con tareas solamente
+    if (isMobile) {
+      const daysWithTasks = monthDays.filter((date) => {
         const isCurrentMonth = date.getMonth() === currentDate.getMonth()
+        return isCurrentMonth && getDayTasks(date).length > 0
+      })
 
+      if (daysWithTasks.length === 0) {
         return (
-          <div
-            key={date.toISOString()}
-            className={`
-            min-h-[120px] p-2 border rounded-lg cursor-pointer transition-all hover:bg-gray-50
-            ${isSelected ? "bg-blue-50 border-blue-300 ring-2 ring-blue-200" : "border-gray-200"}
-            ${isTodayDate ? "bg-yellow-50 border-yellow-300" : ""}
-            ${!isCurrentMonth ? "opacity-40" : ""}
-          `}
-            onClick={() => handleDateSelect(date)}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span
-                className={`
-                text-sm font-medium
-                ${isTodayDate ? "text-yellow-800 font-bold" : "text-gray-700"}
-                ${isSelected ? "text-blue-800" : ""}
-                ${!isCurrentMonth ? "text-gray-400" : ""}
-              `}
-              >
-                {format(date, "d")}
-              </span>
-            </div>
-
-            {isCurrentMonth && (
-              <div className="space-y-1">
-                {pendingTasks.slice(0, 2).map((task) => (
-                  <div
-                    key={task.id}
-                    className="text-xs p-1 bg-red-100 text-red-800 rounded truncate"
-                    title={task.title}
-                  >
-                    {task.title}
-                  </div>
-                ))}
-                {completedTasks.slice(0, 1).map((task) => (
-                  <div
-                    key={task.id}
-                    className="text-xs p-1 bg-green-100 text-green-800 rounded truncate line-through"
-                    title={task.title}
-                  >
-                    {task.title}
-                  </div>
-                ))}
-                {dayTasks.length > 3 && (
-                  <div className="text-xs text-gray-500 text-center">+{dayTasks.length - 3} más</div>
-                )}
-              </div>
-            )}
+          <div className="text-center py-8 text-gray-500">
+            <p>No hay tareas programadas para este mes</p>
           </div>
         )
-      })}
-    </div>
-  )
+      }
 
-  const renderWeekView = () => (
-    <div className={`grid gap-4 ${showWeekends ? "grid-cols-7" : "grid-cols-5"}`}>
-      {displayWeekDays.map((date) => {
-        const dayTasks = getDayTasks(date)
-        const completedTasks = dayTasks.filter((task) => task.completed)
-        const pendingTasks = dayTasks.filter((task) => !task.completed)
-        const isSelected = isSameDay(date, selectedDate)
-        const isTodayDate = isToday(date)
+      return (
+        <div className="space-y-2">
+          {daysWithTasks.map((date) => {
+            const dayTasks = getDayTasks(date)
+            const completedTasks = dayTasks.filter((task) => task.completed)
+            const pendingTasks = dayTasks.filter((task) => !task.completed)
+            const isSelected = isSameDay(date, selectedDate)
+            const isTodayDate = isToday(date)
 
-        return (
-          <div
-            key={date.toISOString()}
-            className={`
-              min-h-[300px] border rounded-lg cursor-pointer transition-all hover:bg-gray-50
+            return (
+              <Card
+                key={date.toISOString()}
+                className={`
+                  cursor-pointer transition-all
+                  ${isSelected ? "bg-blue-50 border-blue-300 ring-2 ring-blue-200" : ""}
+                  ${isTodayDate ? "bg-yellow-50 border-yellow-300" : ""}
+                `}
+                onClick={() => handleDateSelect(date)}
+              >
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <div className="text-xs text-gray-500 uppercase tracking-wide">
+                        {format(date, "EEEE", { locale: es })}
+                      </div>
+                      <div
+                        className={`
+                          text-lg font-bold
+                          ${isTodayDate ? "text-yellow-800" : "text-gray-700"}
+                          ${isSelected ? "text-blue-800" : ""}
+                        `}
+                      >
+                        {format(date, "d 'de' MMMM", { locale: es })}
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      {dayTasks.length} {dayTasks.length === 1 ? "tarea" : "tareas"}
+                    </Badge>
+                  </div>
+
+                  <div className="space-y-1">
+                    {pendingTasks.map((task) => (
+                      <div
+                        key={task.id}
+                        className="text-xs p-2 bg-red-100 text-red-800 rounded truncate"
+                        title={task.title}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onCreateOrEditTask(task)
+                        }}
+                      >
+                        {task.title}
+                      </div>
+                    ))}
+                    {completedTasks.map((task) => (
+                      <div
+                        key={task.id}
+                        className="text-xs p-2 bg-green-100 text-green-800 rounded truncate line-through opacity-75"
+                        title={task.title}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onCreateOrEditTask(task)
+                        }}
+                      >
+                        {task.title}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+      )
+    }
+
+    // Desktop: Vista de cuadrícula 7x7
+    return (
+      <div className="grid grid-cols-7 gap-2">
+        {monthDays.map((date) => {
+          const dayTasks = getDayTasks(date)
+          const completedTasks = dayTasks.filter((task) => task.completed)
+          const pendingTasks = dayTasks.filter((task) => !task.completed)
+          const isSelected = isSameDay(date, selectedDate)
+          const isTodayDate = isToday(date)
+          const isCurrentMonth = date.getMonth() === currentDate.getMonth()
+
+          return (
+            <div
+              key={date.toISOString()}
+              className={`
+              min-h-[120px] p-2 border rounded-lg cursor-pointer transition-all hover:bg-gray-50
               ${isSelected ? "bg-blue-50 border-blue-300 ring-2 ring-blue-200" : "border-gray-200"}
               ${isTodayDate ? "bg-yellow-50 border-yellow-300" : ""}
+              ${!isCurrentMonth ? "opacity-40" : ""}
             `}
-            onClick={() => handleDateSelect(date)}
-          >
-            <div className="p-3 border-b bg-gray-50/50">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-xs text-gray-500 uppercase tracking-wide">
-                    {format(date, "EEEE", { locale: es })}
-                  </div>
-                  <div
-                    className={`
-                      text-lg font-bold
-                      ${isTodayDate ? "text-yellow-800" : "text-gray-700"}
-                      ${isSelected ? "text-blue-800" : ""}
-                    `}
-                  >
-                    {format(date, "d")}
-                  </div>
-                </div>
+              onClick={() => handleDateSelect(date)}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span
+                  className={`
+                  text-sm font-medium
+                  ${isTodayDate ? "text-yellow-800 font-bold" : "text-gray-700"}
+                  ${isSelected ? "text-blue-800" : ""}
+                  ${!isCurrentMonth ? "text-gray-400" : ""}
+                `}
+                >
+                  {format(date, "d")}
+                </span>
               </div>
-            </div>
 
-            <div className="p-3 space-y-2 max-h-[240px] overflow-y-auto">
-              {pendingTasks.map((task) => (
-                <div
-                  key={task.id}
-                  className="text-xs p-2 bg-red-100 text-red-800 rounded border-l-2 border-red-400"
-                  title={task.title}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onCreateOrEditTask(task)
-                  }}
-                >
-                  <div className="font-medium truncate">{task.title}</div>
-                  {task.description && <div className="text-red-600 mt-1 truncate">{task.description}</div>}
-                </div>
-              ))}
-              {completedTasks.map((task) => (
-                <div
-                  key={task.id}
-                  className="text-xs p-2 bg-green-100 text-green-800 rounded border-l-2 border-green-400 opacity-75"
-                  title={task.title}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onCreateOrEditTask(task)
-                  }}
-                >
-                  <div className="font-medium truncate line-through">{task.title}</div>
-                  {task.description && (
-                    <div className="text-green-600 mt-1 truncate line-through">{task.description}</div>
+              {isCurrentMonth && (
+                <div className="space-y-1">
+                  {pendingTasks.slice(0, 2).map((task) => (
+                    <div
+                      key={task.id}
+                      className="text-xs p-1 bg-red-100 text-red-800 rounded truncate"
+                      title={task.title}
+                    >
+                      {task.title}
+                    </div>
+                  ))}
+                  {completedTasks.slice(0, 1).map((task) => (
+                    <div
+                      key={task.id}
+                      className="text-xs p-1 bg-green-100 text-green-800 rounded truncate line-through"
+                      title={task.title}
+                    >
+                      {task.title}
+                    </div>
+                  ))}
+                  {dayTasks.length > 3 && (
+                    <div className="text-xs text-gray-500 text-center">+{dayTasks.length - 3} más</div>
                   )}
                 </div>
-              ))}
+              )}
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
 
-              {/* Botón para añadir tarea rápida */}
+  const renderWeekView = () => {
+    // Mobile: Vista de un día a la vez con navegación
+    if (isMobile) {
+      const date = selectedDate
+      const dayTasks = getDayTasks(date)
+      const completedTasks = dayTasks.filter((task) => task.completed)
+      const pendingTasks = dayTasks.filter((task) => !task.completed)
+      const isTodayDate = isToday(date)
+
+      const handlePrevDay = () => {
+        const prevDay = new Date(selectedDate)
+        prevDay.setDate(prevDay.getDate() - 1)
+        setSelectedDate(prevDay)
+      }
+
+      const handleNextDay = () => {
+        const nextDay = new Date(selectedDate)
+        nextDay.setDate(nextDay.getDate() + 1)
+        setSelectedDate(nextDay)
+      }
+
+      return (
+        <div>
+          {/* Navegación de día */}
+          <div className="flex items-center justify-between mb-4">
+            <Button variant="outline" size="sm" onClick={handlePrevDay}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="text-center">
+              <div className="text-xs text-gray-500 uppercase tracking-wide">
+                {format(date, "EEEE", { locale: es })}
+              </div>
+              <div
+                className={`text-xl font-bold ${isTodayDate ? "text-yellow-800" : "text-gray-700"}`}
+              >
+                {format(date, "d 'de' MMMM", { locale: es })}
+              </div>
+            </div>
+            <Button variant="outline" size="sm" onClick={handleNextDay}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Tareas del día */}
+          <Card className={isTodayDate ? "bg-yellow-50 border-yellow-300" : ""}>
+            <CardContent className="p-4 space-y-2">
+              {dayTasks.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <p>No hay tareas para este día</p>
+                </div>
+              ) : (
+                <>
+                  {pendingTasks.map((task) => (
+                    <div
+                      key={task.id}
+                      className="text-sm p-3 bg-red-100 text-red-800 rounded border-l-2 border-red-400"
+                      onClick={() => onCreateOrEditTask(task)}
+                    >
+                      <div className="font-medium">{task.title}</div>
+                      {task.description && <div className="text-red-600 mt-1 text-xs">{task.description}</div>}
+                    </div>
+                  ))}
+                  {completedTasks.map((task) => (
+                    <div
+                      key={task.id}
+                      className="text-sm p-3 bg-green-100 text-green-800 rounded border-l-2 border-green-400 opacity-75"
+                      onClick={() => onCreateOrEditTask(task)}
+                    >
+                      <div className="font-medium line-through">{task.title}</div>
+                      {task.description && (
+                        <div className="text-green-600 mt-1 text-xs line-through">{task.description}</div>
+                      )}
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {/* Botón para añadir tarea */}
               <Button
                 variant="ghost"
                 size="sm"
-                className="w-full text-xs text-gray-500 border-dashed border border-gray-300 hover:border-gray-400 hover:bg-gray-50"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onCreateOrEditTask(date)
-                }}
+                className="w-full text-sm text-gray-500 border-dashed border border-gray-300 hover:border-gray-400 hover:bg-gray-50 mt-2"
+                onClick={() => onCreateOrEditTask(date)}
               >
                 Añadir tarea
               </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )
+    }
+
+    // Desktop: Vista de múltiples columnas
+    return (
+      <div className={`grid gap-4 ${showWeekends ? "grid-cols-7" : "grid-cols-5"}`}>
+        {displayWeekDays.map((date) => {
+          const dayTasks = getDayTasks(date)
+          const completedTasks = dayTasks.filter((task) => task.completed)
+          const pendingTasks = dayTasks.filter((task) => !task.completed)
+          const isSelected = isSameDay(date, selectedDate)
+          const isTodayDate = isToday(date)
+
+          return (
+            <div
+              key={date.toISOString()}
+              className={`
+                min-h-[300px] border rounded-lg cursor-pointer transition-all hover:bg-gray-50
+                ${isSelected ? "bg-blue-50 border-blue-300 ring-2 ring-blue-200" : "border-gray-200"}
+                ${isTodayDate ? "bg-yellow-50 border-yellow-300" : ""}
+              `}
+              onClick={() => handleDateSelect(date)}
+            >
+              <div className="p-3 border-b bg-gray-50/50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xs text-gray-500 uppercase tracking-wide">
+                      {format(date, "EEEE", { locale: es })}
+                    </div>
+                    <div
+                      className={`
+                        text-lg font-bold
+                        ${isTodayDate ? "text-yellow-800" : "text-gray-700"}
+                        ${isSelected ? "text-blue-800" : ""}
+                      `}
+                    >
+                      {format(date, "d")}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 space-y-2 max-h-[240px] overflow-y-auto">
+                {pendingTasks.map((task) => (
+                  <div
+                    key={task.id}
+                    className="text-xs p-2 bg-red-100 text-red-800 rounded border-l-2 border-red-400"
+                    title={task.title}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onCreateOrEditTask(task)
+                    }}
+                  >
+                    <div className="font-medium truncate">{task.title}</div>
+                    {task.description && <div className="text-red-600 mt-1 truncate">{task.description}</div>}
+                  </div>
+                ))}
+                {completedTasks.map((task) => (
+                  <div
+                    key={task.id}
+                    className="text-xs p-2 bg-green-100 text-green-800 rounded border-l-2 border-green-400 opacity-75"
+                    title={task.title}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onCreateOrEditTask(task)
+                    }}
+                  >
+                    <div className="font-medium truncate line-through">{task.title}</div>
+                    {task.description && (
+                      <div className="text-green-600 mt-1 truncate line-through">{task.description}</div>
+                    )}
+                  </div>
+                ))}
+
+                {/* Botón para añadir tarea rápida */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-xs text-gray-500 border-dashed border border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onCreateOrEditTask(date)
+                  }}
+                >
+                  Añadir tarea
+                </Button>
+              </div>
             </div>
-          </div>
-        )
-      })}
-    </div>
-  )
+          )
+        })}
+      </div>
+    )
+  }
 
   return (
     <div className="w-full">
@@ -300,7 +490,7 @@ export default function CalendarView({ onCreateOrEditTask }: CalendarViewProps) 
 
             <div className="flex items-center gap-2">
               {/* Tabs para cambiar vista */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)}>
                   <TabsList className="bg-gray-100">
                     <TabsTrigger
@@ -320,8 +510,8 @@ export default function CalendarView({ onCreateOrEditTask }: CalendarViewProps) 
                   </TabsList>
                 </Tabs>
 
-                {/* Toggle compacto para fines de semana */}
-                {viewMode === "week" && (
+                {/* Toggle compacto para fines de semana - solo en desktop y solo en vista semana */}
+                {viewMode === "week" && !isMobile && (
                   <div className="flex items-center gap-1.5 text-xs">
                     <Switch
                       id="show-weekends"
@@ -339,7 +529,7 @@ export default function CalendarView({ onCreateOrEditTask }: CalendarViewProps) 
               <Button variant="outline" size="sm" onClick={handlePrevPeriod}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="sm" onClick={handleToday}>
+              <Button variant="outline" size="sm" onClick={handleToday} className="hidden sm:inline-flex">
                 Hoy
               </Button>
               <Button variant="outline" size="sm" onClick={handleNextPeriod}>

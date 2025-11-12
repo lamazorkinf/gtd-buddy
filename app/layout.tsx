@@ -23,6 +23,12 @@ export const metadata: Metadata = {
   title: "GTD Buddy - Tu mente libre, tu sistema claro",
   description: "Captura. Decide. Avanza. Organiza tu vida con el método Getting Things Done",
   generator: "v0.dev",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
 }
 
 export default function RootLayout({

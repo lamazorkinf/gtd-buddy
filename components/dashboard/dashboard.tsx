@@ -324,7 +324,7 @@ export default function Dashboard() {
 
               <div className="flex flex-col gap-6">
                 {/* Top Row - Always Visible Content */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   <Card className={`${modernTheme.colors.cardNext} flex flex-col ${modernTheme.container.radius} ${modernTheme.container.shadowMd} border ${modernTheme.effects.glassHover} ${modernTheme.effects.transition}`}>
                     <CardHeader>
                       <CardTitle className={`flex items-center justify-between text-base ${modernTheme.typography.heading} ${modernTheme.colors.textNext}`}>
@@ -421,7 +421,7 @@ export default function Dashboard() {
                 </div>
 
                 {/* Bottom Row - Expandable Panels */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
                   <AnimatePresence>
                     {!expandedPanel || expandedPanel === "nextActions" ? (
                       <DashboardPanel

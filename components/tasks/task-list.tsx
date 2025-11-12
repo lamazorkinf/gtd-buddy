@@ -124,7 +124,7 @@ export default function TaskList({ onEditTask }: TaskListProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="relative">
               <Search className={`absolute left-3 top-3 h-4 w-4 ${modernTheme.colors.muted}`} />
               <Input
@@ -187,11 +187,11 @@ export default function TaskList({ onEditTask }: TaskListProps) {
             <Card key={category} className={`${styles.card} ${modernTheme.effects.glassHover} ${modernTheme.effects.transition} overflow-hidden`}>
               <CardHeader>
                 <CardTitle className={`flex items-center justify-between ${modernTheme.typography.heading} ${styles.title}`}>
-                  <div className="flex items-center gap-2">
-                    <Icon className="h-5 w-5" />
-                    {category}
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <Icon className="h-5 w-5 flex-shrink-0" />
+                    <span className="truncate card-title">{category}</span>
                   </div>
-                  <Badge variant="secondary" className={styles.badge}>
+                  <Badge variant="secondary" className={`${styles.badge} flex-shrink-0`}>
                     {categoryTasks.length}
                   </Badge>
                 </CardTitle>

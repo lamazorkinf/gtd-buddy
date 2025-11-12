@@ -230,3 +230,34 @@ body.modal-open {
     @apply bg-gtd-disabled-bg text-gtd-disabled-text cursor-not-allowed opacity-60;
   }
 }
+
+/* Mobile Optimization - Prevent Horizontal Scroll */
+@layer base {
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  /* Truncate text in cards to prevent overflow */
+  .card-title,
+  .task-title,
+  .context-name {
+    @apply truncate max-w-full;
+  }
+
+  /* Responsive images */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Prevent code blocks from causing overflow */
+  pre, code {
+    overflow-x: auto;
+    max-width: 100%;
+  }
+}

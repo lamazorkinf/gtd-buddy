@@ -163,7 +163,7 @@ export default function TaskItem({ task, onEdit }: TaskItemProps) {
               <div className="flex items-start justify-between gap-2">
                 <label
                   htmlFor={`task-${task.id}`}
-                  className={`${modernTheme.typography.heading} ${modernTheme.colors.primaryText} cursor-pointer ${task.completed ? "line-through opacity-60" : ""}`}
+                  className={`${modernTheme.typography.heading} ${modernTheme.colors.primaryText} cursor-pointer ${task.completed ? "line-through opacity-60" : ""} truncate max-w-full task-title`}
                 >
                   {task.title}
                 </label>
@@ -194,7 +194,7 @@ export default function TaskItem({ task, onEdit }: TaskItemProps) {
                 </Badge>
 
                 {taskContext && (
-                  <Badge variant="outline" className={`${modernTheme.colors.badgePurple} ${modernTheme.container.radius}`}>
+                  <Badge variant="outline" className={`${modernTheme.colors.badgePurple} ${modernTheme.container.radius} truncate max-w-[120px] context-name`}>
                     @{taskContext.name}
                   </Badge>
                 )}
@@ -269,7 +269,7 @@ export default function TaskItem({ task, onEdit }: TaskItemProps) {
                           <div className="flex-grow min-w-0">
                             <label
                               htmlFor={`subtask-item-${task.id}-${st.id}`}
-                              className={`block cursor-pointer ${st.completed ? "line-through opacity-60" : ""}`}
+                              className={`block cursor-pointer ${st.completed ? "line-through opacity-60" : ""} truncate max-w-full`}
                             >
                               {st.title}
                             </label>
