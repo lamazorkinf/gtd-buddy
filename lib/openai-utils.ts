@@ -13,26 +13,37 @@ const openai = new OpenAI({
  */
 export async function transcribeAudio(audioUrl: string): Promise<string> {
   try {
+    console.log("🎤 Descargando audio desde:", audioUrl)
+
     // Descargar el audio
     const response = await fetch(audioUrl)
     if (!response.ok) {
+      console.error("❌ Error descargando audio:", response.status, response.statusText)
       throw new Error(`Error descargando audio: ${response.statusText}`)
     }
 
     const audioBlob = await response.blob()
-    const audioFile = new File([audioBlob], "audio.ogg", { type: "audio/ogg" })
+    console.log("📦 Audio descargado, tamaño:", audioBlob.size, "bytes, tipo:", audioBlob.type)
+
+    const audioFile = new File([audioBlob], "audio.ogg", { type: audioBlob.type || "audio/ogg" })
 
     // Transcribir con Whisper
+    console.log("🤖 Enviando a Whisper para transcripción...")
     const transcription = await openai.audio.transcriptions.create({
       file: audioFile,
       model: "whisper-1",
       language: "es", // Español
     })
 
+    console.log("✅ Audio transcrito:", transcription.text.substring(0, 100) + "...")
     return transcription.text
-  } catch (error) {
-    console.error("Error transcribiendo audio:", error)
-    throw new Error("No se pudo transcribir el audio")
+  } catch (error: any) {
+    console.error("❌ Error transcribiendo audio:", {
+      message: error?.message,
+      status: error?.response?.status,
+      data: error?.response?.data
+    })
+    throw new Error(`No se pudo transcribir el audio: ${error?.message || "Error desconocido"}`)
   }
 }
 

@@ -142,14 +142,21 @@ export async function POST(request: NextRequest) {
       textMessage = webhook.data.message?.extendedTextMessage?.text
     } else if (messageType === "audioMessage") {
       audioUrl = webhook.data.message?.audioMessage?.url
+      console.log("🎤 Mensaje de audio detectado:", {
+        url: audioUrl,
+        fullAudioMessage: JSON.stringify(webhook.data.message?.audioMessage)
+      })
     }
 
     if (!textMessage && !audioUrl) {
-      console.log("⚠️ No se pudo extraer contenido del mensaje")
+      console.log("⚠️ No se pudo extraer contenido del mensaje", {
+        messageType,
+        message: JSON.stringify(webhook.data.message)
+      })
       return NextResponse.json({ error: "Sin contenido" }, { status: 400 })
     }
 
-    console.log("📝 Contenido:", { textMessage, audioUrl })
+    console.log("📝 Contenido extraído:", { textMessage, audioUrl })
 
     // Verificar si es un código de vinculación
     if (textMessage && /^\d{6}$/.test(textMessage.trim())) {
