@@ -225,7 +225,12 @@ export async function POST(request: NextRequest) {
 
     // Procesar el mensaje con IA
     console.log("🤖 Procesando mensaje con IA...")
-    const processedData: ProcessedTaskData = await processWhatsAppMessage(textMessage, audioUrl)
+    const processedData: ProcessedTaskData = await processWhatsAppMessage(
+      textMessage,
+      audioUrl,
+      webhook.data.key.id,
+      webhook.data.key.remoteJid
+    )
 
     console.log("📊 Datos procesados:", processedData)
 

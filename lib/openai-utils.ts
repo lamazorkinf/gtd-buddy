@@ -7,25 +7,90 @@ const openai = new OpenAI({
 })
 
 /**
+ * Descarga audio desde Evolution API (maneja audios encriptados de WhatsApp)
+ * @param messageId ID del mensaje
+ * @param remoteJid JID del remitente
+ * @returns Buffer con el audio desencriptado
+ */
+async function downloadAudioFromEvolution(messageId: string, remoteJid: string): Promise<Buffer> {
+  const evolutionUrl = process.env.EVOLUTION_API_URL
+  const instanceName = process.env.EVOLUTION_INSTANCE_NAME
+  const apiKey = process.env.EVOLUTION_API_KEY
+
+  if (!evolutionUrl || !instanceName || !apiKey) {
+    throw new Error("Configuración de Evolution API incompleta")
+  }
+
+  const url = `${evolutionUrl}/message/download/${instanceName}`
+
+  console.log("📥 Descargando audio desde Evolution API...")
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": apiKey,
+    },
+    body: JSON.stringify({
+      key: {
+        id: messageId,
+        remoteJid: remoteJid,
+      }
+    })
+  })
+
+  if (!response.ok) {
+    throw new Error(`Error descargando desde Evolution API: ${response.statusText}`)
+  }
+
+  const data = await response.json()
+
+  // Evolution API devuelve el audio en base64
+  if (data.base64) {
+    const buffer = Buffer.from(data.base64, 'base64')
+    console.log("✅ Audio descargado desde Evolution API, tamaño:", buffer.length, "bytes")
+    return buffer
+  }
+
+  throw new Error("Evolution API no devolvió el audio en formato esperado")
+}
+
+/**
  * Transcribe un archivo de audio usando Whisper API
- * @param audioUrl URL del archivo de audio
+ * @param audioUrl URL del archivo de audio (puede estar encriptado)
+ * @param messageId ID del mensaje (para descargar desde Evolution API)
+ * @param remoteJid JID del remitente
  * @returns Texto transcrito
  */
-export async function transcribeAudio(audioUrl: string): Promise<string> {
+export async function transcribeAudio(audioUrl: string, messageId?: string, remoteJid?: string): Promise<string> {
   try {
-    console.log("🎤 Descargando audio desde:", audioUrl)
+    let audioBuffer: Buffer
+    let mimeType = "audio/ogg"
 
-    // Descargar el audio
-    const response = await fetch(audioUrl)
-    if (!response.ok) {
-      console.error("❌ Error descargando audio:", response.status, response.statusText)
-      throw new Error(`Error descargando audio: ${response.statusText}`)
+    // Si el audio está encriptado (.enc), usar Evolution API para descargarlo
+    if (audioUrl.includes('.enc') && messageId && remoteJid) {
+      console.log("🔐 Audio encriptado detectado, usando Evolution API...")
+      audioBuffer = await downloadAudioFromEvolution(messageId, remoteJid)
+    } else {
+      // Descargar audio directamente
+      console.log("🎤 Descargando audio desde:", audioUrl)
+      const response = await fetch(audioUrl)
+
+      if (!response.ok) {
+        console.error("❌ Error descargando audio:", response.status, response.statusText)
+        throw new Error(`Error descargando audio: ${response.statusText}`)
+      }
+
+      const arrayBuffer = await response.arrayBuffer()
+      audioBuffer = Buffer.from(arrayBuffer)
+      mimeType = response.headers.get("content-type") || "audio/ogg"
     }
 
-    const audioBlob = await response.blob()
-    console.log("📦 Audio descargado, tamaño:", audioBlob.size, "bytes, tipo:", audioBlob.type)
+    console.log("📦 Audio listo para transcripción, tamaño:", audioBuffer.length, "bytes")
 
-    const audioFile = new File([audioBlob], "audio.ogg", { type: audioBlob.type || "audio/ogg" })
+    // Crear blob y file
+    const audioBlob = new Blob([audioBuffer], { type: mimeType })
+    const audioFile = new File([audioBlob], "audio.ogg", { type: mimeType })
 
     // Transcribir con Whisper
     console.log("🤖 Enviando a Whisper para transcripción...")
@@ -150,17 +215,21 @@ Responde con JSON en este formato:
  * Procesa un mensaje de WhatsApp: transcribe audio si es necesario y analiza el texto
  * @param text Texto del mensaje (si es texto directo)
  * @param audioUrl URL del audio (si es nota de voz)
+ * @param messageId ID del mensaje (para descargar audio encriptado)
+ * @param remoteJid JID del remitente (para descargar audio encriptado)
  * @returns Datos de tarea procesados
  */
 export async function processWhatsAppMessage(
   text?: string,
-  audioUrl?: string
+  audioUrl?: string,
+  messageId?: string,
+  remoteJid?: string
 ): Promise<ProcessedTaskData> {
   let finalText = text || ""
 
   // Si es audio, primero transcribir
   if (audioUrl) {
-    finalText = await transcribeAudio(audioUrl)
+    finalText = await transcribeAudio(audioUrl, messageId, remoteJid)
   }
 
   if (!finalText.trim()) {
