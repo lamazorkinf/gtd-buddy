@@ -158,29 +158,52 @@ TAREAS VÁLIDAS son mensajes que indican una acción a realizar:
 - "Revisar el informe antes del viernes"
 - "Recordar enviar email a Juan"
 
-Categorías GTD disponibles:
-- "Inbox": Tareas que aún no se han procesado (por defecto para capturas rápidas)
-- "Próximas acciones": Acciones concretas que se pueden hacer ahora
-- "Multitarea": Proyectos que requieren múltiples pasos
-- "A la espera": Tareas que dependen de alguien más
-- "Algún día": Ideas o tareas para el futuro
+Categorías GTD - ANALIZA AUTOMÁTICAMENTE según estas reglas:
+
+1. "Próximas acciones" - Úsala cuando:
+   - Tiene fecha/hora específica ("mañana a las 3pm", "el lunes", "en 2 días")
+   - Es una acción concreta y clara que se puede hacer directamente
+   - El usuario puede hacerla sin depender de otros
+   - Ejemplo: "Llamar al dentista mañana", "Enviar informe el viernes"
+
+2. "A la espera" - Úsala cuando:
+   - Depende de otra persona o respuesta externa
+   - Menciona esperar algo: "esperar respuesta", "cuando me contesten"
+   - Involucra delegación o coordinación con otros
+   - Ejemplos: "Esperar respuesta de Juan", "Recordar preguntar a María sobre..."
+
+3. "Multitarea" - Úsala cuando:
+   - Es algo grande que claramente requiere múltiples pasos
+   - Menciona "proyecto", "organizar", "planificar algo grande"
+   - Involucra varias acciones diferentes
+   - Ejemplos: "Organizar evento de fin de año", "Proyecto de renovación casa"
+
+4. "Algún día" - Úsala cuando:
+   - Es una idea, sugerencia o inspiración sin urgencia
+   - Menciona: "me recomendaron", "algún día", "cuando tenga tiempo"
+   - Libros para leer, películas para ver, lugares para visitar
+   - Ideas para explorar o investigar sin fecha definida
+   - NO tiene fecha ni hora
+   - Ejemplos: "Leer libro X", "Ver película Y", "Investigar sobre Z", "Aprender idioma"
+
+5. "Inbox" - Úsala cuando:
+   - NO está claro en qué categoría va
+   - Es muy ambigua o necesita más procesamiento
+   - El usuario solo captura la idea rápido sin detalles
+   - Ante la DUDA, siempre usa Inbox
 
 Contextos comunes: @casa, @oficina, @llamadas, @compras, @computadora, @recados, @reuniones, @email
 
-Si ES una tarea, extrae:
-1. Título conciso de la tarea (máximo 80 caracteres)
-2. Descripción detallada (si hay información adicional)
-3. Contexto sugerido (si se menciona o se puede inferir)
-4. Fecha de vencimiento (si se menciona "mañana", "próximo lunes", "en 3 días", etc.)
-5. Tiempo estimado en minutos (si se menciona)
-6. Categoría GTD más apropiada
-
-IMPORTANTE:
-- Para capturas rápidas sin procesar, usa siempre "Inbox"
-- Solo usa otras categorías si el usuario especifica claramente el tipo de tarea
-- Las fechas relativas deben calcularse desde hoy
-- Sé conservador con la clasificación: ante la duda, usa "Inbox"
-- NO intentes adivinar si una tarea es rápida o no, deja isQuickAction siempre en false
+REGLAS DE CATEGORIZACIÓN:
+✅ SIEMPRE categoriza automáticamente según el contenido
+✅ Si tiene fecha/hora → "Próximas acciones"
+✅ Si espera a otros → "A la espera"
+✅ Si es proyecto grande → "Multitarea"
+✅ Si es idea/recomendación sin urgencia → "Algún día"
+✅ Si hay duda → "Inbox"
+⚠️ NO uses "Inbox" si puedes determinar claramente la categoría
+⚠️ Las fechas relativas deben calcularse desde hoy
+⚠️ NO intentes adivinar si una tarea es rápida (isQuickAction siempre false)
 
 Responde SOLO con un JSON válido, sin markdown ni explicaciones adicionales.`
 
@@ -359,6 +382,20 @@ IMPORTANTE:
 - Si el usuario dice "agregar a @contexto" o "poner en @lugar", es "add_context"
 - Los comandos como /inbox, /hoy, /próximas son "view_tasks"
 - Sé conservador: ante la duda sobre crear tarea vs otra intención, elige la otra intención
+
+CATEGORIZACIÓN GTD AUTOMÁTICA (para create_task):
+✅ Si tiene fecha/hora → "Próximas acciones"
+✅ Si espera a otros/respuesta → "A la espera"
+✅ Si es proyecto grande/múltiples pasos → "Multitarea"
+✅ Si es idea/recomendación sin urgencia (leer libro, ver película, investigar) → "Algún día"
+✅ Si hay duda → "Inbox"
+
+Ejemplos de categorización:
+- "Llamar al dentista mañana" → Próximas acciones (tiene fecha)
+- "Esperar respuesta de Juan" → A la espera (depende de otro)
+- "Organizar evento de fin de año" → Multitarea (proyecto grande)
+- "Me recomendaron leer El Principito" → Algún día (recomendación sin urgencia)
+- "Comprar algo" → Inbox (muy vago)
 
 Responde SOLO con JSON válido, sin markdown.`
 
