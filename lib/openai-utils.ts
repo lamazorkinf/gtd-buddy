@@ -223,8 +223,22 @@ Responde SOLO con un JSON válido, sin markdown ni explicaciones adicionales.`
       hour12: false
     })
 
-    const userPrompt = `Fecha de hoy: ${todayInArgentina}
+    const userPrompt = `HOY ES: ${todayInArgentina} (YYYY-MM-DD)
 Hora actual en Argentina: ${timeInArgentina}
+
+IMPORTANTE: Si el mensaje menciona "mañana", debes usar ${new Date(Date.now() + 86400000).toLocaleDateString('es-AR', {
+  timeZone: 'America/Argentina/Buenos_Aires',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit'
+}).split('/').reverse().join('-')}
+
+Si menciona "pasado mañana", usar ${new Date(Date.now() + 172800000).toLocaleDateString('es-AR', {
+  timeZone: 'America/Argentina/Buenos_Aires',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit'
+}).split('/').reverse().join('-')}
 
 Texto a analizar:
 "${text}"
@@ -235,7 +249,7 @@ Responde con JSON en este formato:
   "title": "string (máximo 80 caracteres, solo si isTask es true)",
   "description": "string (opcional, más detalles)",
   "contextName": "string (opcional, sin @)",
-  "dueDate": "YYYY-MM-DD (opcional)",
+  "dueDate": "YYYY-MM-DD (opcional, DEBE SER 2025 o posterior)",
   "estimatedMinutes": number (opcional),
   "category": "Inbox | Próximas acciones | Multitarea | A la espera | Algún día",
   "isQuickAction": boolean,
@@ -257,17 +271,23 @@ Responde con JSON en este formato:
       throw new Error("No se recibió respuesta de OpenAI")
     }
 
+    console.log("🤖 Respuesta raw de OpenAI (analyzeTaskText):", responseText)
     const parsed = JSON.parse(responseText)
+    console.log("📊 Datos parseados:", JSON.stringify(parsed, null, 2))
 
     // Parsear fecha en zona horaria local de Argentina si existe
     let dueDateObj: Date | undefined = undefined
     if (parsed.dueDate) {
+      console.log("📅 Procesando fecha:", parsed.dueDate)
       // Parsear la fecha como 23:59 en Argentina (UTC-3)
       // El formato es "YYYY-MM-DD"
       const [year, month, day] = parsed.dueDate.split('-').map(Number)
+      console.log("📅 Fecha parseada:", { year, month, day })
       // Crear fecha a las 23:59 UTC-3 (que equivale a 02:59 del día siguiente en UTC)
       // Sumamos 3 horas para compensar la diferencia con UTC
       dueDateObj = new Date(Date.UTC(year, month - 1, day, 23 + 3, 59, 0))
+      console.log("📅 Fecha final (Date object):", dueDateObj.toISOString())
+      console.log("📅 Fecha final (legible):", dueDateObj.toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }))
     }
 
     // Validar y construir objeto ProcessedTaskData
