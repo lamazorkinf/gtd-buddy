@@ -276,7 +276,7 @@ export async function POST(request: NextRequest) {
       console.log("⚠️ Usuario sin suscripción activa")
       await sendWhatsAppMessage(
         phoneNumber,
-        `⚠️ Tu suscripción ha expirado.\n\nPara seguir usando GTD Buddy, renueva tu suscripción en:\n${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
+        `⚠️ Tu suscripción ha expirado.\n\nPara seguir usando GTD Buddy, renueva tu suscripción en:\n${process.env.NEXT_PUBLIC_APP_URL}dashboard`
       )
       return NextResponse.json({ error: "Suscripción inactiva" }, { status: 403 })
     }
@@ -580,16 +580,24 @@ async function handleInboxCommand(phoneNumber: string, userId: string): Promise<
   try {
     const { db } = getFirebaseAdmin()
 
+    // Obtener todas las tareas del usuario y filtrar en memoria para evitar necesidad de índices
     const snapshot = await db
       .collection("tasks")
       .where("userId", "==", userId)
-      .where("category", "==", "Inbox")
       .where("completed", "==", false)
-      .orderBy("createdAt", "desc")
-      .limit(10)
       .get()
 
-    if (snapshot.empty) {
+    // Filtrar por categoría Inbox y ordenar en memoria
+    const inboxTasks = snapshot.docs
+      .filter(doc => doc.data().category === "Inbox")
+      .sort((a, b) => {
+        const aTime = a.data().createdAt?.toDate()?.getTime() || 0
+        const bTime = b.data().createdAt?.toDate()?.getTime() || 0
+        return bTime - aTime // Orden descendente
+      })
+      .slice(0, 10) // Limitar a 10
+
+    if (inboxTasks.length === 0) {
       await sendWhatsAppMessage(
         phoneNumber,
         `📥 *Inbox vacío*\n\n¡Excelente! No tienes tareas pendientes de procesar.\n\n💡 Envía un mensaje para crear una nueva tarea.`
@@ -597,9 +605,9 @@ async function handleInboxCommand(phoneNumber: string, userId: string): Promise<
       return
     }
 
-    let message = `📥 *Inbox* (${snapshot.size} tarea${snapshot.size > 1 ? 's' : ''})\n\n`
+    let message = `📥 *Inbox* (${inboxTasks.length} tarea${inboxTasks.length > 1 ? 's' : ''})\n\n`
 
-    snapshot.docs.forEach((doc, index) => {
+    inboxTasks.forEach((doc, index) => {
       const task = doc.data()
       message += `${index + 1}. ${task.title}\n`
       if (task.description && task.description !== `Creado desde WhatsApp por ${task.pushName || 'Usuario'}`) {
@@ -608,7 +616,7 @@ async function handleInboxCommand(phoneNumber: string, userId: string): Promise<
       message += `\n`
     })
 
-    message += `\n💡 Procesa estas tareas desde el dashboard:\n${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
+    message += `\n💡 Procesa estas tareas desde el dashboard:\n${process.env.NEXT_PUBLIC_APP_URL}dashboard`
 
     await sendWhatsAppMessage(phoneNumber, message)
   } catch (error) {
@@ -632,17 +640,27 @@ async function handleTodayCommand(phoneNumber: string, userId: string): Promise<
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
 
+    // Obtener todas las tareas no completadas y filtrar en memoria
     const snapshot = await db
       .collection("tasks")
       .where("userId", "==", userId)
       .where("completed", "==", false)
-      .where("dueDate", ">=", startOfDay)
-      .where("dueDate", "<=", endOfDay)
-      .orderBy("dueDate", "asc")
-      .limit(15)
       .get()
 
-    if (snapshot.empty) {
+    // Filtrar por fecha de hoy y ordenar en memoria
+    const todayTasks = snapshot.docs
+      .filter(doc => {
+        const dueDate = doc.data().dueDate?.toDate()
+        return dueDate && dueDate >= startOfDay && dueDate <= endOfDay
+      })
+      .sort((a, b) => {
+        const aTime = a.data().dueDate?.toDate()?.getTime() || 0
+        const bTime = b.data().dueDate?.toDate()?.getTime() || 0
+        return aTime - bTime // Orden ascendente por hora
+      })
+      .slice(0, 15) // Limitar a 15
+
+    if (todayTasks.length === 0) {
       await sendWhatsAppMessage(
         phoneNumber,
         `📅 *Tareas de hoy*\n\nNo tienes tareas programadas para hoy.\n\n💡 ¿Qué tal revisar tus próximas acciones con /proximas?`
@@ -650,9 +668,9 @@ async function handleTodayCommand(phoneNumber: string, userId: string): Promise<
       return
     }
 
-    let message = `📅 *Tareas de hoy* (${snapshot.size} tarea${snapshot.size > 1 ? 's' : ''})\n\n`
+    let message = `📅 *Tareas de hoy* (${todayTasks.length} tarea${todayTasks.length > 1 ? 's' : ''})\n\n`
 
-    snapshot.docs.forEach((doc, index) => {
+    todayTasks.forEach((doc, index) => {
       const task = doc.data()
       const dueDate = task.dueDate?.toDate()
       const timeStr = dueDate ? dueDate.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : ''
@@ -676,7 +694,7 @@ async function handleTodayCommand(phoneNumber: string, userId: string): Promise<
       message += `\n`
     })
 
-    message += `\n🎯 ¡A por ellas!\n\nVer más en: ${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
+    message += `\n🎯 ¡A por ellas!\n\nVer más en: ${process.env.NEXT_PUBLIC_APP_URL}dashboard`
 
     await sendWhatsAppMessage(phoneNumber, message)
   } catch (error) {
@@ -695,16 +713,24 @@ async function handleNextActionsCommand(phoneNumber: string, userId: string): Pr
   try {
     const { db } = getFirebaseAdmin()
 
+    // Obtener todas las tareas no completadas y filtrar en memoria
     const snapshot = await db
       .collection("tasks")
       .where("userId", "==", userId)
-      .where("category", "==", "Próximas acciones")
       .where("completed", "==", false)
-      .orderBy("createdAt", "desc")
-      .limit(10)
       .get()
 
-    if (snapshot.empty) {
+    // Filtrar por categoría Próximas acciones y ordenar en memoria
+    const nextActionsTasks = snapshot.docs
+      .filter(doc => doc.data().category === "Próximas acciones")
+      .sort((a, b) => {
+        const aTime = a.data().createdAt?.toDate()?.getTime() || 0
+        const bTime = b.data().createdAt?.toDate()?.getTime() || 0
+        return bTime - aTime // Orden descendente
+      })
+      .slice(0, 10) // Limitar a 10
+
+    if (nextActionsTasks.length === 0) {
       await sendWhatsAppMessage(
         phoneNumber,
         `⚡ *Próximas acciones*\n\nNo tienes próximas acciones definidas.\n\n💡 Procesa tu inbox para identificar acciones concretas.`
@@ -712,9 +738,9 @@ async function handleNextActionsCommand(phoneNumber: string, userId: string): Pr
       return
     }
 
-    let message = `⚡ *Próximas acciones* (${snapshot.size} acción${snapshot.size > 1 ? 'es' : ''})\n\n`
+    let message = `⚡ *Próximas acciones* (${nextActionsTasks.length} acción${nextActionsTasks.length > 1 ? 'es' : ''})\n\n`
 
-    snapshot.docs.forEach((doc, index) => {
+    nextActionsTasks.forEach((doc, index) => {
       const task = doc.data()
       message += `${index + 1}. ${task.title}\n`
 
@@ -735,7 +761,7 @@ async function handleNextActionsCommand(phoneNumber: string, userId: string): Pr
       message += `\n`
     })
 
-    message += `\n💪 ¡Manos a la obra!\n\nVer más en: ${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
+    message += `\n💪 ¡Manos a la obra!\n\nVer más en: ${process.env.NEXT_PUBLIC_APP_URL}dashboard`
 
     await sendWhatsAppMessage(phoneNumber, message)
   } catch (error) {
