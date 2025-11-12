@@ -165,6 +165,15 @@ WhatsApp → Evolution API → Webhook (/api/whatsapp/webhook) →
    - Shows extracted task details (title, category, context, date, time estimate)
    - Error messages for invalid codes, expired subscriptions, etc.
 
+5. **Interactive Commands:**
+   - `/ayuda` or `/help` - Shows available commands (no auth required)
+   - `/menu` - Interactive button menu for quick actions
+   - `/inbox` - View tasks in Inbox (up to 10)
+   - `/hoy` - View tasks due today with times
+   - `/proximas` - View next actions
+   - Button responses automatically converted to commands
+   - All commands (except /ayuda) require authenticated linked account
+
 **Firestore Collections:**
 - `whatsappLinks`: Stores WhatsApp number ↔ Firebase UID mappings
   - Fields: userId, whatsappNumber, linkCode, linkCodeExpiry, isActive, createdAt, updatedAt
