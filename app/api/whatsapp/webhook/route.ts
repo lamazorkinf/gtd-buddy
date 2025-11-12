@@ -85,14 +85,19 @@ async function activateWhatsAppLink(linkCode: string, whatsappNumber: string): P
  */
 export async function POST(request: NextRequest) {
   try {
+    const webhook: EvolutionAPIWebhook = await request.json()
+
     // Verificar API key de Evolution API (seguridad básica)
-    const authHeader = request.headers.get("apikey")
-    if (authHeader !== process.env.EVOLUTION_API_KEY) {
-      console.error("❌ API key inválida")
+    // Evolution API puede enviar la API key en el header o en el payload
+    const authHeader = request.headers.get("apikey") || request.headers.get("x-api-key")
+    const apikeyInPayload = webhook.apikey
+
+    const expectedApiKey = process.env.EVOLUTION_API_KEY
+
+    if (authHeader !== expectedApiKey && apikeyInPayload !== expectedApiKey) {
+      console.error("❌ API key inválida", { authHeader, apikeyInPayload, expected: expectedApiKey?.substring(0, 10) + "..." })
       return NextResponse.json({ error: "No autorizado" }, { status: 401 })
     }
-
-    const webhook: EvolutionAPIWebhook = await request.json()
 
     console.log("📱 Mensaje de WhatsApp recibido:", {
       event: webhook.event,
