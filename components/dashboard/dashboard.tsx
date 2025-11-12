@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Plus, Calendar, ArrowRight, Clock, Layers, Hourglass, CalendarClock, ChevronDown, ChevronUp } from "lucide-react"
+import { Plus, Calendar, ArrowRight, Clock, Layers, Hourglass, CalendarClock, ChevronDown, ChevronUp, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
 import { useTeamContext } from "@/contexts/team-context"
@@ -60,7 +60,7 @@ export default function Dashboard() {
   const [selectedContexts, setSelectedContexts] = useState<string[]>([])
   const { user, subscriptionStatus, signOut } = useAuth()
   const { selectedTeamId, isPersonalMode } = useTeamContext()
-  const { tasks, updateTask } = useTasks({ teamId: selectedTeamId })
+  const { tasks, updateTask, deleteTask } = useTasks({ teamId: selectedTeamId })
   const { contexts } = useContexts({ teamId: selectedTeamId })
   const router = useRouter()
 
@@ -543,6 +543,30 @@ export default function Dashboard() {
               setEditingTask(undefined)
             }}
             title={editingTask ? "Editar Tarea" : "Nueva Tarea"}
+            headerAction={
+              editingTask && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={async () => {
+                    if (confirm("¿Estás seguro de que deseas eliminar esta tarea?")) {
+                      try {
+                        await deleteTask(editingTask.id!)
+                        setShowTaskForm(false)
+                        setEditingTask(undefined)
+                      } catch (error) {
+                        console.error("Error al eliminar tarea:", error)
+                      }
+                    }
+                  }}
+                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 className="h-5 w-5" />
+                  <span className="sr-only">Eliminar tarea</span>
+                </Button>
+              )
+            }
           >
             <TaskForm
               task={editingTask}

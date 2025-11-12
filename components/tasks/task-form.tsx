@@ -222,21 +222,6 @@ export default function TaskForm({ task, onClose, defaultCategory, defaultDueDat
 
   return (
     <div className="p-6">
-      {isEditing && (
-        <div className="flex justify-end mb-4">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={handleDelete}
-            disabled={loading}
-            className="text-red-500 hover:text-red-700 hover:bg-red-50"
-          >
-            <Trash2 className="h-5 w-5" />
-            <span className="sr-only">Eliminar tarea</span>
-          </Button>
-        </div>
-      )}
       <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block">Título *</label>

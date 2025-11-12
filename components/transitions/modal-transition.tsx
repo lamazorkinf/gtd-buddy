@@ -12,6 +12,7 @@ interface ModalTransitionProps {
   onClose: () => void
   children: React.ReactNode
   title?: string
+  headerAction?: React.ReactNode
 }
 
 const backdropVariants = {
@@ -44,7 +45,7 @@ const modalVariants = {
   },
 }
 
-export default function ModalTransition({ isOpen, onClose, children, title }: ModalTransitionProps) {
+export default function ModalTransition({ isOpen, onClose, children, title, headerAction }: ModalTransitionProps) {
   const [mounted, setMounted] = useState(false)
   const portalRootRef = useRef<HTMLElement | null>(null)
 
@@ -135,10 +136,11 @@ export default function ModalTransition({ isOpen, onClose, children, title }: Mo
 
             {/* Title */}
             {title && (
-              <div className="px-6 pt-6 pb-2">
+              <div className="px-6 pt-6 pb-2 flex items-center justify-between">
                 <h2 className={`text-lg font-semibold leading-none tracking-tight ${modernTheme.colors.primaryText}`}>
                   {title}
                 </h2>
+                {headerAction && <div className="ml-4">{headerAction}</div>}
               </div>
             )}
 

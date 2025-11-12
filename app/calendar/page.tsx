@@ -2,9 +2,11 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Plus, LogOut, LayoutDashboard, User } from "lucide-react"
+import { Plus, LogOut, LayoutDashboard, User, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
+import { useTeamContext } from "@/contexts/team-context"
+import { useTasks } from "@/hooks/use-tasks"
 import CalendarView from "@/components/calendar/calendar-view"
 import TaskForm from "@/components/tasks/task-form"
 import ModalTransition from "@/components/transitions/modal-transition"
@@ -16,6 +18,8 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [editingTask, setEditingTask] = useState<Task | undefined>(undefined)
   const { user, signOut } = useAuth()
+  const { selectedTeamId } = useTeamContext()
+  const { deleteTask } = useTasks({ teamId: selectedTeamId })
 
   const handleCreateOrEditTask = (dateOrTask?: Date | Task) => {
     if (dateOrTask instanceof Date || dateOrTask === undefined) {
@@ -76,7 +80,34 @@ export default function CalendarPage() {
         <div className="w-full px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto">
           <CalendarView onCreateOrEditTask={handleCreateOrEditTask} />
 
-          <ModalTransition isOpen={showTaskForm} onClose={handleCloseForm} title={editingTask ? "Editar Tarea" : "Nueva Tarea"}>
+          <ModalTransition
+            isOpen={showTaskForm}
+            onClose={handleCloseForm}
+            title={editingTask ? "Editar Tarea" : "Nueva Tarea"}
+            headerAction={
+              editingTask && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={async () => {
+                    if (confirm("¿Estás seguro de que deseas eliminar esta tarea?")) {
+                      try {
+                        await deleteTask(editingTask.id!)
+                        handleCloseForm()
+                      } catch (error) {
+                        console.error("Error al eliminar tarea:", error)
+                      }
+                    }
+                  }}
+                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 className="h-5 w-5" />
+                  <span className="sr-only">Eliminar tarea</span>
+                </Button>
+              )
+            }
+          >
             <TaskForm
               onClose={handleCloseForm}
               task={editingTask}
