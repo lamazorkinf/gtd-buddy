@@ -1,5 +1,5 @@
 import OpenAI from "openai"
-import type { ProcessedTaskData } from "@/types/whatsapp"
+import type { ProcessedTaskData, ProcessedIntent, ConversationContext } from "@/types/whatsapp"
 import type { GTDCategory } from "@/types/task"
 
 const openai = new OpenAI({
@@ -303,4 +303,162 @@ export async function processWhatsAppMessage(
 
   // Analizar el texto con GPT-4
   return await analyzeTaskText(finalText)
+}
+
+/**
+ * Detecta la intención del usuario y procesa el mensaje en consecuencia
+ * @param text Texto del mensaje
+ * @param conversationContext Contexto de la conversación (mensajes previos, última tarea, etc.)
+ * @returns Intención procesada con parámetros
+ */
+export async function detectUserIntent(
+  text: string,
+  conversationContext?: Partial<ConversationContext>
+): Promise<ProcessedIntent> {
+  try {
+    const systemPrompt = `Eres un asistente experto en el método GTD que analiza mensajes de WhatsApp para detectar la intención del usuario.
+
+INTENCIONES POSIBLES:
+1. "create_task" - El usuario quiere crear una tarea nueva
+   Ejemplos: "Llamar al dentista mañana", "Comprar leche"
+
+2. "view_tasks" - El usuario quiere ver sus tareas
+   Ejemplos: "muéstrame mis tareas", "qué tengo para hoy", "inbox", "/hoy", "/próximas"
+   Parámetros: taskFilter puede ser "inbox", "today", "next_actions", "all"
+
+3. "complete_task" - El usuario quiere marcar una tarea como completada
+   Ejemplos: "completé esa tarea", "ya hice eso", "marcar como hecha"
+   needsContext: true (requiere saber cuál fue la última tarea)
+
+4. "edit_task" - El usuario quiere editar una tarea
+   Ejemplos: "cambiar la fecha", "modificar el título", "editar la descripción"
+   needsContext: true (requiere saber cuál tarea editar)
+
+5. "add_context" - El usuario quiere agregar contexto a la última tarea
+   Ejemplos: "agregar eso a @Vilma", "poner esa tarea en @casa", "añadir contexto @oficina"
+   needsContext: true (requiere saber cuál fue la última tarea)
+   Parámetros: contextName (sin el @)
+
+6. "help" - El usuario pide ayuda o el menú
+   Ejemplos: "ayuda", "help", "menu", "qué puedes hacer"
+
+7. "greeting" - Saludo o conversación casual
+   Ejemplos: "hola", "gracias", "ok", "dale"
+
+IMPORTANTE:
+- Si el mensaje es una tarea nueva clara, usa "create_task" y analiza la tarea completa
+- Si el usuario menciona "la tarea anterior", "esa tarea", "la última", necesita contexto (needsContext: true)
+- Si el usuario dice "agregar a @contexto" o "poner en @lugar", es "add_context"
+- Los comandos como /inbox, /hoy, /próximas son "view_tasks"
+- Sé conservador: ante la duda sobre crear tarea vs otra intención, elige la otra intención
+
+Responde SOLO con JSON válido, sin markdown.`
+
+    const historyContext = conversationContext?.conversationHistory
+      ?.slice(-3) // Últimos 3 mensajes
+      .map(msg => `${msg.role === 'user' ? 'Usuario' : 'Asistente'}: ${msg.content}`)
+      .join('\n') || 'Sin historial previo'
+
+    const lastTaskInfo = conversationContext?.lastTaskId
+      ? `Última tarea creada/mencionada: ID ${conversationContext.lastTaskId}`
+      : 'Sin tareas previas en esta conversación'
+
+    const userPrompt = `Contexto de conversación:
+${historyContext}
+
+${lastTaskInfo}
+
+Mensaje actual del usuario:
+"${text}"
+
+Responde con JSON en este formato:
+{
+  "intent": "create_task" | "view_tasks" | "complete_task" | "edit_task" | "add_context" | "help" | "greeting",
+  "confidence": number (0.0 a 1.0),
+  "needsContext": boolean (true si requiere saber la tarea previa),
+  "parameters": {
+    "taskFilter": "inbox" | "today" | "next_actions" | "all" (solo para view_tasks),
+    "contextName": "string sin @" (solo para add_context),
+    "editField": "title" | "description" | "dueDate" | "context" (solo para edit_task),
+    "editValue": "string" (solo para edit_task)
+  },
+  "taskData": {
+    // Solo si intent es "create_task", incluir análisis completo de la tarea
+    "isTask": true,
+    "title": "string",
+    "description": "string opcional",
+    "contextName": "string opcional sin @",
+    "dueDate": "YYYY-MM-DD opcional",
+    "estimatedMinutes": number opcional,
+    "category": "Inbox | Próximas acciones | Multitarea | A la espera | Algún día",
+    "isQuickAction": boolean,
+    "confidence": number
+  }
+}`
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      temperature: 0.2,
+      response_format: { type: "json_object" },
+    })
+
+    const responseText = completion.choices[0].message.content
+    if (!responseText) {
+      throw new Error("No se recibió respuesta de OpenAI")
+    }
+
+    const parsed = JSON.parse(responseText)
+
+    // Parsear taskData si existe
+    let taskData: ProcessedTaskData | undefined
+    if (parsed.taskData && parsed.intent === "create_task") {
+      let dueDateObj: Date | undefined = undefined
+      if (parsed.taskData.dueDate) {
+        const [year, month, day] = parsed.taskData.dueDate.split('-').map(Number)
+        dueDateObj = new Date(Date.UTC(year, month - 1, day, 23 + 3, 59, 0))
+      }
+
+      taskData = {
+        isTask: true,
+        title: parsed.taskData.title?.substring(0, 80) || text.substring(0, 80),
+        description: parsed.taskData.description || undefined,
+        contextName: parsed.taskData.contextName || undefined,
+        dueDate: dueDateObj,
+        estimatedMinutes: parsed.taskData.estimatedMinutes || undefined,
+        category: (parsed.taskData.category as GTDCategory) || "Inbox",
+        isQuickAction: parsed.taskData.isQuickAction || false,
+        confidence: parsed.taskData.confidence || 0.5,
+      }
+    }
+
+    const result: ProcessedIntent = {
+      intent: parsed.intent,
+      confidence: parsed.confidence || 0.5,
+      needsContext: parsed.needsContext || false,
+      parameters: parsed.parameters || {},
+      taskData,
+    }
+
+    return result
+  } catch (error) {
+    console.error("Error detectando intención:", error)
+
+    // Fallback: intentar crear tarea
+    return {
+      intent: "create_task",
+      confidence: 0.1,
+      taskData: {
+        isTask: true,
+        title: text.substring(0, 80),
+        description: text.length > 80 ? text : undefined,
+        category: "Inbox",
+        isQuickAction: false,
+        confidence: 0.1,
+      },
+    }
+  }
 }
