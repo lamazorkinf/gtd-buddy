@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/contexts/auth-context"
-import { Mail, Lock, Edit3, Eye, EyeOff, Loader2 } from "lucide-react"
+import { Mail, Lock, Edit3, Eye, EyeOff, Loader2, Phone } from "lucide-react"
 import { modernTheme } from "@/lib/theme"
 import Image from "next/image"
 
@@ -21,6 +21,7 @@ export default function AuthPage() {
   const [confirmPassword, setConfirmPassword] = useState("")
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
+  const [phoneNumber, setPhoneNumber] = useState("")
 
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -38,6 +39,7 @@ export default function AuthPage() {
     setConfirmPassword("")
     setFirstName("")
     setLastName("")
+    setPhoneNumber("")
     const url = new URL(window.location.href)
     url.searchParams.set("tab", value)
     router.replace(url.pathname + url.search, { scroll: false })
@@ -71,7 +73,7 @@ export default function AuthPage() {
           setFormLoading(false)
           return
         }
-        await signUp(email, password, firstName, lastName)
+        await signUp(email, password, firstName, lastName, phoneNumber)
       } else {
         await signIn(email, password)
       }
@@ -287,6 +289,16 @@ export default function AuthPage() {
                       onChange={(e) => setEmail(e.target.value)}
                       className={`pl-12 py-3 text-md ${modernTheme.container.radius} ${modernTheme.effects.glass}`}
                       required
+                    />
+                  </div>
+                  <div className="relative">
+                    <Phone className={`absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 ${modernTheme.colors.muted}`} />
+                    <Input
+                      type="tel"
+                      placeholder="WhatsApp (opcional, ej: +54 9 11 1234-5678)"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      className={`pl-12 py-3 text-md ${modernTheme.container.radius} ${modernTheme.effects.glass}`}
                     />
                   </div>
                   <div className="relative">

@@ -45,6 +45,7 @@ export interface User {
   email: string | null
   displayName: string | null
   photoURL: string | null
+  phoneNumber?: string | null // Número de WhatsApp para vincular cuenta
   role: "admin" | "user" | "test"
   subscriptionStatus?: "active" | "inactive" | "trial" | "pending_payment" | "test"
   subscriptionEndDate?: Date

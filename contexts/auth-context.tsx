@@ -21,7 +21,7 @@ interface AuthContextType {
   loading: boolean
   subscriptionStatus: ReturnType<typeof checkSubscriptionStatus>
   signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<void>
+  signUp: (email: string, password: string, firstName: string, lastName: string, phoneNumber?: string) => Promise<void>
   signInWithGoogle: () => Promise<void>
   signOut: () => Promise<void>
 }
@@ -126,7 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
+  const signUp = async (email: string, password: string, firstName: string, lastName: string, phoneNumber?: string) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password)
       const firebaseUser = userCredential.user
@@ -150,6 +150,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           photoURL: firebaseUser.photoURL,
           firstName: firstName,
           lastName: lastName,
+          phoneNumber: phoneNumber || null,
           role: "user",
           subscriptionStatus: "trial",
           trialStartDate: serverTimestamp(),
