@@ -331,8 +331,16 @@ INTENCIONES POSIBLES:
    needsContext: true (requiere saber cuál fue la última tarea)
 
 4. "edit_task" - El usuario quiere editar una tarea
-   Ejemplos: "cambiar la fecha", "modificar el título", "editar la descripción"
+   Ejemplos:
+   - "cambiar la fecha a mañana"
+   - "modificar el título a Llamar al doctor"
+   - "cambiar la descripción"
+   - "mover a pasado mañana"
+   - "cambiar el contexto a @casa"
    needsContext: true (requiere saber cuál tarea editar)
+   Parámetros:
+   - editField: "title" | "description" | "dueDate" | "context" | "category"
+   - editValue: nuevo valor (puede ser una fecha relativa como "mañana", "pasado mañana")
 
 5. "add_context" - El usuario quiere agregar contexto a la última tarea
    Ejemplos: "agregar eso a @Vilma", "poner esa tarea en @casa", "añadir contexto @oficina"
@@ -378,9 +386,10 @@ Responde con JSON en este formato:
   "needsContext": boolean (true si requiere saber la tarea previa),
   "parameters": {
     "taskFilter": "inbox" | "today" | "next_actions" | "all" (solo para view_tasks),
-    "contextName": "string sin @" (solo para add_context),
-    "editField": "title" | "description" | "dueDate" | "context" (solo para edit_task),
-    "editValue": "string" (solo para edit_task)
+    "contextName": "string sin @" (solo para add_context o edit_task cuando editField es "context"),
+    "editField": "title" | "description" | "dueDate" | "context" | "category" (solo para edit_task),
+    "editValue": "string o YYYY-MM-DD para fechas" (solo para edit_task),
+    "category": "Inbox | Próximas acciones | Multitarea | A la espera | Algún día" (solo para edit_task cuando editField es "category")
   },
   "taskData": {
     // Solo si intent es "create_task", incluir análisis completo de la tarea

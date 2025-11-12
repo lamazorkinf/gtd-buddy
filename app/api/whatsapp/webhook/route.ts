@@ -4,7 +4,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getFirebaseAdmin } from "@/lib/firebase-admin"
 import type { EvolutionAPIWebhook, ProcessedTaskData, ProcessedIntent } from "@/types/whatsapp"
 import type { Context } from "@/types/task"
-import { detectUserIntent } from "@/lib/openai-utils"
+import { detectUserIntent, transcribeAudio } from "@/lib/openai-utils"
 import { getOrCreateConversationContext, updateConversationContext, addToConversationHistory } from "@/lib/conversation-utils"
 
 // Extraer número de teléfono del remoteJid de WhatsApp
@@ -359,6 +359,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Suscripción inactiva" }, { status: 403 })
     }
 
+    // Si es audio, transcribir primero
+    let finalText = textMessage || ""
+    if (audioUrl && !textMessage) {
+      console.log("🎤 Transcribiendo audio...")
+      try {
+        finalText = await transcribeAudio(audioUrl, webhook.data.key.id, webhook.data.key.remoteJid)
+        console.log("✅ Audio transcrito:", finalText.substring(0, 100) + "...")
+      } catch (error) {
+        console.error("❌ Error transcribiendo audio:", error)
+        await sendWhatsAppMessage(
+          phoneNumber,
+          "❌ No pude procesar el audio. Por favor, intenta:\n• Enviar un audio más corto\n• Enviar el mensaje como texto"
+        )
+        return NextResponse.json({ error: "Error transcribiendo audio" }, { status: 500 })
+      }
+    }
+
     // Obtener o crear contexto de conversación
     console.log("💬 Obteniendo contexto de conversación...")
     const conversationContext = await getOrCreateConversationContext(userId, phoneNumber)
@@ -369,11 +386,11 @@ export async function POST(request: NextRequest) {
     })
 
     // Agregar mensaje del usuario al historial
-    await addToConversationHistory(conversationContext.id, "user", textMessage || "[audio]")
+    await addToConversationHistory(conversationContext.id, "user", finalText || "[sin contenido]")
 
     // Detectar intención del usuario usando IA con contexto conversacional
     console.log("🤖 Detectando intención del usuario...")
-    const intent: ProcessedIntent = await detectUserIntent(textMessage || "", conversationContext)
+    const intent: ProcessedIntent = await detectUserIntent(finalText, conversationContext)
     console.log("📊 Intención detectada:", {
       intent: intent.intent,
       confidence: intent.confidence,
@@ -512,12 +529,101 @@ export async function POST(request: NextRequest) {
         break
 
       case "edit_task":
-        responseMessage = "La función de editar tareas aún no está disponible. Por ahora, puedes completar la tarea y crear una nueva."
-        await updateConversationContext(conversationContext.id, { lastIntent: "edit_task" })
+        if (!conversationContext.lastTaskId) {
+          responseMessage = "No tengo registro de ninguna tarea reciente. Crea una tarea primero."
+        } else if (!intent.parameters?.editField) {
+          responseMessage = "No especificaste qué quieres editar. Ejemplos:\n• 'cambiar la fecha a mañana'\n• 'modificar el título a ...'\n• 'cambiar el contexto a @casa'"
+        } else {
+          try {
+            const updates: any = { updatedAt: new Date() }
+            const editField = intent.parameters.editField
+            const editValue = intent.parameters.editValue
+
+            switch (editField) {
+              case "title":
+                if (!editValue) {
+                  responseMessage = "Debes especificar el nuevo título."
+                  break
+                }
+                updates.title = editValue
+                responseMessage = `✅ Título actualizado a: "${editValue}"`
+                break
+
+              case "description":
+                if (!editValue) {
+                  responseMessage = "Debes especificar la nueva descripción."
+                  break
+                }
+                updates.description = editValue
+                responseMessage = `✅ Descripción actualizada`
+                break
+
+              case "dueDate":
+                if (!editValue) {
+                  responseMessage = "Debes especificar la nueva fecha."
+                  break
+                }
+                // Parsear fecha
+                try {
+                  const [year, month, day] = editValue.split('-').map(Number)
+                  const dueDate = new Date(Date.UTC(year, month - 1, day, 23 + 3, 59, 0))
+                  updates.dueDate = dueDate
+                  const dateStr = dueDate.toLocaleDateString("es-AR", {
+                    weekday: "short",
+                    day: "numeric",
+                    month: "short",
+                  })
+                  responseMessage = `✅ Fecha actualizada a: ${dateStr}`
+                } catch (e) {
+                  responseMessage = "❌ No pude entender la fecha. Intenta de nuevo."
+                  break
+                }
+                break
+
+              case "context":
+                const contextName = intent.parameters.contextName
+                if (!contextName) {
+                  responseMessage = "Debes especificar el contexto. Ejemplo: @Vilma"
+                  break
+                }
+                const contextDoc = await findContextByName(userId, contextName)
+                if (contextDoc) {
+                  updates.contextId = contextDoc.id
+                  responseMessage = `✅ Contexto actualizado a: @${contextName}`
+                } else {
+                  responseMessage = `❌ No encontré el contexto "@${contextName}". Créalo primero desde el dashboard.`
+                  break
+                }
+                break
+
+              case "category":
+                const category = intent.parameters.category
+                if (!category) {
+                  responseMessage = "Debes especificar la categoría."
+                  break
+                }
+                updates.category = category
+                responseMessage = `✅ Categoría actualizada a: ${category}`
+                break
+
+              default:
+                responseMessage = "Campo de edición no reconocido."
+            }
+
+            // Solo actualizar si hay cambios y no hubo errores
+            if (Object.keys(updates).length > 1 && !responseMessage.startsWith("❌") && !responseMessage.startsWith("Debes")) {
+              await db.collection("tasks").doc(conversationContext.lastTaskId).update(updates)
+              await updateConversationContext(conversationContext.id, { lastIntent: "edit_task" })
+            }
+          } catch (error) {
+            console.error("Error editando tarea:", error)
+            responseMessage = "❌ No pude editar la tarea. Es posible que ya no exista."
+          }
+        }
         break
 
       case "greeting":
-        responseMessage = `¡Hola! 👋\n\nEstoy aquí para ayudarte con tus tareas.\n\nPuedes:\n• Enviarme una tarea (ej: "Llamar al dentista mañana")\n• Ver tus tareas: "muéstrame mis tareas de hoy"\n• Completar tareas: "marcar como hecha"\n• Agregar contexto: "agregar eso a @Vilma"`
+        responseMessage = `¡Hola! 👋\n\nEstoy aquí para ayudarte con tus tareas.\n\nPuedes:\n• Enviarme una tarea por texto o audio\n• Ver tus tareas: "muéstrame mis tareas de hoy"\n• Completar tareas: "marcar como hecha"\n• Editar tareas: "cambiar la fecha a mañana"\n• Agregar contexto: "agregar eso a @Vilma"`
         await updateConversationContext(conversationContext.id, { lastIntent: "greeting" })
         break
 
