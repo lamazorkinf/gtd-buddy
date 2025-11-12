@@ -499,31 +499,30 @@ async function sendWhatsAppButtons(phoneNumber: string): Promise<void> {
         buttons: [
           {
             type: "reply",
-            reply: {
-              id: "inbox",
-              title: "📥 Ver Inbox"
-            }
+            displayText: "📥 Ver Inbox",
+            id: "inbox"
           },
           {
             type: "reply",
-            reply: {
-              id: "hoy",
-              title: "📅 Tareas de hoy"
-            }
+            displayText: "📅 Tareas de hoy",
+            id: "hoy"
           },
           {
             type: "reply",
-            reply: {
-              id: "proximas",
-              title: "⚡ Próximas acciones"
-            }
+            displayText: "⚡ Próximas acciones",
+            id: "proximas"
           }
         ]
       }),
     })
 
     if (!response.ok) {
-      console.error("❌ Error enviando botones de WhatsApp:", response.statusText)
+      const errorText = await response.text()
+      console.error("❌ Error enviando botones de WhatsApp:", {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      })
       // Fallback: enviar mensaje de texto con opciones
       await sendWhatsAppMessage(
         phoneNumber,
@@ -535,7 +534,8 @@ async function sendWhatsAppButtons(phoneNumber: string): Promise<void> {
         `/ayuda - Ver todos los comandos`
       )
     } else {
-      console.log("✅ Botones enviados a WhatsApp")
+      const responseData = await response.json()
+      console.log("✅ Botones enviados a WhatsApp:", responseData)
     }
   } catch (error) {
     console.error("❌ Error enviando botones:", error)
