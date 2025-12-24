@@ -36,18 +36,19 @@ export function registerQueryTools(server: McpServer, userId: string): void {
       limit: z.number().min(1).max(100).optional().default(50).describe("Maximum tasks to return")
     },
     async (args) => {
+      // Simplified query - filter in memory to avoid index requirements
       const snapshot = await db.collection("tasks")
         .where("userId", "==", userId)
-        .where("teamId", "==", null)
         .where("category", "==", "Inbox")
         .where("completed", "==", false)
         .orderBy("createdAt", "desc")
-        .limit(args.limit ?? 50)
         .get();
 
-      const tasks = snapshot.docs.map(doc =>
-        convertTaskToResponse(doc.id, doc.data() as TaskDocument)
-      );
+      const tasks = snapshot.docs
+        .map(doc => ({ id: doc.id, ...(doc.data() as TaskDocument) }))
+        .filter(task => task.teamId === null)
+        .slice(0, args.limit ?? 50)
+        .map(task => convertTaskToResponse(task.id, task as TaskDocument));
 
       return {
         content: [{
@@ -77,18 +78,19 @@ export function registerQueryTools(server: McpServer, userId: string): void {
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
+      // Simplified query to avoid complex index requirements
+      // Filter teamId and completed in memory
       const snapshot = await db.collection("tasks")
         .where("userId", "==", userId)
-        .where("teamId", "==", null)
         .where("dueDate", ">=", today)
         .where("dueDate", "<", tomorrow)
-        .where("completed", "==", false)
-        .limit(args.limit ?? 50)
         .get();
 
-      const tasks = snapshot.docs.map(doc =>
-        convertTaskToResponse(doc.id, doc.data() as TaskDocument)
-      );
+      const tasks = snapshot.docs
+        .map(doc => ({ id: doc.id, ...(doc.data() as TaskDocument) }))
+        .filter(task => task.teamId === null && task.completed === false)
+        .slice(0, args.limit ?? 50)
+        .map(task => convertTaskToResponse(task.id, task as TaskDocument));
 
       return {
         content: [{
@@ -117,18 +119,18 @@ export function registerQueryTools(server: McpServer, userId: string): void {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
+      // Simplified query - filter in memory to avoid index requirements
       const snapshot = await db.collection("tasks")
         .where("userId", "==", userId)
-        .where("teamId", "==", null)
         .where("dueDate", "<", today)
-        .where("completed", "==", false)
         .orderBy("dueDate", "asc")
-        .limit(args.limit ?? 50)
         .get();
 
-      const tasks = snapshot.docs.map(doc =>
-        convertTaskToResponse(doc.id, doc.data() as TaskDocument)
-      );
+      const tasks = snapshot.docs
+        .map(doc => ({ id: doc.id, ...(doc.data() as TaskDocument) }))
+        .filter(task => task.teamId === null && task.completed === false)
+        .slice(0, args.limit ?? 50)
+        .map(task => convertTaskToResponse(task.id, task as TaskDocument));
 
       return {
         content: [{
@@ -153,17 +155,18 @@ export function registerQueryTools(server: McpServer, userId: string): void {
       limit: z.number().min(1).max(50).optional().default(20).describe("Maximum tasks to return")
     },
     async (args) => {
+      // Simplified query - filter in memory
       const snapshot = await db.collection("tasks")
         .where("userId", "==", userId)
-        .where("teamId", "==", null)
         .where("isQuickAction", "==", true)
         .where("completed", "==", false)
-        .limit(args.limit ?? 20)
         .get();
 
-      const tasks = snapshot.docs.map(doc =>
-        convertTaskToResponse(doc.id, doc.data() as TaskDocument)
-      );
+      const tasks = snapshot.docs
+        .map(doc => ({ id: doc.id, ...(doc.data() as TaskDocument) }))
+        .filter(task => task.teamId === null)
+        .slice(0, args.limit ?? 20)
+        .map(task => convertTaskToResponse(task.id, task as TaskDocument));
 
       return {
         content: [{
@@ -190,20 +193,22 @@ export function registerQueryTools(server: McpServer, userId: string): void {
       limit: z.number().min(1).max(100).optional().default(50).describe("Maximum tasks to return")
     },
     async (args) => {
+      // Simplified query - filter in memory
       let query: FirebaseFirestore.Query = db.collection("tasks")
         .where("userId", "==", userId)
-        .where("teamId", "==", null)
         .where("contextId", "==", args.contextId);
 
       if (!args.includeCompleted) {
         query = query.where("completed", "==", false);
       }
 
-      const snapshot = await query.limit(args.limit ?? 50).get();
+      const snapshot = await query.get();
 
-      const tasks = snapshot.docs.map(doc =>
-        convertTaskToResponse(doc.id, doc.data() as TaskDocument)
-      );
+      const tasks = snapshot.docs
+        .map(doc => ({ id: doc.id, ...(doc.data() as TaskDocument) }))
+        .filter(task => task.teamId === null)
+        .slice(0, args.limit ?? 50)
+        .map(task => convertTaskToResponse(task.id, task as TaskDocument));
 
       // Get context name
       const contextDoc = await db.collection("contexts").doc(args.contextId).get();
@@ -276,9 +281,9 @@ export function registerQueryTools(server: McpServer, userId: string): void {
       limit: z.number().min(1).max(100).optional().default(50).describe("Maximum tasks to return")
     },
     async (args) => {
+      // Simplified query - filter in memory
       let query: FirebaseFirestore.Query = db.collection("tasks")
         .where("userId", "==", userId)
-        .where("teamId", "==", null)
         .where("category", "==", "Próximas acciones")
         .where("completed", "==", false);
 
@@ -286,13 +291,15 @@ export function registerQueryTools(server: McpServer, userId: string): void {
         query = query.where("contextId", "==", args.contextId);
       }
 
-      query = query.orderBy("createdAt", "desc").limit(args.limit ?? 50);
+      query = query.orderBy("createdAt", "desc");
 
       const snapshot = await query.get();
 
-      const tasks = snapshot.docs.map(doc =>
-        convertTaskToResponse(doc.id, doc.data() as TaskDocument)
-      );
+      const tasks = snapshot.docs
+        .map(doc => ({ id: doc.id, ...(doc.data() as TaskDocument) }))
+        .filter(task => task.teamId === null)
+        .slice(0, args.limit ?? 50)
+        .map(task => convertTaskToResponse(task.id, task as TaskDocument));
 
       return {
         content: [{
@@ -320,18 +327,19 @@ export function registerQueryTools(server: McpServer, userId: string): void {
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      // Fetch all incomplete tasks
+      // Fetch all incomplete tasks - filter teamId in memory
       const snapshot = await db.collection("tasks")
         .where("userId", "==", userId)
-        .where("teamId", "==", null)
         .where("completed", "==", false)
         .get();
 
-      const tasks = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...(doc.data() as TaskDocument),
-        dueDateMs: doc.data().dueDate?.toDate?.()?.getTime() || null
-      }));
+      const tasks = snapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...(doc.data() as TaskDocument),
+          dueDateMs: doc.data().dueDate?.toDate?.()?.getTime() || null
+        }))
+        .filter(task => task.teamId === null);
 
       // Calculate counts
       const inbox = tasks.filter(t => t.category === "Inbox").length;
