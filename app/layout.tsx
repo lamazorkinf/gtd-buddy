@@ -6,6 +6,7 @@ import { AuthProvider } from "@/contexts/auth-context"
 import { TeamProvider } from "@/contexts/team-context"
 import PageTransition from "@/components/transitions/page-transition"
 import { Toaster } from "@/components/ui/toaster"
+import { BuddyWidget } from "@/components/voice-assistant/buddy-widget"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -43,6 +44,7 @@ export default function RootLayout({
           <TeamProvider>
             <PageTransition>{children}</PageTransition>
             <Toaster />
+            <BuddyWidget />
           </TeamProvider>
         </AuthProvider>
       </body>
