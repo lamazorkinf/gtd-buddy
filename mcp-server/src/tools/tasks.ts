@@ -118,7 +118,9 @@ export function registerTaskTools(server: McpServer, userId: string): void {
         taskData.estimatedMinutes = args.estimatedMinutes;
       }
       if (args.dueDate) {
-        taskData.dueDate = new Date(args.dueDate);
+        // Fix timezone issue: if only date (YYYY-MM-DD), add noon time to avoid UTC midnight shift
+        const dateStr = args.dueDate.includes('T') ? args.dueDate : `${args.dueDate}T12:00:00`;
+        taskData.dueDate = new Date(dateStr);
       }
       if (args.subtasks && args.subtasks.length > 0) {
         taskData.subtasks = args.subtasks.map((st, i) => ({
@@ -188,7 +190,13 @@ export function registerTaskTools(server: McpServer, userId: string): void {
       if (updates.description !== undefined) updateData.description = updates.description?.trim() || null;
       if (updates.category !== undefined) updateData.category = updates.category;
       if (updates.dueDate !== undefined) {
-        updateData.dueDate = updates.dueDate ? new Date(updates.dueDate) : null;
+        if (updates.dueDate) {
+          // Fix timezone issue: if only date (YYYY-MM-DD), add noon time to avoid UTC midnight shift
+          const dateStr = updates.dueDate.includes('T') ? updates.dueDate : `${updates.dueDate}T12:00:00`;
+          updateData.dueDate = new Date(dateStr);
+        } else {
+          updateData.dueDate = null;
+        }
       }
       if (updates.contextId !== undefined) updateData.contextId = updates.contextId;
       if (updates.estimatedMinutes !== undefined) updateData.estimatedMinutes = updates.estimatedMinutes;
