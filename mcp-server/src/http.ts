@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import "dotenv/config";
-import express, { Request, Response } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { initializeFirebase } from "./firebase.js";
@@ -9,6 +9,18 @@ import { createMcpServer } from "./server.js";
 // Configuration
 const PORT = parseInt(process.env.PORT || "3001", 10);
 const HOST = process.env.HOST || "0.0.0.0";
+
+// Debug log storage (last 50 entries)
+const debugLogs: { timestamp: string; type: string; data: unknown }[] = [];
+function addLog(type: string, data: unknown) {
+  debugLogs.push({
+    timestamp: new Date().toISOString(),
+    type,
+    data
+  });
+  if (debugLogs.length > 50) debugLogs.shift();
+  console.log(`[${type}]`, JSON.stringify(data).slice(0, 500));
+}
 
 function getUserId(): string {
   const userId = process.env.GTD_USER_ID;
@@ -41,11 +53,29 @@ async function main() {
     res.json({ status: "ok", server: "gtd-buddy-mcp", userId });
   });
 
+  // Debug endpoint - view recent logs
+  app.get("/debug", (_req: Request, res: Response) => {
+    res.json({
+      logs: debugLogs,
+      activeSessions: transports.size,
+      userId
+    });
+  });
+
   // Store transports for session management
   const transports = new Map<string, StreamableHTTPServerTransport>();
 
   // MCP endpoint - handles all MCP protocol messages
   app.all("/mcp", async (req: Request, res: Response) => {
+    addLog("MCP_REQUEST", {
+      method: req.method,
+      headers: {
+        "content-type": req.headers["content-type"],
+        "mcp-session-id": req.headers["mcp-session-id"]
+      },
+      body: req.body
+    });
+
     // Get or create session ID
     const sessionId = req.headers["mcp-session-id"] as string || "default";
 

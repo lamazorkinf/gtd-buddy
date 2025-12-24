@@ -14,7 +14,8 @@
       "Bash(mkdir:*)",
       "WebSearch",
       "Bash(firebase:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(dir \"C:\\\\Desarrollo\\\\gtd-buddy\\\\node_modules\\\\@modelcontextprotocol\")"
     ],
     "deny": []
   }
