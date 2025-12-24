@@ -1,0 +1,44 @@
+name: Deploy MCP Server to VPS
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'mcp-server/**'
+      - '.github/workflows/deploy-mcp.yml'
+  workflow_dispatch: # Permite ejecutar manualmente
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            # Ir al directorio del proyecto
+            cd ~/gtd-buddy
+
+            # Pull últimos cambios
+            git pull origin main
+
+            # Instalar dependencias del MCP server
+            cd mcp-server
+            npm install
+
+            # Build TypeScript
+            npm run build
+
+            # Reiniciar con PM2
+            pm2 restart gtd-mcp || pm2 start dist/http.js --name gtd-mcp
+
+            # Guardar configuración PM2
+            pm2 save
+
+            echo "Deploy completed!"

@@ -1,0 +1,29 @@
+{
+  "name": "gtd-buddy-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP Server for GTD-Buddy task management",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "start:http": "node dist/http.js",
+    "dev": "tsx src/index.ts",
+    "dev:http": "tsx src/http.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.0",
+    "firebase-admin": "^13.0.0",
+    "zod": "^3.23.8",
+    "dotenv": "^16.4.0",
+    "express": "^4.21.0",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/express": "^5.0.0",
+    "@types/cors": "^2.8.17",
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.0"
+  }
+}
